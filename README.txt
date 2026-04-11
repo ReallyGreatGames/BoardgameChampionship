@@ -1,0 +1,1 @@
+Monorepo for boardgame championship app.
