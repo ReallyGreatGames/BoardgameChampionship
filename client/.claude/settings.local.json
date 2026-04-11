@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(update-config)",
+      "Read(//c/Users/fnils/AppData/Local/Android/Sdk/**)",
+      "Read(//c/Program Files/Android/Android Studio/**)",
+      "Bash(npm install:*)"
+    ]
+  }
+}
