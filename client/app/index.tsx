@@ -1,34 +1,38 @@
-import { useState } from "react";
-import { ActivityIndicator, Button, Text, View } from "react-native";
-import client from "../lib/appwrite";
-import { Locale } from "react-native-appwrite"
-
-const locale = new Locale(client);
+import { useEffect } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { router } from "expo-router";
+import { account, useAuth } from "../lib/auth";
 
 export default function Index() {
-  const [status, setStatus] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { user, loading, logout } = useAuth();
 
-  async function ping() {
-    setLoading(true);
-    setStatus(null);
-    try {
-      // const res = await client.ping();
-      const res = await locale.get();
-      
-      setStatus(`Pong: ${res.ip}`);
-    } catch (e: any) {
-      setStatus(`Error: ${e?.message ?? String(e)}`);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      router.replace("/login");
     }
-  }
+    if (user?.labels.includes("admin")) {
+      router.replace("/admin");
+    }
+  }, [user, loading]);
 
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", gap: 16 }}>
-      <Button title="Ping Appwrite" onPress={ping} disabled={loading} />
-      {loading && <ActivityIndicator />}
-      {status && <Text>{status}</Text>}
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#0f0f0f",
+      }}
+    >
+      <ActivityIndicator size="large" color="#fff" />
+      <Text style={{ color: "white" }}>Dummer normaler Nutzer</Text>
+      <Pressable style={{ backgroundColor: "#ff0000", padding: 10, borderRadius: 8, marginTop: 5 }} onPress={async () => {
+        await logout();
+        router.replace("/login")
+      }}>
+        <Text>Log out</Text>
+      </Pressable>
     </View>
   );
 }
