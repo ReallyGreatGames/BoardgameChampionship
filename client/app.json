@@ -20,7 +20,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.cyklan.boardgamechampionship"
+      "package": "games.reallygreat.bgchampion"
     },
     "web": {
       "output": "static",
