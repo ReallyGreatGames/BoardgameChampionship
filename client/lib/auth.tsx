@@ -11,7 +11,7 @@ import {
   Models,
   TablesDB,
 } from "react-native-appwrite";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "./secureStorage";
 import client from "./appwrite";
 
 const account = new Account(client);
