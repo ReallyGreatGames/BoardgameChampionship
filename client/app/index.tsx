@@ -1,20 +1,21 @@
 import { useEffect } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
-import { account, useAuth } from "../lib/auth";
+import { useAuth } from "../lib/auth";
 
 export default function Index() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, isAdmin, isPinVerified } = useAuth();
 
   useEffect(() => {
     if (loading) return;
-    if (!user) {
+    if (!user || (!isAdmin && !isPinVerified)) {
       router.replace("/login");
+      return;
     }
-    if (user?.labels.includes("admin")) {
+    if (isAdmin) {
       router.replace("/admin");
     }
-  }, [user, loading]);
+  }, [user, loading, isAdmin, isPinVerified]);
 
   return (
     <View
