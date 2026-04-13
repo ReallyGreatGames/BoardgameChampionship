@@ -40,7 +40,12 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-screen-orientation", {
+          "initialOrientation": "PORTRAIT"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
