@@ -1,6 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { useAuth } from "../../lib/auth";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useAuth } from "../../../lib/auth";
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();

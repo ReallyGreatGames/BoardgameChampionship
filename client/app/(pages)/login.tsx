@@ -1,4 +1,6 @@
-import { useState, useRef } from "react";
+import { router } from "expo-router";
+import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Alert,
@@ -10,9 +12,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { router } from "expo-router";
-import { useAuth } from "../lib/auth";
-import { useTranslation } from "react-i18next";
+import { useAuth } from "../../lib/auth";
 
 const SECRET_TAPS = 7;
 

@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-export default function SettingsScreen() {
+export default function ChooseTeam() {
   return (
     <View style={styles.container}>
       <Pressable onPress={() => router.back()}>

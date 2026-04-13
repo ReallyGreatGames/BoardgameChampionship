@@ -1,9 +1,9 @@
+import { useRouter } from "@/lib/routing/useRouter";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../lib/auth";
-import { useRouter } from "@/lib/routing/useRouter";
 
 export default function Index() {
   const { user, loading, logout, isAdmin, isPinVerified } = useAuth();
@@ -16,7 +16,7 @@ export default function Index() {
 
   return (
     <View style={styles.container}>
-      <Pressable style={styles.gear} onPress={() => router.navigate("/settings")}>
+      <Pressable style={styles.gear} onPress={() => router.navigate("/choose-team")}>
         <Ionicons name="settings-outline" size={24} color="#888" />
       </Pressable>
       <ActivityIndicator size="large" color="#fff" />
