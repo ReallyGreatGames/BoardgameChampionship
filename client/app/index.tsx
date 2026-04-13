@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../lib/auth";
+import { colors } from "@/lib/theme/colors"
 
 export default function Index() {
   const { user, loading, logout, isAdmin, isPinVerified } = useAuth();
@@ -19,8 +20,8 @@ export default function Index() {
       <Pressable style={styles.gear} onPress={() => router.navigate("/choose-team")}>
         <Ionicons name="settings-outline" size={24} color="#888" />
       </Pressable>
-      <ActivityIndicator size="large" color="#fff" />
-      <Text style={{ color: "white" }}>Dummer normaler Nutzer</Text>
+      <ActivityIndicator size="large" color={colors.border} />
+      <Text style={{ color: colors.text }}>Dummer normaler Nutzer</Text>
       <Pressable
         style={{
           backgroundColor: "#ff0000",
@@ -44,7 +45,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#0f0f0f",
+    backgroundColor: colors.background,
   },
   gear: {
     position: "absolute",

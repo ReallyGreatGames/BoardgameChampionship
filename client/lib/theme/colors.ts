@@ -57,4 +57,4 @@ export const light = {
 } as const;
 
 /** Active theme — swap to `light` when implementing theme switching */
-export const colors = dark;
+export const colors = light;
