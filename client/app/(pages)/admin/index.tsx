@@ -1,6 +1,9 @@
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../../../lib/auth";
+import { type } from "../../../lib/theme/typography";
+import { inset } from "../../../lib/theme/spacing";
+import { colors } from "../../../lib/theme/colors";
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
@@ -12,9 +15,11 @@ export default function AdminDashboard() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.badge}>ADMIN</Text>
-      <Text style={styles.title}>Dashboard</Text>
-      <Text style={styles.email}>{user?.email}</Text>
+      <View style={styles.headerZone}>
+        <Text style={styles.eyebrow}>ADMIN</Text>
+        <Text style={styles.title}>Dashboard</Text>
+        <Text style={styles.email}>{user?.email}</Text>
+      </View>
 
       <View style={styles.divider} />
 
@@ -30,45 +35,44 @@ export default function AdminDashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f0f0f",
-    padding: 32,
-    paddingTop: 80,
+    backgroundColor: colors.background,
+    paddingHorizontal: inset.screen,
+    paddingTop: inset.screenTopTall,
+    paddingBottom: inset.screenBottom,
   },
-  badge: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#ff4444",
-    letterSpacing: 2,
-    marginBottom: 8,
+  headerZone: {
+    marginBottom: inset.group,
+  },
+  eyebrow: {
+    ...type.eyebrow,
+    color: colors.accent,
+    marginBottom: inset.tight,
   },
   title: {
-    fontSize: 36,
-    fontWeight: "700",
-    color: "#fff",
+    ...type.h1,
+    color: colors.text,
     marginBottom: 4,
   },
   email: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 32,
+    ...type.bodySmall,
+    color: colors.textSecondary,
   },
   divider: {
     height: 1,
-    backgroundColor: "#222",
-    marginBottom: 32,
+    backgroundColor: colors.divider,
+    marginBottom: inset.group,
   },
   placeholder: {
-    color: "#444",
-    fontSize: 14,
+    ...type.body,
+    color: colors.textMuted,
   },
   logoutButton: {
     position: "absolute",
-    bottom: 48,
-    right: 32,
+    bottom: inset.screenBottom,
+    right: inset.screen,
   },
   logoutText: {
-    color: "#ff4444",
-    fontWeight: "600",
-    fontSize: 14,
+    ...type.button,
+    color: colors.error,
   },
 });

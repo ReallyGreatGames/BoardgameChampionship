@@ -11,6 +11,9 @@ import {
 import { Query } from "react-native-appwrite";
 import { tablesDB } from "../appwrite";
 import { Team } from "../bootstrap/PlayerProvider";
+import { type } from "../theme/typography";
+import { inset } from "../theme/spacing";
+import { colors } from "../theme/colors";
 
 const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
 
@@ -49,7 +52,7 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
   if (isLoading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#fff" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -68,8 +71,12 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
         <Pressable onPress={() => setStep("team")}>
           <Text style={styles.back}>← Back</Text>
         </Pressable>
-        <Text style={styles.title}>{selectedTeam.name}</Text>
-        <Text style={styles.subtitle}>Who are you?</Text>
+
+        <View style={styles.playerHeaderZone}>
+          <Text style={styles.title}>{selectedTeam.name}</Text>
+          <Text style={styles.subtitle}>Who are you?</Text>
+        </View>
+
         <View style={styles.playerGrid}>
           {["1", "2", "3", "4"].map((id) => (
             <Pressable
@@ -93,8 +100,16 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
           <Text style={styles.back}>← Back</Text>
         </Pressable>
       )}
-      <Text style={styles.title}>Choose Your Team</Text>
-      <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
+
+      <View style={styles.teamHeaderZone}>
+        <Text style={styles.title}>Choose Your Team</Text>
+      </View>
+
+      <ScrollView
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+      >
         {teams?.map((team) => (
           <Pressable
             key={team.code}
@@ -102,7 +117,7 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
             onPress={() => handleTeamSelect(team)}
           >
             <Text style={styles.teamCode}>{team.code}</Text>
-            <View>
+            <View style={styles.teamInfo}>
               <Text style={styles.teamName}>{team.name}</Text>
               <Text style={styles.teamCountry}>{team.country}</Text>
             </View>
@@ -116,94 +131,104 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f0f0f",
-    padding: 32,
-    paddingTop: 64,
+    backgroundColor: colors.background,
+    paddingHorizontal: inset.screen,
+    paddingTop: inset.screenTop,
   },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#0f0f0f",
+    backgroundColor: colors.background,
   },
   back: {
-    color: "#888",
-    fontSize: 14,
-    marginBottom: 24,
+    ...type.bodySmall,
+    color: colors.primary,
+    marginBottom: inset.group,
+  },
+
+  // Team selection
+  teamHeaderZone: {
+    marginBottom: inset.group,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: "#fff",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#888",
-    marginBottom: 32,
-  },
-  errorText: {
-    color: "#ff4444",
-    fontSize: 16,
+    ...type.h1,
+    color: colors.text,
   },
   list: {
     flex: 1,
   },
   listContent: {
-    gap: 12,
-    paddingBottom: 32,
+    gap: inset.list,
+    paddingBottom: inset.screenBottom,
   },
   teamCard: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
-    backgroundColor: "#1a1a1a",
+    gap: inset.group,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: colors.border,
     borderRadius: 8,
-    padding: 16,
+    paddingVertical: inset.card,
+    paddingHorizontal: inset.card,
   },
   teamCode: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#fff",
-    width: 48,
+    ...type.h2,
+    color: colors.primary,
+    width: 56,
     textAlign: "center",
   },
+  teamInfo: {
+    flex: 1,
+    gap: 2,
+  },
   teamName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#fff",
+    ...type.body,
+    fontFamily: "DMSans_700Bold",
+    color: colors.text,
   },
   teamCountry: {
-    fontSize: 13,
-    color: "#888",
-    marginTop: 2,
+    ...type.caption,
+    color: colors.textSecondary,
+  },
+  errorText: {
+    ...type.body,
+    color: colors.error,
+  },
+
+  // Player selection
+  playerHeaderZone: {
+    gap: 4,
+    marginBottom: inset.section,
+  },
+  subtitle: {
+    ...type.bodyLarge,
+    color: colors.textSecondary,
   },
   playerGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 16,
+    gap: inset.card,
   },
   playerCard: {
     flex: 1,
     minWidth: "40%",
     aspectRatio: 1,
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: colors.border,
     borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
-    gap: 8,
+    gap: inset.tight,
   },
   playerNumber: {
-    fontSize: 48,
-    fontWeight: "700",
-    color: "#fff",
+    ...type.bigNumber,
+    color: colors.text,
   },
   playerLabel: {
-    fontSize: 14,
-    color: "#888",
+    ...type.bodySmall,
+    color: colors.textSecondary,
   },
 });

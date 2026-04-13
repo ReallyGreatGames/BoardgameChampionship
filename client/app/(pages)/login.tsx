@@ -4,15 +4,20 @@ import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { useAuth } from "../../lib/auth";
+import { type } from "../../lib/theme/typography";
+import { inset } from "../../lib/theme/spacing";
+import { colors } from "../../lib/theme/colors";
 
 const SECRET_TAPS = 7;
 
@@ -77,58 +82,70 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <Pressable onPress={handleTitleTap}>
-        <Text style={styles.title}>
-          {adminMode ? "Admin Login" : t("welcome")}
-        </Text>
-      </Pressable>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.inner}>
+          {/* Zone 1 — Title */}
+          <View style={styles.headerZone}>
+            <Pressable onPress={handleTitleTap}>
+              <Text style={styles.title}>
+                {adminMode ? "Admin Login" : t("welcome")}
+              </Text>
+            </Pressable>
+            {adminMode && <Text style={styles.adminBadge}>ADMIN MODE</Text>}
+          </View>
 
-      {adminMode && <Text style={styles.adminBadge}>ADMIN MODE</Text>}
+          {/* Zone 2 — Form */}
+          <View style={styles.formZone}>
+            {adminMode ? (
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email"
+                  placeholderTextColor={colors.textPlaceholder}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  value={email}
+                  onChangeText={setEmail}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder={t("password")}
+                  placeholderTextColor={colors.textPlaceholder}
+                  secureTextEntry
+                  value={password}
+                  onChangeText={setPassword}
+                />
+              </>
+            ) : (
+              <View style={styles.pinContainer}>
+                <Text style={styles.pinLabel}>{t("enterPin")}</Text>
+                <TextInput
+                  style={[styles.input, styles.pinInput]}
+                  placeholder="••••"
+                  placeholderTextColor={colors.textPlaceholder}
+                  keyboardType="number-pad"
+                  secureTextEntry
+                  maxLength={8}
+                  value={pin}
+                  onChangeText={setPin}
+                  textAlign="center"
+                />
+              </View>
+            )}
+          </View>
 
-      {adminMode ? (
-        <>
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor="#888"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            value={email}
-            onChangeText={setEmail}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder={t("password")}
-            placeholderTextColor="#888"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-        </>
-      ) : (
-        <View style={styles.pinContainer}>
-          <Text style={styles.pinLabel}>{t("enterPin")}</Text>
-          <TextInput
-            style={[styles.input, styles.pinInput]}
-            placeholder="••••"
-            placeholderTextColor="#555"
-            keyboardType="number-pad"
-            secureTextEntry
-            maxLength={8}
-            value={pin}
-            onChangeText={setPin}
-            textAlign="center"
-          />
+          {/* Zone 3 — Action */}
+          <View style={styles.actionZone}>
+            {loading ? (
+              <ActivityIndicator size="large" color={colors.accent} />
+            ) : (
+              <Pressable style={styles.button} onPress={handleLogin}>
+                <Text style={styles.buttonText}>{t("login")}</Text>
+              </Pressable>
+            )}
+          </View>
         </View>
-      )}
-
-      {loading ? (
-        <ActivityIndicator size="large" />
-      ) : (
-        <Pressable style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>{t("login")}</Text>
-        </Pressable>
-      )}
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }
@@ -136,58 +153,62 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 32,
-    gap: 16,
-    backgroundColor: "#0f0f0f",
+    backgroundColor: colors.background,
+  },
+  inner: {
+    flex: 1,
+    paddingHorizontal: inset.screen,
+    paddingTop: inset.screenTopTall,
+    paddingBottom: inset.screenBottom,
+  },
+  headerZone: {
+    marginBottom: inset.section,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: "#fff",
-    marginBottom: 8,
+    ...type.h1,
+    color: colors.text,
   },
   adminBadge: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#ff4444",
-    letterSpacing: 2,
-    marginBottom: 8,
+    ...type.eyebrow,
+    color: colors.accent,
+    marginTop: inset.tight,
+  },
+  formZone: {
+    gap: inset.list,
   },
   input: {
-    width: "100%",
+    ...type.body,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: colors.border,
     borderRadius: 8,
-    padding: 14,
-    color: "#fff",
-    fontSize: 16,
-    backgroundColor: "#1a1a1a",
+    padding: inset.card,
+    color: colors.text,
+    backgroundColor: colors.surface,
   },
   pinContainer: {
-    width: "100%",
-    alignItems: "center",
-    gap: 8,
+    gap: inset.tight,
   },
   pinLabel: {
-    color: "#888",
-    fontSize: 14,
+    ...type.bodySmall,
+    color: colors.textSecondary,
   },
   pinInput: {
-    fontSize: 24,
-    letterSpacing: 8,
+    ...type.h2,
+    letterSpacing: 10,
+    color: colors.text,
+    textAlign: "center",
+  },
+  actionZone: {
+    marginTop: inset.section,
   },
   button: {
-    width: "100%",
-    backgroundColor: "#fff",
+    backgroundColor: colors.accent,
     borderRadius: 8,
-    padding: 14,
+    padding: inset.card,
     alignItems: "center",
   },
   buttonText: {
-    color: "#0f0f0f",
-    fontWeight: "700",
-    fontSize: 16,
+    ...type.button,
+    color: "#fff",
   },
 });

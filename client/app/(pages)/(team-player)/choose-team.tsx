@@ -1,5 +1,8 @@
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { type } from "../../../lib/theme/typography";
+import { inset } from "../../../lib/theme/spacing";
+import { colors } from "../../../lib/theme/colors";
 
 export default function ChooseTeam() {
   return (
@@ -7,15 +10,19 @@ export default function ChooseTeam() {
       <Pressable onPress={() => router.back()}>
         <Text style={styles.back}>← Back</Text>
       </Pressable>
+
       <Text style={styles.title}>Settings</Text>
 
-      <Pressable
-        style={styles.item}
-        onPress={() => router.navigate("/choose-your-character?from=settings")}
-      >
-        <Text style={styles.itemText}>Change Player / Team</Text>
-        <Text style={styles.itemChevron}>›</Text>
-      </Pressable>
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>Identity</Text>
+        <Pressable
+          style={styles.item}
+          onPress={() => router.navigate("/choose-your-character?from=settings")}
+        >
+          <Text style={styles.itemText}>Change Player / Team</Text>
+          <Text style={styles.itemChevron}>›</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -23,37 +30,44 @@ export default function ChooseTeam() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f0f0f",
-    padding: 32,
-    paddingTop: 64,
+    backgroundColor: colors.background,
+    paddingHorizontal: inset.screen,
+    paddingTop: inset.screenTop,
   },
   back: {
-    color: "#888",
-    fontSize: 14,
-    marginBottom: 24,
+    ...type.bodySmall,
+    color: colors.primary,
+    marginBottom: inset.group,
   },
   title: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: "#fff",
-    marginBottom: 32,
+    ...type.h1,
+    color: colors.text,
+    marginBottom: inset.section,
+  },
+  section: {
+    gap: inset.tight,
+  },
+  sectionLabel: {
+    ...type.eyebrow,
+    color: colors.secondary,
+    marginBottom: inset.tight,
   },
   item: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: colors.border,
     borderRadius: 8,
-    padding: 16,
+    padding: inset.card,
   },
   itemText: {
-    fontSize: 16,
-    color: "#fff",
+    ...type.body,
+    color: colors.text,
   },
   itemChevron: {
-    fontSize: 20,
-    color: "#888",
+    ...type.h3,
+    color: colors.primary,
   },
 });
