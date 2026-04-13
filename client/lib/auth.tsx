@@ -5,24 +5,19 @@ import {
   useState,
   ReactNode,
 } from "react";
-import {
-  Account,
-  Query,
-  Models,
-  TablesDB,
-} from "react-native-appwrite";
+import { Query, Models } from "react-native-appwrite";
 import * as SecureStore from "./secureStorage";
-import client from "./appwrite";
-
-const account = new Account(client);
+import { account, tablesDB } from "./appwrite";
 
 const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
-const PIN_COLLECTION_ID = "pin-login";
+const PIN_COLLECTION_ID = "tournament";
 const PIN_STORE_KEY = "bgcs_pin_auth";
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
-const tablesDB = new TablesDB(client);
-type StoredPin = { pin: string; lastVerified: number };
+type StoredPin = {
+  pin: string;
+  lastVerified: number;
+};
 
 type AuthContextType = {
   user: Models.User<Models.Preferences> | null;
@@ -49,7 +44,7 @@ async function verifyPinInDb(pin: string): Promise<boolean> {
   const result = await tablesDB.listRows({
     databaseId: DATABASE_ID,
     tableId: PIN_COLLECTION_ID,
-    queries: [Query.equal("pin", pin)],
+    queries: [Query.equal("pin", pin), Query.equal("active", true)],
   });
 
   return result.total > 0;
@@ -165,5 +160,3 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }
-
-export { account };
