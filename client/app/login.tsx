@@ -12,10 +12,12 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "../lib/auth";
+import { useTranslation } from "react-i18next";
 
 const SECRET_TAPS = 7;
 
 export default function LoginScreen() {
+  const { t } = useTranslation(["login"]);
   const { login, loginWithPin } = useAuth();
   const [pin, setPin] = useState("");
   const [email, setEmail] = useState("");
@@ -77,7 +79,7 @@ export default function LoginScreen() {
     >
       <Pressable onPress={handleTitleTap}>
         <Text style={styles.title}>
-          {adminMode ? "Admin Login" : "Welcome"}
+          {adminMode ? "Admin Login" : t("welcome")}
         </Text>
       </Pressable>
 
@@ -96,7 +98,7 @@ export default function LoginScreen() {
           />
           <TextInput
             style={styles.input}
-            placeholder="Password"
+            placeholder={t("password")}
             placeholderTextColor="#888"
             secureTextEntry
             value={password}
@@ -105,7 +107,7 @@ export default function LoginScreen() {
         </>
       ) : (
         <View style={styles.pinContainer}>
-          <Text style={styles.pinLabel}>Enter PIN</Text>
+          <Text style={styles.pinLabel}>{t("enterPin")}</Text>
           <TextInput
             style={[styles.input, styles.pinInput]}
             placeholder="••••"
@@ -124,9 +126,7 @@ export default function LoginScreen() {
         <ActivityIndicator size="large" />
       ) : (
         <Pressable style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>
-            {adminMode ? "Login as Admin" : "Enter"}
-          </Text>
+          <Text style={styles.buttonText}>{t("login")}</Text>
         </Pressable>
       )}
     </KeyboardAvoidingView>
