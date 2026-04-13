@@ -1,0 +1,9 @@
+import { View } from "react-native";
+
+export default function SettingsScreen() {
+  return (
+    <View>
+      Hier stehen Infos zur App, Impressum, etc.
+    </View>
+  )
+}

@@ -6,6 +6,27 @@ const translations = {
     welcome: "Welcome",
     password: "Password",
   },
+  menu: {
+    title: "Boardgame Championship",
+    entries: {
+      home: "Home",
+      dashboard: "Dashboard",
+    },
+  },
+  settings: {
+    title: "Settings",
+    appearance: "Appearance",
+    darkMode: "Dark Mode",
+    language: "Language",
+    account: "Account",
+    currentTeam: "Team",
+    currentPlayer: "Player",
+    changeTeam: "Change Team / Player",
+    languages: {
+      en: "English",
+      de: "German",
+    },
+  },
 };
 
 export default translations;
