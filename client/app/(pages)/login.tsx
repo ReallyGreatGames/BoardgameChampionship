@@ -1,9 +1,10 @@
 import { router } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -29,9 +30,27 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [adminMode, setAdminMode] = useState(false);
+  const [pinFocused, setPinFocused] = useState(false);
 
   const tapCount = useRef(0);
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const buttonScale = useRef(new Animated.Value(1)).current;
+  const badgeAnim = useRef(new Animated.Value(0)).current;
+
+  // Admin badge spring-in when mode activates
+  useEffect(() => {
+    if (adminMode) {
+      badgeAnim.setValue(0);
+      Animated.spring(badgeAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 18,
+        bounciness: 14,
+      }).start();
+    } else {
+      badgeAnim.setValue(0);
+    }
+  }, [adminMode]);
 
   function handleTitleTap() {
     tapCount.current += 1;
@@ -91,7 +110,16 @@ export default function LoginScreen() {
                 {adminMode ? "Admin Login" : t("welcome")}
               </Text>
             </Pressable>
-            {adminMode && <Text style={styles.adminBadge}>ADMIN MODE</Text>}
+            {adminMode && (
+              <Animated.View
+                style={{
+                  opacity: badgeAnim,
+                  transform: [{ scale: badgeAnim }],
+                }}
+              >
+                <Text style={styles.adminBadge}>ADMIN MODE</Text>
+              </Animated.View>
+            )}
           </View>
 
           {/* Zone 2 — Form */}
@@ -120,7 +148,11 @@ export default function LoginScreen() {
               <View style={styles.pinContainer}>
                 <Text style={styles.pinLabel}>{t("enterPin")}</Text>
                 <TextInput
-                  style={[styles.input, styles.pinInput]}
+                  style={[
+                    styles.input,
+                    styles.pinInput,
+                    pinFocused && styles.pinInputFocused,
+                  ]}
                   placeholder="••••"
                   placeholderTextColor={colors.textPlaceholder}
                   keyboardType="number-pad"
@@ -129,6 +161,8 @@ export default function LoginScreen() {
                   value={pin}
                   onChangeText={setPin}
                   textAlign="center"
+                  onFocus={() => setPinFocused(true)}
+                  onBlur={() => setPinFocused(false)}
                 />
               </View>
             )}
@@ -139,9 +173,30 @@ export default function LoginScreen() {
             {loading ? (
               <ActivityIndicator size="large" color={colors.accent} />
             ) : (
-              <Pressable style={styles.button} onPress={handleLogin}>
-                <Text style={styles.buttonText}>{t("login")}</Text>
-              </Pressable>
+              <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+                <Pressable
+                  style={styles.button}
+                  onPress={handleLogin}
+                  onPressIn={() =>
+                    Animated.spring(buttonScale, {
+                      toValue: 0.96,
+                      useNativeDriver: true,
+                      speed: 60,
+                      bounciness: 0,
+                    }).start()
+                  }
+                  onPressOut={() =>
+                    Animated.spring(buttonScale, {
+                      toValue: 1,
+                      useNativeDriver: true,
+                      speed: 30,
+                      bounciness: 6,
+                    }).start()
+                  }
+                >
+                  <Text style={styles.buttonText}>{t("login")}</Text>
+                </Pressable>
+              </Animated.View>
             )}
           </View>
         </View>
@@ -197,6 +252,10 @@ const styles = StyleSheet.create({
     letterSpacing: 10,
     color: colors.text,
     textAlign: "center",
+  },
+  pinInputFocused: {
+    borderColor: colors.primary,
+    backgroundColor: colors.surfaceHigh,
   },
   actionZone: {
     marginTop: inset.section,

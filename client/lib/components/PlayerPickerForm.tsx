@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -35,19 +37,134 @@ type Props = {
   onBack?: () => void;
 };
 
+// Animated team card — crisp scale press
+function AnimatedTeamCard({
+  team,
+  onPress,
+}: {
+  team: Team;
+  onPress: () => void;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  return (
+    <Pressable
+      onPressIn={() =>
+        Animated.spring(scale, {
+          toValue: 0.96,
+          useNativeDriver: true,
+          speed: 60,
+          bounciness: 0,
+        }).start()
+      }
+      onPressOut={() =>
+        Animated.spring(scale, {
+          toValue: 1,
+          useNativeDriver: true,
+          speed: 30,
+          bounciness: 5,
+        }).start()
+      }
+      onPress={onPress}
+    >
+      <Animated.View style={[styles.teamCard, { transform: [{ scale }] }]}>
+        <Text style={styles.teamCode}>{team.code}</Text>
+        <View style={styles.teamInfo}>
+          <Text style={styles.teamName}>{team.name}</Text>
+          <Text style={styles.teamCountry}>{team.country}</Text>
+        </View>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+// Animated player card — dramatic spring-back "claim" moment
+function AnimatedPlayerCard({
+  id,
+  onConfirm,
+}: {
+  id: string;
+  onConfirm: () => void;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const confirmed = useRef(false);
+
+  return (
+    <Pressable
+      onPressIn={() => {
+        confirmed.current = false;
+        Animated.spring(scale, {
+          toValue: 0.9,
+          useNativeDriver: true,
+          speed: 60,
+          bounciness: 0,
+        }).start();
+      }}
+      onPress={() => {
+        confirmed.current = true;
+      }}
+      onPressOut={() => {
+        Animated.spring(scale, {
+          toValue: 1,
+          useNativeDriver: true,
+          speed: 22,
+          bounciness: 18,
+        }).start(() => {
+          if (confirmed.current) {
+            confirmed.current = false;
+            onConfirm();
+          }
+        });
+      }}
+      style={styles.playerCardPressable}
+    >
+      <Animated.View style={[styles.playerCard, { transform: [{ scale }] }]}>
+        <Text style={styles.playerNumber}>{id}</Text>
+        <Text style={styles.playerLabel}>Player {id}</Text>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
 export function PlayerPickerForm({ onConfirm, onBack }: Props) {
   const [step, setStep] = useState<"team" | "player">("team");
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
 
-  const { data: teams, isLoading, isError } = useQuery<Team[]>({
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        setStep("team");
+        setSelectedTeam(null);
+      };
+    }, [])
+  );
+
+  const {
+    data: teams,
+    isLoading,
+    isError,
+  } = useQuery<Team[]>({
     queryKey: ["teams"],
     queryFn: fetchTeams,
   });
 
   function handleTeamSelect(team: Team) {
     setSelectedTeam(team);
+    fadeAnim.setValue(0);
     setStep("player");
   }
+
+  useEffect(() => {
+    if (step === "player") {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 220,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [step]);
+
 
   if (isLoading) {
     return (
@@ -60,7 +177,10 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
   if (isError) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>Failed to load teams.</Text>
+        <Text style={styles.errorText}>Couldn't reach the server.</Text>
+        <Text style={styles.errorHint}>
+          Check your connection and try again.
+        </Text>
       </View>
     );
   }
@@ -68,27 +188,30 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
   if (step === "player" && selectedTeam) {
     return (
       <View style={styles.container}>
-        <Pressable onPress={() => setStep("team")}>
-          <Text style={styles.back}>← Back</Text>
-        </Pressable>
+        <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+          <Pressable onPress={() => setStep("team")}>
+            <Text style={styles.back}>← Back</Text>
+          </Pressable>
 
-        <View style={styles.playerHeaderZone}>
-          <Text style={styles.title}>{selectedTeam.name}</Text>
-          <Text style={styles.subtitle}>Who are you?</Text>
-        </View>
+          <View style={styles.playerHeaderZone}>
+            <Text style={styles.title}>{selectedTeam.name}</Text>
+            <Text style={styles.subtitle}>Who are you?</Text>
+          </View>
 
-        <View style={styles.playerGrid}>
-          {["1", "2", "3", "4"].map((id) => (
-            <Pressable
-              key={id}
-              style={styles.playerCard}
-              onPress={() => onConfirm(selectedTeam, id)}
-            >
-              <Text style={styles.playerNumber}>{id}</Text>
-              <Text style={styles.playerLabel}>Player {id}</Text>
-            </Pressable>
-          ))}
-        </View>
+          <View style={styles.playerGrid}>
+            {["1", "2", "3", "4"].map((id) => (
+              <AnimatedPlayerCard
+                key={id}
+                id={id}
+                onConfirm={() => {
+                  onConfirm(selectedTeam, id);
+                  setSelectedTeam(null);
+                  setStep("team");
+                }}
+              />
+            ))}
+          </View>
+        </Animated.View>
       </View>
     );
   }
@@ -111,17 +234,11 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
         showsVerticalScrollIndicator={false}
       >
         {teams?.map((team) => (
-          <Pressable
+          <AnimatedTeamCard
             key={team.code}
-            style={styles.teamCard}
+            team={team}
             onPress={() => handleTeamSelect(team)}
-          >
-            <Text style={styles.teamCode}>{team.code}</Text>
-            <View style={styles.teamInfo}>
-              <Text style={styles.teamName}>{team.name}</Text>
-              <Text style={styles.teamCountry}>{team.country}</Text>
-            </View>
-          </Pressable>
+          />
         ))}
       </ScrollView>
     </View>
@@ -140,6 +257,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: colors.background,
+    gap: inset.tight,
   },
   back: {
     ...type.bodySmall,
@@ -196,6 +314,10 @@ const styles = StyleSheet.create({
     ...type.body,
     color: colors.error,
   },
+  errorHint: {
+    ...type.bodySmall,
+    color: colors.textMuted,
+  },
 
   // Player selection
   playerHeaderZone: {
@@ -211,10 +333,13 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: inset.card,
   },
-  playerCard: {
+  playerCardPressable: {
     flex: 1,
     minWidth: "40%",
     aspectRatio: 1,
+  },
+  playerCard: {
+    flex: 1,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
