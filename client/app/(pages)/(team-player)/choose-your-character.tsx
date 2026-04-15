@@ -8,7 +8,11 @@ export default function ChooseYourCharacter() {
 
   async function handleConfirm(team: Team, playerId: string) {
     await assignPlayer({ team, playerId });
-    router.back();
+    if (from) {
+      router.push("/settings");
+    } else {
+      router.push("/");
+    }
   }
 
   return (

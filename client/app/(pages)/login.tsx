@@ -50,7 +50,7 @@ export default function LoginScreen() {
     } else {
       badgeAnim.setValue(0);
     }
-  }, [adminMode]);
+  }, [adminMode, badgeAnim]);
 
   function handleTitleTap() {
     tapCount.current += 1;

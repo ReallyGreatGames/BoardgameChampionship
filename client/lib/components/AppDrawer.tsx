@@ -1,20 +1,29 @@
+import { useAuth } from "@/lib/auth";
 import { Ionicons } from "@expo/vector-icons";
 import {
   DrawerContentComponentProps,
   DrawerContentScrollView,
-  DrawerItemList,
+  DrawerItem,
 } from "@react-navigation/drawer";
-import { router } from "expo-router";
+import { router, usePathname } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { type } from "../theme/typography";
 import { inset } from "../theme/spacing";
 import { colors } from "../theme/colors";
 
 function DrawerHeader() {
+  const { t } = useTranslation(["menu"]);
+
   return (
     <View style={styles.header}>
-      <Text style={styles.headerTitle}>Boardgame Championship</Text>
-      <Pressable onPress={() => {}} hitSlop={12}>
+      <Text style={styles.headerTitle}>{t("title")}</Text>
+      <Pressable
+        onPress={() => {
+          router.push("/(pages)/info");
+        }}
+        hitSlop={12}
+      >
         <Ionicons name="information-circle-outline" size={22} color={colors.primary} />
       </Pressable>
     </View>
@@ -22,35 +31,104 @@ function DrawerHeader() {
 }
 
 function DrawerFooter() {
+  const { user, logout } = useAuth();
+
+  async function handleAuthPress() {
+    if (user) {
+      await logout();
+      router.replace("/(pages)/login");
+    } else {
+      router.push("/(pages)/login");
+    }
+  }
+
   return (
     <View style={styles.footer}>
       <View style={styles.footerActions}>
         <Pressable
           style={styles.iconButton}
-          onPress={() => router.push("/settings")}
+          onPress={() => router.push("/(pages)/settings")}
           hitSlop={8}
         >
           <Ionicons name="settings-outline" size={22} color={colors.primary} />
         </Pressable>
-        <Pressable
-          style={styles.iconButton}
-          onPress={() => router.push("/(pages)/login")}
-        >
-          <Ionicons name="log-in-outline" size={22} color={colors.primary} />
+        <Pressable style={styles.iconButton} onPress={handleAuthPress}>
+          <Ionicons
+            name={user ? "log-out-outline" : "log-in-outline"}
+            size={22}
+            color={colors.primary}
+          />
         </Pressable>
       </View>
     </View>
   );
 }
 
+export const drawerScreenOptions = {
+  headerStyle: { backgroundColor: colors.background },
+  headerTintColor: colors.primary,
+  headerTitleStyle: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 20,
+    color: colors.text,
+  },
+  headerShadowVisible: false,
+  headerShown: true,
+  drawerStyle: { backgroundColor: colors.background },
+  drawerActiveTintColor: colors.primary,
+  drawerInactiveTintColor: colors.textMuted,
+} as const;
+
 export function AppDrawer(props: DrawerContentComponentProps) {
+  const pathname = usePathname();
+  const { t } = useTranslation(["menu"]);
+  const { isAdmin, isPinVerified } = useAuth();
+
+  const entries = [
+    {
+      translationId: "entries.home",
+      route: "/",
+      icon: "home-outline",
+      scope: "private",
+    },
+    {
+      translationId: "entries.dashboard",
+      route: "/admin",
+      icon: "grid-outline",
+      scope: "admin",
+    },
+  ];
+
   return (
     <DrawerContentScrollView
       {...props}
       contentContainerStyle={styles.container}
     >
       <DrawerHeader />
-      <DrawerItemList {...props} />
+
+      {entries
+        .filter((entry) => {
+          if (entry.scope === "public") return true;
+          if (entry.scope === "private" && (isPinVerified || isAdmin))
+            return true;
+          if (entry.scope === "admin" && isAdmin) return true;
+          return false;
+        })
+        .map((entry, i) => (
+          <DrawerItem
+            key={i}
+            label={t(entry.translationId)}
+            focused={pathname === entry.route}
+            onPress={() => router.push(entry.route as any)}
+            activeTintColor={colors.primary}
+            inactiveTintColor={colors.textMuted}
+            labelStyle={{ color: colors.text }}
+            icon={({ color, size }) => (
+              <Ionicons name={entry.icon as any} size={size} color={color} />
+            )}
+          />
+        ))}
+
       <View style={styles.spacer} />
       <DrawerFooter />
     </DrawerContentScrollView>

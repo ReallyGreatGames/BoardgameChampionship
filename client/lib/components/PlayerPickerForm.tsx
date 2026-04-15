@@ -177,7 +177,7 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
   if (isError) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>Couldn't reach the server.</Text>
+        <Text style={styles.errorText}>Couldn&apos;t reach the server.</Text>
         <Text style={styles.errorHint}>
           Check your connection and try again.
         </Text>
@@ -223,15 +223,9 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
           <Text style={styles.back}>← Back</Text>
         </Pressable>
       )}
-
-      <View style={styles.teamHeaderZone}>
-        <Text style={styles.title}>Choose Your Team</Text>
-      </View>
-
       <ScrollView
         style={styles.list}
         contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
       >
         {teams?.map((team) => (
           <AnimatedTeamCard
