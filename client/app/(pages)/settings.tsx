@@ -67,18 +67,21 @@ export default function SettingsScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{t("settings:title")}</Text>
-
       <Text style={styles.sectionLabel}>{t("settings:appearance")}</Text>
       <View style={styles.card}>
         <View style={styles.row}>
           <View style={styles.rowLeft}>
-            <Ionicons name="moon-outline" size={20} color="#888" style={styles.rowIcon} />
+            <Ionicons
+              name="moon-outline"
+              size={20}
+              color="#888"
+              style={styles.rowIcon}
+            />
             <Text style={styles.rowLabel}>{t("settings:darkMode")}</Text>
           </View>
           <Switch
             value={true}
-            onValueChange={() => { }}
+            onValueChange={() => {}}
             trackColor={{ false: "#333", true: "#555" }}
             thumbColor="#fff"
           />
@@ -89,7 +92,12 @@ export default function SettingsScreen() {
       <View style={styles.card}>
         <View style={styles.row}>
           <View style={styles.rowLeft}>
-            <Ionicons name="language-outline" size={20} color="#888" style={styles.rowIcon} />
+            <Ionicons
+              name="language-outline"
+              size={20}
+              color="#888"
+              style={styles.rowIcon}
+            />
             <Text style={styles.rowLabel}>{t("settings:language")}</Text>
           </View>
           <LanguagePicker />
@@ -104,15 +112,29 @@ export default function SettingsScreen() {
               <>
                 <View style={styles.row}>
                   <View style={styles.rowLeft}>
-                    <Ionicons name="shield-outline" size={20} color="#888" style={styles.rowIcon} />
-                    <Text style={styles.rowLabel}>{t("settings:currentTeam")}</Text>
+                    <Ionicons
+                      name="shield-outline"
+                      size={20}
+                      color="#888"
+                      style={styles.rowIcon}
+                    />
+                    <Text style={styles.rowLabel}>
+                      {t("settings:currentTeam")}
+                    </Text>
                   </View>
                   <Text style={styles.rowValue}>{player.team.name}</Text>
                 </View>
                 <View style={[styles.row, styles.rowBorderTop]}>
                   <View style={styles.rowLeft}>
-                    <Ionicons name="person-outline" size={20} color="#888" style={styles.rowIcon} />
-                    <Text style={styles.rowLabel}>{t("settings:currentPlayer")}</Text>
+                    <Ionicons
+                      name="person-outline"
+                      size={20}
+                      color="#888"
+                      style={styles.rowIcon}
+                    />
+                    <Text style={styles.rowLabel}>
+                      {t("settings:currentPlayer")}
+                    </Text>
                   </View>
                   <Text style={styles.rowValue}>{player.playerId}</Text>
                 </View>
@@ -120,10 +142,19 @@ export default function SettingsScreen() {
             )}
             <Pressable
               style={[styles.row, player && styles.rowBorderTop]}
-              onPress={() => router.push("/(pages)/(team-player)/choose-your-character")}
+              onPress={() =>
+                router.push(
+                  "/(pages)/(team-player)/choose-your-character?from=settings",
+                )
+              }
             >
               <View style={styles.rowLeft}>
-                <Ionicons name="people-outline" size={20} color="#888" style={styles.rowIcon} />
+                <Ionicons
+                  name="people-outline"
+                  size={20}
+                  color="#888"
+                  style={styles.rowIcon}
+                />
                 <Text style={styles.rowLabel}>{t("settings:changeTeam")}</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#888" />

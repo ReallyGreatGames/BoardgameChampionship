@@ -11,6 +11,9 @@ const translations = {
     entries: {
       home: "Home",
       dashboard: "Dashboard",
+      settings: "Settings",
+      info: "Info",
+      chooseYourCharacter: "Choose Team",
     },
   },
   settings: {

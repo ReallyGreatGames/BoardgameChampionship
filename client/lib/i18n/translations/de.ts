@@ -11,6 +11,9 @@ const translations = {
     entries: {
       home: "Startseite",
       dashboard: "Dashboard",
+      settings: "Einstellungen",
+      info: "Informationen",
+      chooseYourCharacter: "Team auswählen",
     },
   },
   settings: {

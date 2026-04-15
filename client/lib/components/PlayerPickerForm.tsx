@@ -93,8 +93,10 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
           <Text style={styles.back}>← Back</Text>
         </Pressable>
       )}
-      <Text style={styles.title}>Choose Your Team</Text>
-      <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
+      <ScrollView
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
+      >
         {teams?.map((team) => (
           <Pressable
             key={team.code}

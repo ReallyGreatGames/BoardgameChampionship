@@ -6,7 +6,6 @@ import {
   DrawerItem,
 } from "@react-navigation/drawer";
 import { router, usePathname } from "expo-router";
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -16,7 +15,12 @@ function DrawerHeader() {
   return (
     <View style={styles.header}>
       <Text style={styles.headerTitle}>{t("title")}</Text>
-      <Pressable onPress={() => { router.push("/(pages)/info") }} hitSlop={12}>
+      <Pressable
+        onPress={() => {
+          router.push("/(pages)/info");
+        }}
+        hitSlop={12}
+      >
         <Ionicons name="information-circle-outline" size={22} color="#fff" />
       </Pressable>
     </View>
@@ -73,28 +77,20 @@ export function AppDrawer(props: DrawerContentComponentProps) {
   const { t } = useTranslation(["menu"]);
   const { isAdmin, isPinVerified } = useAuth();
 
-  // ! TODO: Define entries here
-  const entries = useMemo(() => [
+  const entries = [
     {
       translationId: "entries.home",
       route: "/",
       icon: "home-outline",
-      scope: "public"
-    },
-    {
-      translationId: "entries.home",
-      route: "/",
-      icon: "home-outline",
-      scope: "private"
+      scope: "private",
     },
     {
       translationId: "entries.dashboard",
       route: "/admin",
       icon: "grid-outline",
-      scope: "admin"
-    }
-  ], [isAdmin, isPinVerified]);
-
+      scope: "admin",
+    },
+  ];
 
   return (
     <DrawerContentScrollView
@@ -103,26 +99,30 @@ export function AppDrawer(props: DrawerContentComponentProps) {
     >
       <DrawerHeader />
 
-      {entries.filter(entry => {
-        if (entry.scope === "public") return true;
-        if (entry.scope === "private" && (isPinVerified || isAdmin)) return true;
-        if (entry.scope === "admin" && isAdmin) return true;
-        return false;
-      }).map((entry, i) => {
-
-        return (<DrawerItem
-          key={i}
-          label={t(entry.translationId)}
-          focused={pathname === entry.route}
-          onPress={() => router.push(entry.route as any)}
-          activeTintColor="#fff"
-          inactiveTintColor="#888"
-          labelStyle={{ color: "#fff" }}
-          icon={({ color, size }) => (
-            <Ionicons name={entry.icon as any} size={size} color={color} />
-          )}
-        />)
-      })}
+      {entries
+        .filter((entry) => {
+          if (entry.scope === "public") return true;
+          if (entry.scope === "private" && (isPinVerified || isAdmin))
+            return true;
+          if (entry.scope === "admin" && isAdmin) return true;
+          return false;
+        })
+        .map((entry, i) => {
+          return (
+            <DrawerItem
+              key={i}
+              label={t(entry.translationId)}
+              focused={pathname === entry.route}
+              onPress={() => router.push(entry.route as any)}
+              activeTintColor="#fff"
+              inactiveTintColor="#888"
+              labelStyle={{ color: "#fff" }}
+              icon={({ color, size }) => (
+                <Ionicons name={entry.icon as any} size={size} color={color} />
+              )}
+            />
+          );
+        })}
 
       <View style={styles.spacer} />
       <DrawerFooter />
