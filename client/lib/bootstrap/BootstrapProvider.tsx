@@ -1,8 +1,8 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { FC, PropsWithChildren } from "react";
-import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
-import { TournamentProvider } from "./TournamentProvider";
 import { AuthProvider } from "../auth";
 import { PlayerProvider } from "./PlayerProvider";
+import { TournamentProvider } from "./TournamentProvider";
 
 const queryClient = new QueryClient();
 

@@ -4,7 +4,9 @@
       "Skill(update-config)",
       "Read(//c/Users/fnils/AppData/Local/Android/Sdk/**)",
       "Read(//c/Program Files/Android/Android Studio/**)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(powershell.exe -Command ':*)",
+      "Bash(powershell.exe -Command \"\\(Get-Content 'd:\\\\Dev\\\\Source\\\\BoardgameChampionship\\\\client\\\\lib\\\\components\\\\AppDrawer.tsx' -Raw\\) -replace 'headerTitle: \\\\\\(\\\\\\) => <DrawerHeaderTitle />,\\\\n', 'headerShown: false,\\\\n' | Set-Content 'd:\\\\Dev\\\\Source\\\\BoardgameChampionship\\\\client\\\\lib\\\\components\\\\AppDrawer.tsx' -NoNewline\")"
     ]
   }
 }

@@ -1,7 +1,7 @@
+import { router, Stack } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { router, Stack } from "expo-router";
-import { useAuth } from "../../lib/auth";
+import { useAuth } from "../../../lib/auth";
 
 export default function AdminLayout() {
   const { user, loading, isAdmin } = useAuth();

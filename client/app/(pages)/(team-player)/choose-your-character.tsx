@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { PlayerPickerForm } from "../lib/components/PlayerPickerForm";
-import { Team, usePlayer } from "../lib/bootstrap/PlayerProvider";
+import { Team, usePlayer } from "../../../lib/bootstrap/PlayerProvider";
+import { PlayerPickerForm } from "../../../lib/components/PlayerPickerForm";
 
 export default function ChooseYourCharacter() {
   const { assignPlayer } = usePlayer();
@@ -8,7 +8,11 @@ export default function ChooseYourCharacter() {
 
   async function handleConfirm(team: Team, playerId: string) {
     await assignPlayer({ team, playerId });
-    router.back();
+    if (from) {
+      router.push("/settings");
+    } else {
+      router.push("/");
+    }
   }
 
   return (
