@@ -137,7 +137,7 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
         setStep("team");
         setSelectedTeam(null);
       };
-    }, [])
+    }, []),
   );
 
   const {
@@ -163,8 +163,7 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
         useNativeDriver: true,
       }).start();
     }
-  }, [step]);
-
+  }, [step, fadeAnim]);
 
   if (isLoading) {
     return (

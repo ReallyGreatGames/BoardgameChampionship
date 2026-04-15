@@ -5,7 +5,7 @@ import { usePlayer } from "../bootstrap/PlayerProvider";
 
 export const useRouter = () => {
   const { user, isAdmin, isPinVerified } = useAuth();
-  const { player } = usePlayer();
+  const { player, playerLoading } = usePlayer();
 
   const navigate = (path: Href, options?: NavigationOptions) => {
     router.navigate(path, options);
@@ -22,7 +22,8 @@ export const useRouter = () => {
       return;
     }
 
-    console.log(player)
+    if (playerLoading) return;
+
     if (!player) {
       navigate("/choose-your-character");
       return;

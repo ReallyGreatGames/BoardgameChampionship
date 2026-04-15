@@ -15,19 +15,7 @@ export default function AdminDashboard() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerZone}>
-        <Text style={styles.eyebrow}>ADMIN</Text>
-        <Text style={styles.title}>Dashboard</Text>
-        <Text style={styles.email}>{user?.email}</Text>
-      </View>
-
-      <View style={styles.divider} />
-
       <Text style={styles.placeholder}>Admin content here.</Text>
-
-      <Pressable style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutText}>Logout</Text>
-      </Pressable>
     </View>
   );
 }

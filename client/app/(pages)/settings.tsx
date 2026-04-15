@@ -1,6 +1,7 @@
 import { useAuth } from "@/lib/auth";
 import { usePlayer } from "@/lib/bootstrap/PlayerProvider";
 import i18n from "@/lib/i18n/i18n";
+import { colors } from "@/lib/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
@@ -29,7 +30,7 @@ function LanguagePicker() {
         <Text style={styles.comboboxText}>
           {t(`settings:languages.${current}`)}
         </Text>
-        <Ionicons name="chevron-down" size={16} color="#888" />
+        <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
       </Pressable>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
@@ -49,7 +50,7 @@ function LanguagePicker() {
                   <Text style={[styles.dropdownText, active && styles.dropdownTextActive]}>
                     {t(`settings:languages.${code}`)}
                   </Text>
-                  {active && <Ionicons name="checkmark" size={16} color="#fff" />}
+                  {active && <Ionicons name="checkmark" size={16} color={colors.text} />}
                 </Pressable>
               );
             })}
@@ -74,7 +75,7 @@ export default function SettingsScreen() {
             <Ionicons
               name="moon-outline"
               size={20}
-              color="#888"
+              color={colors.textMuted}
               style={styles.rowIcon}
             />
             <Text style={styles.rowLabel}>{t("settings:darkMode")}</Text>
@@ -82,8 +83,6 @@ export default function SettingsScreen() {
           <Switch
             value={true}
             onValueChange={() => {}}
-            trackColor={{ false: "#333", true: "#555" }}
-            thumbColor="#fff"
           />
         </View>
       </View>
@@ -95,7 +94,7 @@ export default function SettingsScreen() {
             <Ionicons
               name="language-outline"
               size={20}
-              color="#888"
+              color={colors.textMuted}
               style={styles.rowIcon}
             />
             <Text style={styles.rowLabel}>{t("settings:language")}</Text>
@@ -115,7 +114,7 @@ export default function SettingsScreen() {
                     <Ionicons
                       name="shield-outline"
                       size={20}
-                      color="#888"
+                      color={colors.textMuted}
                       style={styles.rowIcon}
                     />
                     <Text style={styles.rowLabel}>
@@ -129,7 +128,7 @@ export default function SettingsScreen() {
                     <Ionicons
                       name="person-outline"
                       size={20}
-                      color="#888"
+                      color={colors.textMuted}
                       style={styles.rowIcon}
                     />
                     <Text style={styles.rowLabel}>
@@ -152,12 +151,12 @@ export default function SettingsScreen() {
                 <Ionicons
                   name="people-outline"
                   size={20}
-                  color="#888"
+                  color={colors.textMuted}
                   style={styles.rowIcon}
                 />
                 <Text style={styles.rowLabel}>{t("settings:changeTeam")}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#888" />
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </Pressable>
           </View>
         </>
@@ -169,29 +168,29 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f0f0f",
+    backgroundColor: colors.background,
     padding: 24,
     paddingTop: 64,
   },
   title: {
     fontSize: 32,
     fontWeight: "700",
-    color: "#fff",
+    color: colors.text,
     marginBottom: 32,
   },
   sectionLabel: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#888",
+    color: colors.textSecondary,
     letterSpacing: 1.5,
     textTransform: "uppercase",
     marginBottom: 8,
     marginLeft: 4,
   },
   card: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: colors.border,
     borderRadius: 10,
     marginBottom: 24,
     overflow: "hidden",
@@ -211,31 +210,34 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     fontSize: 16,
-    color: "#fff",
+    color: colors.text,
   },
   rowValue: {
     fontSize: 14,
-    color: "#888",
+    color: colors.textSecondary,
+    flexShrink: 1,
+    textAlign: "right",
+    marginLeft: 8,
   },
   rowBorderTop: {
     borderTopWidth: 1,
-    borderTopColor: "#333",
+    borderTopColor: colors.border,
   },
   // Combobox
   combobox: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#0f0f0f",
+    backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: colors.border,
     borderRadius: 6,
     paddingVertical: 6,
     paddingHorizontal: 10,
   },
   comboboxText: {
     fontSize: 14,
-    color: "#fff",
+    color: colors.text,
   },
   // Modal dropdown
   backdrop: {
@@ -245,9 +247,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   dropdown: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: colors.border,
     borderRadius: 10,
     minWidth: 180,
     overflow: "hidden",
@@ -260,14 +262,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   dropdownItemActive: {
-    backgroundColor: "#2a2a2a",
+    backgroundColor: colors.surfaceHigh,
   },
   dropdownText: {
     fontSize: 16,
-    color: "#888",
+    color: colors.textSecondary,
   },
   dropdownTextActive: {
-    color: "#fff",
+    color: colors.text,
     fontWeight: "600",
   },
 });

@@ -67,7 +67,7 @@ export default function RootLayout() {
         />
         <Drawer.Screen
           name="(pages)/admin"
-          options={{ drawerLabel: "Admin", title: "Admin" }}
+          options={{ drawerLabel: "Dashboard", title: "Admin Dashboard" }}
         />
         <Drawer.Screen
           name="(pages)/(team-player)/choose-team"
