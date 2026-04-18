@@ -2,11 +2,41 @@ import { BootstrapProvider } from "@/lib/bootstrap/BootstrapProvider";
 import { AppDrawer, drawerScreenOptions } from "@/lib/components/AppDrawer";
 import "@/lib/i18n/i18n";
 import { Drawer } from "expo-router/drawer";
-import { useTranslation } from "react-i18next";
 import "react-native-url-polyfill/auto";
+import { useFonts } from "expo-font";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
+import { BarlowCondensed_600SemiBold } from "@expo-google-fonts/barlow-condensed/600SemiBold";
+import { BarlowCondensed_700Bold } from "@expo-google-fonts/barlow-condensed/700Bold";
+import { BarlowCondensed_800ExtraBold } from "@expo-google-fonts/barlow-condensed/800ExtraBold";
+import { DMSans_400Regular } from "@expo-google-fonts/dm-sans/400Regular";
+import { DMSans_500Medium } from "@expo-google-fonts/dm-sans/500Medium";
+import { DMSans_700Bold } from "@expo-google-fonts/dm-sans/700Bold";
+import { useTranslation } from "react-i18next";
+import { useTournament } from "@/lib/bootstrap/TournamentProvider";
+
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { t } = useTranslation(["menu"]);
+  const { type } = useTournament();
+  const [fontsLoaded] = useFonts({
+    BarlowCondensed_600SemiBold,
+    BarlowCondensed_700Bold,
+    BarlowCondensed_800ExtraBold,
+    DMSans_400Regular,
+    DMSans_500Medium,
+    DMSans_700Bold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
+
   return (
     <BootstrapProvider>
       <Drawer
@@ -16,7 +46,7 @@ export default function RootLayout() {
         <Drawer.Screen
           name="(pages)/login"
           options={{
-            title: "",
+            title: t(type),
           }}
         />
         <Drawer.Screen
@@ -36,6 +66,10 @@ export default function RootLayout() {
           options={{
             title: t("entries.info"),
           }}
+        />
+        <Drawer.Screen
+          name="(pages)/admin"
+          options={{ drawerLabel: "Dashboard", title: "Admin Dashboard" }}
         />
         <Drawer.Screen
           name="(pages)/(team-player)/choose-your-character"

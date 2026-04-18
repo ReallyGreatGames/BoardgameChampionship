@@ -8,6 +8,9 @@ import {
 import { router, usePathname } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { type } from "../theme/typography";
+import { inset } from "../theme/spacing";
+import { colors } from "../theme/colors";
 
 function DrawerHeader() {
   const { t } = useTranslation(["menu"]);
@@ -21,7 +24,7 @@ function DrawerHeader() {
         }}
         hitSlop={12}
       >
-        <Ionicons name="information-circle-outline" size={22} color="#fff" />
+        <Ionicons name="information-circle-outline" size={22} color={colors.primary} />
       </Pressable>
     </View>
   );
@@ -47,13 +50,13 @@ function DrawerFooter() {
           onPress={() => router.push("/(pages)/settings")}
           hitSlop={8}
         >
-          <Ionicons name="settings-outline" size={22} color="#fff" />
+          <Ionicons name="settings-outline" size={22} color={colors.primary} />
         </Pressable>
         <Pressable style={styles.iconButton} onPress={handleAuthPress}>
           <Ionicons
             name={user ? "log-out-outline" : "log-in-outline"}
             size={22}
-            color="#fff"
+            color={colors.primary}
           />
         </Pressable>
       </View>
@@ -62,14 +65,18 @@ function DrawerFooter() {
 }
 
 export const drawerScreenOptions = {
-  headerStyle: { backgroundColor: "#0f0f0f" },
-  headerTintColor: "#fff",
-  headerTitleStyle: { fontWeight: "700" as const },
+  headerStyle: { backgroundColor: colors.background },
+  headerTintColor: colors.primary,
+  headerTitleStyle: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 20,
+    color: colors.text,
+  },
   headerShadowVisible: false,
   headerShown: true,
-  drawerStyle: { backgroundColor: "#0f0f0f" },
-  drawerActiveTintColor: "#fff",
-  drawerInactiveTintColor: "#888",
+  drawerStyle: { backgroundColor: colors.background },
+  drawerActiveTintColor: colors.primary,
+  drawerInactiveTintColor: colors.textMuted,
 } as const;
 
 export function AppDrawer(props: DrawerContentComponentProps) {
@@ -107,22 +114,20 @@ export function AppDrawer(props: DrawerContentComponentProps) {
           if (entry.scope === "admin" && isAdmin) return true;
           return false;
         })
-        .map((entry, i) => {
-          return (
-            <DrawerItem
-              key={i}
-              label={t(entry.translationId)}
-              focused={pathname === entry.route}
-              onPress={() => router.push(entry.route as any)}
-              activeTintColor="#fff"
-              inactiveTintColor="#888"
-              labelStyle={{ color: "#fff" }}
-              icon={({ color, size }) => (
-                <Ionicons name={entry.icon as any} size={size} color={color} />
-              )}
-            />
-          );
-        })}
+        .map((entry, i) => (
+          <DrawerItem
+            key={i}
+            label={t(entry.translationId)}
+            focused={pathname === entry.route}
+            onPress={() => router.push(entry.route as any)}
+            activeTintColor={colors.primary}
+            inactiveTintColor={colors.textMuted}
+            labelStyle={{ color: colors.text }}
+            icon={({ color, size }) => (
+              <Ionicons name={entry.icon as any} size={size} color={color} />
+            )}
+          />
+        ))}
 
       <View style={styles.spacer} />
       <DrawerFooter />
@@ -133,32 +138,30 @@ export function AppDrawer(props: DrawerContentComponentProps) {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: "#0f0f0f",
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 20,
+    paddingHorizontal: inset.card,
+    paddingTop: inset.card,
+    paddingBottom: inset.group,
     borderBottomWidth: 1,
-    borderBottomColor: "#1e1e1e",
-    marginBottom: 8,
+    borderBottomColor: colors.divider,
+    marginBottom: inset.tight,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#fff",
+    ...type.h3,
+    color: colors.text,
   },
   spacer: {
     flex: 1,
   },
   footer: {
     borderTopWidth: 1,
-    borderTopColor: "#1e1e1e",
-    padding: 16,
-    gap: 12,
+    borderTopColor: colors.divider,
+    padding: inset.card,
   },
   footerActions: {
     flexDirection: "row",
@@ -168,6 +171,6 @@ const styles = StyleSheet.create({
   iconButton: {
     padding: 6,
     borderRadius: 8,
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
   },
 });

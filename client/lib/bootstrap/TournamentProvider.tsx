@@ -8,11 +8,13 @@ import { useTranslation } from "react-i18next";
 export type Tournament = {
   locale: "en" | "de";
   active: boolean;
+  type: "dmmib" | "europemasters";
 };
 
 export const tournamentContext = createContext<Tournament>({
   locale: "en",
   active: true,
+  type: "dmmib",
 });
 
 export const TournamentProvider: FC<PropsWithChildren> = ({ children }) => {
@@ -40,6 +42,7 @@ export const TournamentProvider: FC<PropsWithChildren> = ({ children }) => {
       const activeTournament: Tournament = {
         active: true,
         locale: data.locale,
+        type: data.type,
       };
 
       i18n.changeLanguage(activeTournament.locale);
@@ -51,7 +54,9 @@ export const TournamentProvider: FC<PropsWithChildren> = ({ children }) => {
   return (
     <tournamentContext.Provider
       value={
-        query.data === EMPTY ? { active: true, locale: "en" } : query.data
+        query.data === EMPTY
+          ? { active: true, locale: "en", type: "dmmib" }
+          : query.data
       }
     >
       {children}
