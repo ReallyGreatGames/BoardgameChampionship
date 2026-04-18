@@ -13,11 +13,13 @@ import { DMSans_400Regular } from "@expo-google-fonts/dm-sans/400Regular";
 import { DMSans_500Medium } from "@expo-google-fonts/dm-sans/500Medium";
 import { DMSans_700Bold } from "@expo-google-fonts/dm-sans/700Bold";
 import { useTranslation } from "react-i18next";
+import { useTournament } from "@/lib/bootstrap/TournamentProvider";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { t } = useTranslation(["menu"]);
+  const { type } = useTournament();
   const [fontsLoaded] = useFonts({
     BarlowCondensed_600SemiBold,
     BarlowCondensed_700Bold,
@@ -44,7 +46,7 @@ export default function RootLayout() {
         <Drawer.Screen
           name="(pages)/login"
           options={{
-            title: "",
+            title: t(type),
           }}
         />
         <Drawer.Screen
@@ -68,10 +70,6 @@ export default function RootLayout() {
         <Drawer.Screen
           name="(pages)/admin"
           options={{ drawerLabel: "Dashboard", title: "Admin Dashboard" }}
-        />
-        <Drawer.Screen
-          name="(pages)/(team-player)/choose-team"
-          options={{ drawerLabel: "Choose Team", title: "Choose Team" }}
         />
         <Drawer.Screen
           name="(pages)/(team-player)/choose-your-character"

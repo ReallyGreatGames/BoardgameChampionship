@@ -11,7 +11,7 @@ import { account, tablesDB } from "./appwrite";
 
 const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
 const PIN_COLLECTION_ID = "tournament";
-const PIN_STORE_KEY = "bgcs_pin_auth";
+export const PIN_STORE_KEY = "bgcs_pin_auth";
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 type StoredPin = {

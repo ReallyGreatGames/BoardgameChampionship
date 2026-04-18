@@ -15,6 +15,8 @@ const translations = {
       info: "Informationen",
       chooseYourCharacter: "Team auswählen",
     },
+    dmmib: "DMMiB",
+    europemasters: "Europe Masters",
   },
   settings: {
     title: "Einstellungen",
