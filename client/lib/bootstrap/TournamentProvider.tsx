@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { createContext, FC, PropsWithChildren, useContext } from "react";
-import { tablesDB } from "../appwrite";
-import { Query } from "react-native-appwrite";
-import { EMPTY } from "../empty";
 import { useTranslation } from "react-i18next";
+import { Query } from "react-native-appwrite";
+import { DATABASE_ID, tablesDB } from "../appwrite";
+import { EMPTY } from "../empty";
 
 export type Tournament = {
   locale: "en" | "de";
@@ -25,7 +25,7 @@ export const TournamentProvider: FC<PropsWithChildren> = ({ children }) => {
     refetchInterval: 60 * 60 * 1_000, // hourly
     queryFn: async () => {
       const res = await tablesDB.listRows({
-        databaseId: process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!,
+        databaseId: DATABASE_ID,
         tableId: "tournament",
         queries: [
           Query.equal("active", true),

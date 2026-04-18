@@ -11,13 +11,12 @@ import {
   View,
 } from "react-native";
 import { Query } from "react-native-appwrite";
-import { tablesDB } from "../appwrite";
+import { DATABASE_ID, tablesDB } from "../appwrite";
 import { Team } from "../bootstrap/PlayerProvider";
 import { useTheme } from "../bootstrap/ThemeProvider";
-import { type } from "../theme/typography";
 import { inset } from "../theme/spacing";
+import { type } from "../theme/typography";
 
-const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
 
 async function fetchTeams(): Promise<Team[]> {
   const res = await tablesDB.listRows({

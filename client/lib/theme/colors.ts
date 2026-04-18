@@ -30,6 +30,7 @@ export const dark = {
   secondary: "#8c1591",
   accent: "#e02883",
   error: "#f05252",
+  success: "#4caf50",
 } as const;
 
 export const light = {
@@ -54,6 +55,7 @@ export const light = {
   secondary: "#e66cea",
   accent: "#d61f7a",
   error: "#d63232",
+  success: "#4caf50",
 } as const;
 
 /** Fallback static palette — prefer useTheme() from ThemeProvider for dynamic theming */

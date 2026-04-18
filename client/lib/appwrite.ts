@@ -8,4 +8,8 @@ const client = new Client()
 const account = new Account(client);
 const tablesDB = new TablesDB(client);
 
-export { client, account, tablesDB };
+export const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
+
+
+export { account, client, tablesDB };
+

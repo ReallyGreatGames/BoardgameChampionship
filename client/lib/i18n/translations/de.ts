@@ -32,6 +32,25 @@ const translations = {
       de: "Deutsch",
     },
   },
+  components: {
+    schedule: {
+      title: "Zeitplan",
+      goToGameButton: "Zum Spiel",
+      addItem: "Zeitplan-Eintrag hinzufügen",
+      confirmDelete: {
+        title: "Eintrag löschen",
+        message: "Diesen Zeitplan-Eintrag wirklich löschen?",
+        confirm: "Löschen",
+        cancel: "Abbrechen",
+      },
+      confirmSetActive: {
+        title: "Aktiv setzen",
+        message: "Diesen Eintrag als aktiven Zeitplan-Eintrag setzen?",
+        confirm: "Aktiv setzen",
+        cancel: "Abbrechen",
+      },
+    }
+  }
 };
 
 export default translations;
