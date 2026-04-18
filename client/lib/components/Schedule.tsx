@@ -16,6 +16,7 @@ import { useScheduleStore } from "../stores/appwrite/schedule-store";
 import { inset } from "../theme/spacing";
 import { type } from "../theme/typography";
 import { useDialog } from "./Dialog";
+import { ScheduleFormData, ScheduleItemModal } from "./ScheduleItemModal";
 
 function addMinutesToTime(time: string, minutes: number): string {
   const [h, m] = time.split(":").map(Number);
@@ -35,15 +36,14 @@ type AdminActions = {
   isFirst: boolean;
   isLast: boolean;
   disabled: boolean;
+  canSetActive: boolean;
 };
 
 export function ScheduleItem({
   schedule,
-  previous,
   admin,
 }: {
   schedule: Schedule;
-  previous?: Schedule;
   admin?: AdminActions;
 }) {
   const { colors } = useTheme();
@@ -145,7 +145,7 @@ export function ScheduleItem({
             <Ionicons name="arrow-down" size={16} color={(admin.isLast || admin.disabled) ? colors.textMuted : colors.text} />
           </TouchableOpacity>
 
-          {schedule.isActive ? null : (
+          {!schedule.isActive && admin.canSetActive && (
             <TouchableOpacity
               style={[styles.adminBtn, admin.disabled && styles.adminBtnDisabled]}
               onPress={admin.onSetActive}
@@ -185,11 +185,19 @@ export function ScheduleList() {
   const { t } = useTranslation(["components"]);
   const { isAdmin } = useAuth();
   const { confirm } = useDialog();
-  const { collection, update, delete: deleteItem } = useScheduleStore();
+  const { collection, add, update, delete: deleteItem } = useScheduleStore();
   const [isLoading, setIsLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editingItem, setEditingItem] = useState<Schedule | undefined>(undefined);
   const sortedScheduleItems = useMemo(
     () => [...collection].sort((a, b) => a.sortIndex - b.sortIndex),
     [collection],
+  );
+  const nextSortIndex = useMemo(
+    () => sortedScheduleItems.length === 0
+      ? 0
+      : Math.max(...sortedScheduleItems.map((s) => s.sortIndex ?? 0)) + 1,
+    [sortedScheduleItems],
   );
 
   async function handleMoveUp(index: number) {
@@ -270,20 +278,40 @@ export function ScheduleList() {
   }
 
   function handleEdit(index: number) {
-    // TODO: Open Edit Modal
+    setEditingItem(sortedScheduleItems[index]);
+    setModalVisible(true);
   }
 
   function addSchedule() {
-    // TODO: Open Add Modal (same as Edit Modal, but empty)
+    setEditingItem(undefined);
+    setModalVisible(true);
+  }
+
+  async function handleModalSave(data: ScheduleFormData) {
+    if (editingItem) {
+      const ok = await update({ ...editingItem, ...data });
+      if (!ok) throw new Error();
+    } else {
+      const result = await add(data);
+      if (!result) throw new Error();
+    }
   }
 
   const lastIndex = sortedScheduleItems.length - 1;
+  const activeIndex = sortedScheduleItems.findIndex((s) => s.isActive);
 
   return (
     <>
       <View style={styles.header}>
         <Text style={styles.title}>{t("schedule.title")}</Text>
       </View>
+      <ScheduleItemModal
+        visible={modalVisible}
+        item={editingItem}
+        nextSortIndex={nextSortIndex}
+        onClose={() => setModalVisible(false)}
+        onSave={handleModalSave}
+      />
       <ScrollView
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
@@ -302,11 +330,11 @@ export function ScheduleList() {
                 <ScheduleItem
                   key={`${schedule.$id}-${schedule.$updatedAt ?? ""}`}
                   schedule={schedule}
-                  previous={sortedScheduleItems[index - 1]}
                   admin={isAdmin ? {
                     isFirst,
                     isLast,
                     disabled: isLoading,
+                    canSetActive: activeIndex === -1 ? index === 0 : index === activeIndex + 1,
                     onMoveUp: () => handleMoveUp(index),
                     onMoveDown: () => handleMoveDown(index),
                     onSetActive: () => handleSetActive(index),

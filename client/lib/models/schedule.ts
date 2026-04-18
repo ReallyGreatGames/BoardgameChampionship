@@ -14,8 +14,6 @@ export type Schedule = {
   durationPlanned: number;
   gameId?: string;
   startTimePlanned: string;
-  startTimeActual?: string;
-  endTimeActual?: string;
   isActive?: boolean;
   isFinished?: boolean;
 } & Models.Document;

@@ -102,6 +102,12 @@ export function AppDrawer(props: DrawerContentComponentProps) {
       scope: "public",
     },
     {
+      translationId: "entries.schedule",
+      route: "/schedule",
+      icon: "list-outline",
+      scope: "private",
+    },
+    {
       translationId: "entries.dashboard",
       route: "/admin",
       icon: "grid-outline",
