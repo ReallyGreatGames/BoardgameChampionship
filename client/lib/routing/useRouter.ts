@@ -12,8 +12,8 @@ export const useRouter = () => {
   };
 
   const routeDeterministic = () => {
-    if (!user || (!isAdmin && !isPinVerified)) {
-      navigate("/login");
+    if (!user && !isAdmin && !isPinVerified) {
+      navigate("/");
       return;
     }
 

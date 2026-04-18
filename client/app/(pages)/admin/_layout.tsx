@@ -1,9 +1,9 @@
+import { useScreenOrientation } from "@/lib/bootstrap/ScreenOrientationProvider";
 import { router, Stack, useFocusEffect } from "expo-router";
+import { OrientationLock } from "expo-screen-orientation";
 import { useCallback, useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { useAuth } from "../../../lib/auth";
-import { useScreenOrientation } from "@/lib/bootstrap/ScreenOrientationProvider";
-import { OrientationLock } from "expo-screen-orientation";
 
 export default function AdminLayout() {
   const { user, loading, isAdmin } = useAuth();

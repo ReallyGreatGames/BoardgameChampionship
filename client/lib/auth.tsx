@@ -32,11 +32,11 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 async function getOrCreateAnonymousSession(): Promise<
-  Models.User<Models.Preferences>
+  Models.User<Models.Preferences> | null
 > {
   return account.get().catch(async () => {
     await account.createAnonymousSession();
-    return account.get();
+    return account.get().catch(() => null);
   });
 }
 

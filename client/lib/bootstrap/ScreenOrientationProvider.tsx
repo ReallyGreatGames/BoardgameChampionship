@@ -30,16 +30,16 @@ export const ScreenOrientationProvider: FC<PropsWithChildren> = ({
 }) => {
   const [orientation, setOrientation] = useState(OrientationLock.PORTRAIT_UP);
   useEffect(() => {
-    lockAsync(OrientationLock.PORTRAIT_UP);
+    lockAsync(OrientationLock.PORTRAIT_UP).catch(() => {});
   }, []);
   const forceOrientation = useCallback(async (o: OrientationLock) => {
     setOrientation(o);
-    await lockAsync(o);
+    await lockAsync(o).catch(() => {});
   }, []);
 
   const unlockOrientation = useCallback(async () => {
     setOrientation(OrientationLock.PORTRAIT_UP);
-    await lockAsync(OrientationLock.PORTRAIT_UP);
+    await lockAsync(OrientationLock.PORTRAIT_UP).catch(() => {});
   }, []);
 
   return (

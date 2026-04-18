@@ -56,5 +56,5 @@ export const light = {
   error: "#d63232",
 } as const;
 
-/** Active theme — swap to `light` when implementing theme switching */
-export const colors = light;
+/** Fallback static palette — prefer useTheme() from ThemeProvider for dynamic theming */
+export const colors = dark;
