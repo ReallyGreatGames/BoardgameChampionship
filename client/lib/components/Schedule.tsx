@@ -1,12 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
+  LayoutAnimation,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
+  UIManager,
   View,
 } from "react-native";
 import { useAuth } from "../auth";
@@ -19,6 +24,10 @@ import { deepClone } from "../utils";
 import { useDialog } from "./Dialog";
 import { ScheduleFormData, ScheduleItemModal } from "./ScheduleItemModal";
 
+if (Platform.OS === "android") {
+  UIManager.setLayoutAnimationEnabledExperimental?.(true);
+}
+
 function addMinutesToTime(time: string, minutes: number): string {
   const [h, m] = time.split(":").map(Number);
   const total = h * 60 + m + minutes;
@@ -27,6 +36,86 @@ function addMinutesToTime(time: string, minutes: number): string {
   return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
 }
 
+// Animated.loop doesn't reset values between iterations, so we use a recursive
+// callback that explicitly resets scale/opacity before each cycle.
+function PulsingDot({
+  isActive,
+  isFinished,
+  colors,
+}: {
+  isActive: boolean;
+  isFinished: boolean;
+  colors: ReturnType<typeof useTheme>["colors"];
+}) {
+  const pingScale = useRef(new Animated.Value(1)).current;
+  const pingOpacity = useRef(new Animated.Value(0)).current;
+  const activeRef = useRef(false);
+
+  useEffect(() => {
+    if (!isActive) {
+      activeRef.current = false;
+      pingScale.stopAnimation();
+      pingOpacity.stopAnimation();
+      pingScale.setValue(1);
+      pingOpacity.setValue(0);
+      return;
+    }
+
+    activeRef.current = true;
+
+    const pulse = () => {
+      if (!activeRef.current) return;
+      pingScale.setValue(1);
+      pingOpacity.setValue(0.7);
+      Animated.parallel([
+        Animated.timing(pingScale, {
+          toValue: 2.5,
+          duration: 1200,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pingOpacity, {
+          toValue: 0,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+      ]).start(({ finished }) => {
+        if (finished) pulse();
+      });
+    };
+
+    pulse();
+
+    return () => {
+      activeRef.current = false;
+    };
+  }, [isActive]);
+
+  const dotColor = isFinished
+    ? colors.text
+    : isActive
+      ? colors.success
+      : colors.accent;
+
+  return (
+    <View style={{ alignItems: "center", justifyContent: "center", marginVertical: 4 }}>
+      {isActive && (
+        <Animated.View
+          style={{
+            position: "absolute",
+            width: 10,
+            height: 10,
+            borderRadius: 5,
+            backgroundColor: colors.success,
+            transform: [{ scale: pingScale }],
+            opacity: pingOpacity,
+          }}
+        />
+      )}
+      <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: dotColor }} />
+    </View>
+  );
+}
 
 type AdminActions = {
   onMoveUp: () => void;
@@ -53,11 +142,38 @@ export function ScheduleItem({
   const { t } = useTranslation(["components"]);
   const endTime = addMinutesToTime(schedule.startTimePlanned, schedule.durationPlanned);
 
+  const chevronRotation = useRef(new Animated.Value(schedule.isActive ? 1 : 0)).current;
+  const chevronStyle = {
+    transform: [
+      {
+        rotate: chevronRotation.interpolate({
+          inputRange: [0, 1],
+          outputRange: ["0deg", "180deg"],
+        }),
+      },
+    ],
+  };
+
+  useEffect(() => {
+    if (schedule.isActive && !expanded) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setExpanded(true);
+      Animated.timing(chevronRotation, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    }
+  }, [schedule.isActive]);
+
+  const handleToggle = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    const next = !expanded;
+    setExpanded(next);
+    Animated.timing(chevronRotation, { toValue: next ? 1 : 0, duration: 200, useNativeDriver: true }).start();
+  };
+
   return (
     <View style={styles.card}>
       <TouchableOpacity
         style={styles.itemHeader}
-        onPress={() => setExpanded((v) => !v)}
+        onPress={handleToggle}
         activeOpacity={0.7}
       >
         <View style={styles.itemLeft}>
@@ -68,11 +184,9 @@ export function ScheduleItem({
         </View>
         <View style={styles.itemRight}>
           <Text style={styles.itemTime}>{schedule.startTimePlanned}</Text>
-          <Ionicons
-            name={expanded ? "chevron-up" : "chevron-down"}
-            size={16}
-            color={colors.textMuted}
-          />
+          <Animated.View style={chevronStyle}>
+            <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
+          </Animated.View>
         </View>
       </TouchableOpacity>
 
@@ -194,6 +308,8 @@ export function ScheduleList() {
     () => [...collection].sort((a, b) => a.sortIndex - b.sortIndex),
     [collection],
   );
+  // If update buttons are clicked within 2 seconds of each other, the dedupe logic in the store causes only one update to be processed, which results in the sortIndex getting out of sync with the actual order. To mitigate this, we disable all buttons for 2 seconds after any update.
+  const debounceTimeOut = 2000;
   const nextSortIndex = useMemo(
     () => sortedScheduleItems.length === 0
       ? 0
@@ -214,7 +330,7 @@ export function ScheduleList() {
         update({ ...prev, sortIndex: itemOrder }),
       ]);
     } finally {
-      setIsLoading(false);
+      setTimeout(() => setIsLoading(false), debounceTimeOut);
     }
   }
 
@@ -231,11 +347,11 @@ export function ScheduleList() {
         update({ ...next, sortIndex: itemOrder }),
       ]);
     } finally {
-      setIsLoading(false);
+      setTimeout(() => setIsLoading(false), debounceTimeOut);
     }
   }
 
-  async function handleSetActive(index: number) {
+  async function handleSetActive(storeIndex: number) {
     const ok = await confirm({
       title: t("schedule.confirmSetActive.title"),
       message: t("schedule.confirmSetActive.message"),
@@ -249,21 +365,21 @@ export function ScheduleList() {
       const items = deepClone(sortedScheduleItems);
       const currentActiveItem = items.findIndex((s) => s.isActive);
       if (currentActiveItem !== -1) {
-        items[currentActiveItem].isFinished = currentActiveItem <= index;
+        items[currentActiveItem].isFinished = currentActiveItem <= storeIndex;
         items[currentActiveItem].isActive = false;
       }
       await Promise.all(
         items.map((s, i) => {
-          const shouldBeActive = i === index;
+          const shouldBeActive = i === storeIndex;
           return update({ ...s, isActive: shouldBeActive, isFinished: shouldBeActive ? false : s.isFinished });
         })
       );
     } finally {
-      setIsLoading(false);
+      setTimeout(() => setIsLoading(false), debounceTimeOut);
     }
   }
 
-  async function handleDelete(index: number) {
+  async function handleDelete(storeIndex: number) {
     const ok = await confirm({
       title: t("schedule.confirmDelete.title"),
       message: t("schedule.confirmDelete.message"),
@@ -275,14 +391,14 @@ export function ScheduleList() {
 
     setIsLoading(true);
     try {
-      await deleteItem(sortedScheduleItems[index]);
+      await deleteItem(sortedScheduleItems[storeIndex]);
     } finally {
       setIsLoading(false);
     }
   }
 
-  function handleEdit(index: number) {
-    setEditingItem({ ...sortedScheduleItems[index] });
+  function handleEdit(storeIndex: number) {
+    setEditingItem({ ...sortedScheduleItems[storeIndex] });
     setModalVisible(true);
   }
 
@@ -327,8 +443,12 @@ export function ScheduleList() {
             <View key={schedule.$id} style={styles.timelineRow}>
               <View style={styles.timelineTrack}>
                 <View style={[styles.timelineLine, isFirst && styles.timelineLineHidden]} />
-                <View style={schedule.isFinished ? [styles.timelineDot, { backgroundColor: colors.text }] : schedule.isActive ? [styles.timelineDot, { backgroundColor: colors.success }] : styles.timelineDot} />
-                <View style={[styles.timelineLine, (isLast && !isAdmin) && styles.timelineLineHidden]} />
+                <PulsingDot
+                  isActive={schedule.isActive ?? false}
+                  isFinished={schedule.isFinished ?? false}
+                  colors={colors}
+                />
+                <View style={isLast && isAdmin ? styles.timelineLineDashed : [styles.timelineLine, isLast && styles.timelineLineHidden]} />
               </View>
               <View style={[styles.timelineCard, (!isLast || isAdmin) && styles.timelineCardGap]}>
                 <ScheduleItem
@@ -353,9 +473,9 @@ export function ScheduleList() {
         {isAdmin && (
           <View style={styles.timelineRow}>
             <View style={styles.timelineTrack}>
-              <View style={styles.timelineLine} />
+              <View style={styles.timelineLineDashed} />
               <View style={[styles.timelineDot, { backgroundColor: colors.border }]} />
-              <View style={styles.timelineLineHidden} />
+              <View style={[styles.timelineLine, styles.timelineLineHidden]} />
             </View>
             <View style={styles.timelineCard}>
               <TouchableOpacity
@@ -402,6 +522,13 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     timelineLineHidden: {
       opacity: 0,
+    },
+    timelineLineDashed: {
+      flex: 1,
+      width: 2,
+      borderLeftWidth: 2,
+      borderStyle: "dashed",
+      borderColor: colors.border,
     },
     timelineDot: {
       width: 10,
