@@ -33,6 +33,16 @@ const translations = {
       de: "Deutsch",
     },
   },
+  game: {
+    title: "Spielübersicht",
+    actions: {
+      lottery: "Auslosung",
+      rules: "Regeln",
+      tableBell: "Tischklingel",
+      timer: "Timer",
+      results: "Ergebnisse",
+    },
+  },
   components: {
     schedule: {
       title: "Zeitplan",

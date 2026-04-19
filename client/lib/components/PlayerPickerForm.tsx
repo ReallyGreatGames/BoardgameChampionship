@@ -263,7 +263,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       color: colors.primary,
       marginBottom: inset.group,
     },
-
     // Team selection
     teamHeaderZone: {
       marginBottom: inset.group,

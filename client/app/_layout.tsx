@@ -72,7 +72,7 @@ export default function RootLayout() {
           options={{ drawerLabel: "Dashboard", title: "Admin Dashboard" }}
         />
         <Drawer.Screen
-          name="(pages)/(user)/schedule"
+          name="(pages)/(user)"
           options={{ drawerLabel: t("entries.schedule"), title: t("entries.schedule") }}
         />
         <Drawer.Screen

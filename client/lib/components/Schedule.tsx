@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -23,6 +24,7 @@ import { type } from "../theme/typography";
 import { deepClone } from "../utils";
 import { useDialog } from "./Dialog";
 import { ScheduleFormData, ScheduleItemModal } from "./ScheduleItemModal";
+import { Table } from "./Table";
 
 if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -210,7 +212,7 @@ export function ScheduleItem({
                 </View>
               </View>
               {schedule.gameId ? (
-                <TouchableOpacity style={styles.goToGameButton}>
+                <TouchableOpacity style={styles.goToGameButton} onPress={() => router.push(`/game?gameId=${schedule.gameId}`)}>
                   <Text style={styles.goToGameButtonText}>{t("schedule.goToGameButton")}</Text>
                   <Ionicons name="arrow-forward" size={16} color="#fff" />
                 </TouchableOpacity>
@@ -218,23 +220,7 @@ export function ScheduleItem({
             </View>
 
             {schedule.gameId ? (
-              <View style={styles.gameSection}>
-                {/* TODO: Load Data from Games - requires data import */}
-                <Text style={styles.gameSectionHeader}>Tisch 14 // TODO</Text>
-                <View style={styles.gameTable}>
-                  {[
-                    { team: "Team 1", player: "Spieler 1" },
-                    { team: "Team 2", player: "Spieler 2" },
-                    { team: "Team 3", player: "Spieler 3" },
-                    { team: "Team 4", player: "Spieler 4" },
-                  ].map((entry, i) => (
-                    <View key={i} style={styles.gameRow}>
-                      <Text style={styles.gameTeam}>{entry.team}</Text>
-                      <Text style={styles.gamePlayer}>{entry.player}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
+              <Table gameId={schedule.gameId} />
             ) : null}
 
             {schedule.description ? (
