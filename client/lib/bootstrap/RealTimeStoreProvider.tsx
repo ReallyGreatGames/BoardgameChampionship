@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { useAuth } from "../auth";
+import { useTableBellNotifications } from "../notifications/useTableBellNotifications";
 import { useScheduleStore } from "../stores/appwrite/schedule-store";
+import { useTableBellStore } from "../stores/appwrite/table-bell-store";
 
 
 
@@ -15,8 +17,11 @@ export function RealTimeStoreProvider() {
   const { isAdmin, isPinVerified, loading } = useAuth();
   const isAuthenticated = isAdmin || isPinVerified;
 
+  useTableBellNotifications(isAdmin);
+
   const userInits = [
-    useScheduleStore
+    useScheduleStore,
+    useTableBellStore
   ];
 
   const adminInits: any[] = [

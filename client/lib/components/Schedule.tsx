@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../auth";
+import { usePlayer } from "../bootstrap/PlayerProvider";
 import { useTheme } from "../bootstrap/ThemeProvider";
 import { Schedule } from "../models/schedule";
 import { useScheduleStore } from "../stores/appwrite/schedule-store";
@@ -142,6 +143,7 @@ export function ScheduleItem({
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [expanded, setExpanded] = useState(schedule.isActive);
   const { t } = useTranslation(["components"]);
+  const { player } = usePlayer();
   const endTime = addMinutesToTime(schedule.startTimePlanned, schedule.durationPlanned);
 
   const chevronRotation = useRef(new Animated.Value(schedule.isActive ? 1 : 0)).current;
@@ -212,7 +214,13 @@ export function ScheduleItem({
                 </View>
               </View>
               {schedule.gameId ? (
-                <TouchableOpacity style={styles.goToGameButton} onPress={() => router.push(`/game?gameId=${schedule.gameId}`)}>
+                <TouchableOpacity
+                  style={styles.goToGameButton}
+                  onPress={() => {
+                    if (player?.team && player?.playerId) router.push(`/game?gameId=${schedule.gameId}`);
+                    else router.push({ pathname: "/(pages)/(team-player)/choose-your-character", params: { gameId: schedule.gameId } });
+                  }}
+                >
                   <Text style={styles.goToGameButtonText}>{t("schedule.goToGameButton")}</Text>
                   <Ionicons name="arrow-forward" size={16} color="#fff" />
                 </TouchableOpacity>

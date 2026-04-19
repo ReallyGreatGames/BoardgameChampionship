@@ -41,7 +41,22 @@ const translations = {
       tableBell: "Table Bell",
       timer: "Timer",
       results: "Results",
+      confirmRing: {
+        title: "Ring Table Bell",
+        message: "Alert the judges that your table needs assistance?",
+        confirm: "Ring",
+        cancel: "Cancel",
+      },
+      confirmDismiss: {
+        title: "Dismiss Bell",
+        message: "Clear the table bell notification?",
+        confirm: "Dismiss",
+        cancel: "Cancel",
+      },
     },
+  },
+  navigation: {
+    back: "Back",
   },
   components: {
     schedule: {

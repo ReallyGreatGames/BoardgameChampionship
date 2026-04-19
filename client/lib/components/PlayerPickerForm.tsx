@@ -1,3 +1,4 @@
+import { BackButton } from "@/lib/components/BackButton";
 import { useQuery } from "@tanstack/react-query";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -193,9 +194,7 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
     return (
       <View style={styles.container}>
         <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
-          <Pressable onPress={() => setStep("team")}>
-            <Text style={styles.back}>← Back</Text>
-          </Pressable>
+          <BackButton onPress={() => setStep("team")} />
 
           <View style={styles.playerHeaderZone}>
             <Text style={styles.title}>{selectedTeam.name}</Text>
@@ -222,11 +221,7 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
 
   return (
     <View style={styles.container}>
-      {onBack && (
-        <Pressable onPress={onBack}>
-          <Text style={styles.back}>← Back</Text>
-        </Pressable>
-      )}
+      {onBack && <BackButton onPress={onBack} />}
       <ScrollView
         style={styles.list}
         contentContainerStyle={styles.listContent}
@@ -257,11 +252,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       alignItems: "center",
       backgroundColor: colors.background,
       gap: inset.tight,
-    },
-    back: {
-      ...type.bodySmall,
-      color: colors.primary,
-      marginBottom: inset.group,
     },
     // Team selection
     teamHeaderZone: {

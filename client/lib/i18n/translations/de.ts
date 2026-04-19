@@ -41,7 +41,22 @@ const translations = {
       tableBell: "Tischklingel",
       timer: "Timer",
       results: "Ergebnisse",
+      confirmRing: {
+        title: "Tischklingel läuten",
+        message: "Die Schiedsrichter:innen auf euren Tisch aufmerksam machen?",
+        confirm: "Klingeln",
+        cancel: "Abbrechen",
+      },
+      confirmDismiss: {
+        title: "Klingel entfernen",
+        message: "Tischklingel-Benachrichtigung entfernen?",
+        confirm: "Entfernen",
+        cancel: "Abbrechen",
+      },
     },
+  },
+  navigation: {
+    back: "Zurück",
   },
   components: {
     schedule: {
