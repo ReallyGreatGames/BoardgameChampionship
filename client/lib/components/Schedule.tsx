@@ -15,6 +15,7 @@ import { Schedule } from "../models/schedule";
 import { useScheduleStore } from "../stores/appwrite/schedule-store";
 import { inset } from "../theme/spacing";
 import { type } from "../theme/typography";
+import { deepClone } from "../utils";
 import { useDialog } from "./Dialog";
 import { ScheduleFormData, ScheduleItemModal } from "./ScheduleItemModal";
 
@@ -201,8 +202,9 @@ export function ScheduleList() {
   );
 
   async function handleMoveUp(index: number) {
-    const item = sortedScheduleItems[index];
-    const prev = sortedScheduleItems[index - 1];
+    const items = deepClone(sortedScheduleItems);
+    const item = items[index];
+    const prev = items[index - 1];
     const itemOrder = item.sortIndex ?? index;
     const prevOrder = prev.sortIndex ?? (index - 1);
     setIsLoading(true);
@@ -217,8 +219,9 @@ export function ScheduleList() {
   }
 
   async function handleMoveDown(index: number) {
-    const item = sortedScheduleItems[index];
-    const next = sortedScheduleItems[index + 1];
+    const items = deepClone(sortedScheduleItems);
+    const item = items[index];
+    const next = items[index + 1];
     const itemOrder = item.sortIndex ?? index;
     const nextOrder = next.sortIndex ?? (index + 1);
     setIsLoading(true);
@@ -243,13 +246,14 @@ export function ScheduleList() {
 
     setIsLoading(true);
     try {
-      const currentActiveItem = sortedScheduleItems.findIndex((s) => s.isActive);
+      const items = deepClone(sortedScheduleItems);
+      const currentActiveItem = items.findIndex((s) => s.isActive);
       if (currentActiveItem !== -1) {
-        sortedScheduleItems[currentActiveItem].isFinished = currentActiveItem <= index;
-        sortedScheduleItems[currentActiveItem].isActive = false;
+        items[currentActiveItem].isFinished = currentActiveItem <= index;
+        items[currentActiveItem].isActive = false;
       }
       await Promise.all(
-        sortedScheduleItems.map((s, i) => {
+        items.map((s, i) => {
           const shouldBeActive = i === index;
           return update({ ...s, isActive: shouldBeActive, isFinished: shouldBeActive ? false : s.isFinished });
         })
@@ -278,7 +282,7 @@ export function ScheduleList() {
   }
 
   function handleEdit(index: number) {
-    setEditingItem(sortedScheduleItems[index]);
+    setEditingItem({ ...sortedScheduleItems[index] });
     setModalVisible(true);
   }
 
@@ -334,7 +338,7 @@ export function ScheduleList() {
                     isFirst,
                     isLast,
                     disabled: isLoading,
-                    canSetActive: activeIndex === -1 ? index === 0 : index === activeIndex + 1,
+                    canSetActive: activeIndex === -1 ? index === 0 : (index === activeIndex + 1 || index === activeIndex - 1),
                     onMoveUp: () => handleMoveUp(index),
                     onMoveDown: () => handleMoveDown(index),
                     onSetActive: () => handleSetActive(index),
