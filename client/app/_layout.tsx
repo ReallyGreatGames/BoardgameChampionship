@@ -68,11 +68,15 @@ export default function RootLayout() {
           }}
         />
         <Drawer.Screen
-          name="(pages)/admin"
+          name="(pages)/(admin)/admin"
           options={{ drawerLabel: "Dashboard", title: "Admin Dashboard" }}
         />
         <Drawer.Screen
-          name="(pages)/(user)"
+          name="(pages)/(user)/game"
+          options={{ drawerLabel: t("entries.game"), title: t("entries.game"), }}
+        />
+        <Drawer.Screen
+          name="(pages)/(user)/schedule"
           options={{ drawerLabel: t("entries.schedule"), title: t("entries.schedule") }}
         />
         <Drawer.Screen
@@ -80,6 +84,10 @@ export default function RootLayout() {
           options={{
             title: t("entries.chooseYourCharacter"),
           }}
+        />
+        <Drawer.Screen
+          name="(pages)/(admin)/active-bells"
+          options={{ drawerLabel: t("entries.activeBells"), title: t("entries.activeBells"), }}
         />
       </Drawer>
     </BootstrapProvider>

@@ -1,5 +1,6 @@
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
+import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { dark } from "@/lib/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -93,6 +94,11 @@ export function AppDrawer(props: DrawerContentComponentProps) {
   const { isAdmin, isPinVerified } = useAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const bellCollection = useTableBellStore((s) => s.collection);
+  const activeBellCount = useMemo(
+    () => bellCollection.filter((b) => !b.acknowledgeTime).length,
+    [bellCollection],
+  );
 
   const entries = [
     {
@@ -100,18 +106,28 @@ export function AppDrawer(props: DrawerContentComponentProps) {
       route: "/",
       icon: "home-outline",
       scope: "public",
+      badgeCount: undefined as number | undefined,
     },
     {
       translationId: "entries.schedule",
       route: "/schedule",
       icon: "list-outline",
       scope: "private",
+      badgeCount: undefined as number | undefined,
+    },
+    {
+      translationId: "entries.activeBells",
+      route: "/active-bells",
+      icon: "notifications-outline",
+      scope: "private",
+      badgeCount: isAdmin ? activeBellCount : undefined,
     },
     {
       translationId: "entries.dashboard",
       route: "/admin",
       icon: "grid-outline",
       scope: "admin",
+      badgeCount: undefined as number | undefined,
     },
   ];
 
@@ -133,7 +149,21 @@ export function AppDrawer(props: DrawerContentComponentProps) {
         .map((entry, i) => (
           <DrawerItem
             key={i}
-            label={t(entry.translationId)}
+            label={entry.badgeCount !== undefined
+              ? () => (
+                <View style={styles.labelRow}>
+                  <Text style={[styles.labelText, { color: colors.text }]}>
+                    {t(entry.translationId)}
+                  </Text>
+                  {entry.badgeCount! > 0 && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{entry.badgeCount}</Text>
+                    </View>
+                  )}
+                </View>
+              )
+              : t(entry.translationId)
+            }
             focused={pathname === entry.route}
             onPress={() => router.push(entry.route as any)}
             activeTintColor={colors.primary}
@@ -189,6 +219,31 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       padding: 6,
       borderRadius: 8,
       backgroundColor: colors.surface,
+    },
+    labelRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      flex: 1,
+    },
+    labelText: {
+      ...type.bodySmall,
+      color: colors.text,
+      flex: 1,
+    },
+    badge: {
+      backgroundColor: colors.accent,
+      borderRadius: 10,
+      minWidth: 20,
+      height: 20,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: 5,
+    },
+    badgeText: {
+      ...type.eyebrow,
+      color: "#fff",
+      letterSpacing: 0,
     },
   });
 }

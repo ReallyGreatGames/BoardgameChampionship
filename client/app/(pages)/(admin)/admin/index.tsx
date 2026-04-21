@@ -1,9 +1,9 @@
 import { ScheduleList } from "@/lib/components/Schedule";
 import { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
-import { useTheme } from "../../../lib/bootstrap/ThemeProvider";
-import { TournamentSettings } from "../../../lib/components/TournamentSettings";
-import { inset } from "../../../lib/theme/spacing";
+import { useTheme } from "../../../../lib/bootstrap/ThemeProvider";
+import { TournamentSettings } from "../../../../lib/components/TournamentSettings";
+import { inset } from "../../../../lib/theme/spacing";
 
 export default function AdminDashboard() {
   const { colors } = useTheme();

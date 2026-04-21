@@ -15,6 +15,8 @@ const translations = {
       info: "Informationen",
       chooseYourCharacter: "Team auswählen",
       schedule: "Zeitplan",
+      activeBells: "Aktive Klingeln",
+      game: "Spiel",
     },
     dmmib: "DMMiB",
     europemasters: "Europe Masters",
@@ -57,6 +59,23 @@ const translations = {
   },
   navigation: {
     back: "Zurück",
+  },
+  activeBells: {
+    title: "Aktive Klingeln",
+    table: "Tisch",
+    empty: "Keine aktiven Klingeln",
+    confirmAcknowledge: {
+      title: "Klingel bestätigen",
+      message: "Als bestätigt markieren? Ein Schiedsrichter ist unterwegs.",
+      confirm: "Bestätigen",
+      cancel: "Abbrechen",
+    },
+    confirmDelete: {
+      title: "Klingel löschen",
+      message: "Diesen Klingeleintrag entfernen?",
+      confirm: "Löschen",
+      cancel: "Abbrechen",
+    },
   },
   components: {
     schedule: {

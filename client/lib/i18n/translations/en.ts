@@ -15,6 +15,8 @@ const translations = {
       info: "Info",
       chooseYourCharacter: "Choose Team",
       schedule: "Schedule",
+      activeBells: "Active Calls",
+      game: "Game",
     },
     dmmib: "DMMiB",
     europemasters: "Europe Masters",
@@ -57,6 +59,23 @@ const translations = {
   },
   navigation: {
     back: "Back",
+  },
+  activeBells: {
+    title: "Active Bells",
+    table: "Table",
+    empty: "No active bells",
+    confirmAcknowledge: {
+      title: "Acknowledge Bell",
+      message: "Mark as acknowledged? A judge is on their way.",
+      confirm: "Acknowledge",
+      cancel: "Cancel",
+    },
+    confirmDelete: {
+      title: "Delete Bell",
+      message: "Remove this bell entry?",
+      confirm: "Delete",
+      cancel: "Cancel",
+    },
   },
   components: {
     schedule: {

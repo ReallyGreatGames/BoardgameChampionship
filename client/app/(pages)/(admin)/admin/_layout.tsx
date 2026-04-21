@@ -3,7 +3,7 @@ import { router, Stack, useFocusEffect } from "expo-router";
 import { OrientationLock } from "expo-screen-orientation";
 import { useCallback, useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { useAuth } from "../../../lib/auth";
+import { useAuth } from "../../../../lib/auth";
 
 export default function AdminLayout() {
   const { user, loading, isAdmin } = useAuth();
