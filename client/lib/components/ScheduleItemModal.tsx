@@ -41,6 +41,7 @@ type Props = {
   onClose: () => void;
   /** Resolves on success, throws on failure */
   onSave: (data: ScheduleFormData) => Promise<void>;
+  onRules?: (gameId: string) => void;
 };
 
 
@@ -148,7 +149,7 @@ function iconPickerStyles(colors: ReturnType<typeof useTheme>["colors"]) {
 }
 
 
-export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSave }: Props) {
+export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSave, onRules }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useTranslation(["components"]);
@@ -227,7 +228,6 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
         <Pressable style={styles.backdrop} onPress={onClose} />
 
         <View style={styles.sheet}>
-          {/* Header */}
           <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>
               {item ? t("schedule.form.editTitle") : t("schedule.form.addTitle")}
@@ -237,14 +237,12 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
             </TouchableOpacity>
           </View>
 
-          {/* Form */}
           <ScrollView
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {/* Title */}
             <FormField
               icon="text-outline"
               label={t("schedule.form.titleField")}
@@ -259,7 +257,6 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
               />
             </FormField>
 
-            {/* Icon */}
             <FormField
               icon="shapes-outline"
               label={t("schedule.form.iconField")}
@@ -268,7 +265,6 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
               <IconPicker value={icon} onChange={setIcon} />
             </FormField>
 
-            {/* Start time */}
             <FormField
               icon="time-outline"
               label={t("schedule.form.startTimeField")}
@@ -286,7 +282,6 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
               />
             </FormField>
 
-            {/* Duration */}
             <FormField
               icon="hourglass-outline"
               label={t("schedule.form.durationField")}
@@ -304,7 +299,6 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
               />
             </FormField>
 
-            {/* Description (optional) */}
             <FormField
               icon="document-text-outline"
               label={t("schedule.form.descriptionField")}
@@ -320,7 +314,6 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
               />
             </FormField>
 
-            {/* Game ID (optional) */}
             <FormField
               icon="game-controller-outline"
               label={t("schedule.form.gameIdField")}
@@ -337,7 +330,6 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
             </FormField>
           </ScrollView>
 
-          {/* Footer */}
           <View style={styles.footer}>
             <View style={styles.actionBtns}>
               <TouchableOpacity
@@ -350,11 +342,12 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.actionBtn, !item && styles.actionBtnDisabled]}
-                disabled={!item}
+                style={[styles.actionBtn, (!item?.gameId || !onRules) && styles.actionBtnDisabled]}
+                disabled={!item?.gameId || !onRules}
+                onPress={() => item?.gameId && onRules?.(item.gameId)}
               >
-                <Ionicons name="list-outline" size={16} color={!item ? colors.textMuted : colors.text} />
-                <Text style={[styles.actionBtnText, !item && styles.actionBtnTextDisabled]}>
+                <Ionicons name="list-outline" size={16} color={(!item?.gameId || !onRules) ? colors.textMuted : colors.text} />
+                <Text style={[styles.actionBtnText, (!item?.gameId || !onRules) && styles.actionBtnTextDisabled]}>
                   {t("schedule.form.actionRules")}
                 </Text>
               </TouchableOpacity>

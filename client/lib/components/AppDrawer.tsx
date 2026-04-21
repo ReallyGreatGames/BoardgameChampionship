@@ -162,7 +162,9 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                   )}
                 </View>
               )
-              : t(entry.translationId)
+              : () => (<Text style={[styles.labelText, { color: colors.text }]}>
+                {t(entry.translationId)}
+              </Text>)
             }
             focused={pathname === entry.route}
             onPress={() => router.push(entry.route as any)}

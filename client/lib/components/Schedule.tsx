@@ -416,15 +416,17 @@ export function ScheduleList() {
 
   return (
     <>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t("schedule.title")}</Text>
-      </View>
       <ScheduleItemModal
         visible={modalVisible}
         item={editingItem}
         nextSortIndex={nextSortIndex}
         onClose={() => setModalVisible(false)}
         onSave={handleModalSave}
+        onRules={(gameId) => {
+          router.push(`/rules?gameId=${gameId}`);
+
+          setModalVisible(false)
+        }}
       />
       <ScrollView
         contentContainerStyle={styles.list}

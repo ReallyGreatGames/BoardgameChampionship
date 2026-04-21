@@ -89,6 +89,10 @@ export default function RootLayout() {
           name="(pages)/(admin)/active-bells"
           options={{ drawerLabel: t("entries.activeBells"), title: t("entries.activeBells"), }}
         />
+        <Drawer.Screen
+          name="(pages)/(user)/rules"
+          options={{ drawerLabel: t("entries.rules"), title: t("entries.rules"), }}
+        />
       </Drawer>
     </BootstrapProvider>
   );

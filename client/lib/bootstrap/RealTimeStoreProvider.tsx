@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useAuth } from "../auth";
 import { useTableBellNotifications } from "../notifications/useTableBellNotifications";
+import { useRuleStore } from "../stores/appwrite/rule-store";
 import { useScheduleStore } from "../stores/appwrite/schedule-store";
 import { useTableBellStore } from "../stores/appwrite/table-bell-store";
 
@@ -21,7 +22,8 @@ export function RealTimeStoreProvider() {
 
   const userInits = [
     useScheduleStore,
-    useTableBellStore
+    useTableBellStore,
+    useRuleStore,
   ];
 
   const adminInits: any[] = [

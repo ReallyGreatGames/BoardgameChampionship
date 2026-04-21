@@ -37,16 +37,14 @@ export default function ActiveBellsPage() {
 
   useEffect(() => {
     if (loading) return;
-    if (!user || !isAdmin) router.replace("/(pages)/login");
-  }, [user, loading, isAdmin]);
+    if (!isAdmin) router.replace("/(pages)/login");
+  }, [loading, isAdmin]);
 
-  // Drive elapsed timer re-renders
   useEffect(() => {
     const id = setInterval(() => setTick((n) => n + 1), 1000);
     return () => clearInterval(id);
   }, []);
 
-  // Unacknowledged first (oldest first), acknowledged after
   const sorted = useMemo(() => {
     return [...tableBellStore.collection].sort((a, b) => {
       const aAck = !!a.acknowledgeTime;
@@ -93,10 +91,6 @@ export default function ActiveBellsPage() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t("title")}</Text>
-      </View>
-
       <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
         {sorted.length === 0 ? (
           <Text style={styles.empty}>{t("empty")}</Text>

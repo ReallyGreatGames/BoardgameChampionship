@@ -78,8 +78,8 @@ export default function GamePage() {
   }, [bell]);
 
   const handleBack = () => {
-    if (router.canGoBack()) router.back();
-    else router.replace("/(pages)/(user)/schedule");
+    if (gameId) router.replace('/(pages)/(user)/schedule');
+    else router.replace("/");
   };
 
   async function toggleBell() {
@@ -127,16 +127,19 @@ export default function GamePage() {
     <View style={styles.container}>
       <BackButton onPress={handleBack} />
 
-      <View style={styles.header}>
-        <Text style={styles.title}>{t("title")}</Text>
-      </View>
-
       <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
         <Table gameId={gameId} />
 
         <View style={styles.actionsGrid}>
           {ACTION_BUTTONS.map(({ key, icon, labelKey }) => (
-            <TouchableOpacity key={key} style={styles.actionBtn} activeOpacity={0.7}>
+            <TouchableOpacity
+              key={key}
+              style={styles.actionBtn}
+              activeOpacity={0.7}
+              onPress={() => {
+                if (key === "rules") router.push(`/rules?gameId=${gameId}` as any);
+              }}
+            >
               <Ionicons name={icon} size={28} color={colors.primary} />
               <Text style={styles.actionLabel}>{t(labelKey)}</Text>
             </TouchableOpacity>
@@ -206,11 +209,12 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       gap: inset.card,
     },
     actionBtn: {
-      flex: 1,
+      width: "47%",
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
       borderRadius: 8,
+      paddingVertical: inset.card,
       justifyContent: "center",
       alignItems: "center",
       gap: inset.tight,
