@@ -119,7 +119,7 @@ export function AppDrawer(props: DrawerContentComponentProps) {
       translationId: "entries.activeBells",
       route: "/active-bells",
       icon: "notifications-outline",
-      scope: "private",
+      scope: "admin",
       badgeCount: isAdmin ? activeBellCount : undefined,
     },
     {
