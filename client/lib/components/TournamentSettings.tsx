@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Modal,
@@ -103,6 +104,7 @@ type TournamentCardProps = {
 function TournamentCard({ row, onSaved }: TournamentCardProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t } = useTranslation(["components"]);
   const [active, setActive] = useState(row.active);
   const [pin, setPin] = useState(row.pin);
   const [tournamentType, setTournamentType] = useState<"dmmib" | "europemasters">(row.type);
@@ -131,7 +133,7 @@ function TournamentCard({ row, onSaved }: TournamentCardProps) {
         </Text>
         {active && (
           <View style={styles.activeBadge}>
-            <Text style={styles.activeBadgeText}>ACTIVE</Text>
+            <Text style={styles.activeBadgeText}>{t("tournamentSettings.activeBadge")}</Text>
           </View>
         )}
       </View>
@@ -139,7 +141,7 @@ function TournamentCard({ row, onSaved }: TournamentCardProps) {
       <View style={styles.divider} />
 
       <View style={styles.fieldRow}>
-        <Text style={styles.fieldLabel}>Type</Text>
+        <Text style={styles.fieldLabel}>{t("tournamentSettings.fieldType")}</Text>
         <EnumPicker<"dmmib" | "europemasters">
           value={tournamentType}
           options={["dmmib", "europemasters"]}
@@ -149,12 +151,12 @@ function TournamentCard({ row, onSaved }: TournamentCardProps) {
       </View>
 
       <View style={styles.fieldRow}>
-        <Text style={styles.fieldLabel}>PIN</Text>
+        <Text style={styles.fieldLabel}>{t("tournamentSettings.fieldPin")}</Text>
         <TextInput
           style={styles.pinInput}
           value={pin}
           onChangeText={setPin}
-          placeholder="Enter PIN"
+          placeholder={t("tournamentSettings.pinPlaceholder")}
           placeholderTextColor={colors.textPlaceholder}
           secureTextEntry={false}
           autoCapitalize="none"
@@ -163,7 +165,7 @@ function TournamentCard({ row, onSaved }: TournamentCardProps) {
       </View>
 
       <View style={styles.fieldRow}>
-        <Text style={styles.fieldLabel}>Active</Text>
+        <Text style={styles.fieldLabel}>{t("tournamentSettings.fieldActive")}</Text>
         <Switch
           value={active}
           onValueChange={setActive}
@@ -178,7 +180,7 @@ function TournamentCard({ row, onSaved }: TournamentCardProps) {
         {isSuccess && !dirty && (
           <View style={styles.savedIndicator}>
             <Ionicons name="checkmark-circle" size={16} color={colors.accent} />
-            <Text style={styles.savedText}>Saved</Text>
+            <Text style={styles.savedText}>{t("tournamentSettings.saved")}</Text>
           </View>
         )}
         <Pressable
@@ -192,7 +194,7 @@ function TournamentCard({ row, onSaved }: TournamentCardProps) {
           {isPending ? (
             <ActivityIndicator size="small" color={colors.background} />
           ) : (
-            <Text style={styles.saveButtonText}>Save</Text>
+            <Text style={styles.saveButtonText}>{t("tournamentSettings.save")}</Text>
           )}
         </Pressable>
       </View>
@@ -204,6 +206,7 @@ export function TournamentSettings() {
   const queryClient = useQueryClient();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t } = useTranslation(["components"]);
 
   const { data, isLoading, error, refetch } = useQuery<TournamentRow[]>({
     queryKey: ["admin-tournaments"],
@@ -232,9 +235,9 @@ export function TournamentSettings() {
   if (error) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>Failed to load tournaments.</Text>
+        <Text style={styles.errorText}>{t("tournamentSettings.loadError")}</Text>
         <Pressable onPress={() => refetch()} style={styles.retryButton}>
-          <Text style={styles.retryText}>Retry</Text>
+          <Text style={styles.retryText}>{t("tournamentSettings.retry")}</Text>
         </Pressable>
       </View>
     );
@@ -242,15 +245,12 @@ export function TournamentSettings() {
 
   return (
     <>
-      <View style={styles.header}>
-        <Text style={styles.title}>Tournament Settings</Text>
-      </View>
       <ScrollView
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       >
         {data?.length === 0 && (
-          <Text style={styles.emptyText}>No tournament rows found.</Text>
+          <Text style={styles.emptyText}>{t("tournamentSettings.empty")}</Text>
         )}
         {data?.map((row) => (
           <TournamentCard key={row.$id} row={row} onSaved={handleSaved} />

@@ -23,13 +23,14 @@ type ActionButton = {
   key: string;
   icon: React.ComponentProps<typeof Ionicons>["name"];
   labelKey: string;
+  onPress: (gameId: string) => void;
 };
 
 const ACTION_BUTTONS: ActionButton[] = [
-  { key: "lottery", icon: "shuffle", labelKey: "actions.lottery" },
-  { key: "rules", icon: "book-outline", labelKey: "actions.rules" },
-  { key: "timer", icon: "timer-outline", labelKey: "actions.timer" },
-  { key: "results", icon: "trophy-outline", labelKey: "actions.results" },
+  { key: "lottery", icon: "shuffle", labelKey: "actions.lottery", onPress: (gameId) => { } },
+  { key: "rules", icon: "book-outline", labelKey: "actions.rules", onPress: (gameId) => router.push(`/rules?gameId=${gameId}`) },
+  { key: "timer", icon: "timer-outline", labelKey: "actions.timer", onPress: (gameId) => { } },
+  { key: "results", icon: "trophy-outline", labelKey: "actions.results", onPress: (gameId) => { } },
 ];
 
 function formatElapsed(seconds: number) {
@@ -131,14 +132,12 @@ export default function GamePage() {
         <Table gameId={gameId} />
 
         <View style={styles.actionsGrid}>
-          {ACTION_BUTTONS.map(({ key, icon, labelKey }) => (
+          {ACTION_BUTTONS.map(({ key, icon, labelKey, onPress }) => (
             <TouchableOpacity
               key={key}
               style={styles.actionBtn}
               activeOpacity={0.7}
-              onPress={() => {
-                if (key === "rules") router.push(`/rules?gameId=${gameId}` as any);
-              }}
+              onPress={() => onPress(gameId)}
             >
               <Ionicons name={icon} size={28} color={colors.primary} />
               <Text style={styles.actionLabel}>{t(labelKey)}</Text>

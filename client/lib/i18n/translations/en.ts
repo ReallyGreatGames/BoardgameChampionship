@@ -150,7 +150,19 @@ const translations = {
           info: "Info",
         },
       },
-    }
+    },
+    tournamentSettings: {
+      activeBadge: "ACTIVE",
+      fieldType: "Type",
+      fieldPin: "PIN",
+      pinPlaceholder: "Enter PIN",
+      fieldActive: "Active",
+      saved: "Saved",
+      save: "Save",
+      loadError: "Failed to load tournaments.",
+      retry: "Retry",
+      empty: "No tournament rows found.",
+    },
   }
 };
 

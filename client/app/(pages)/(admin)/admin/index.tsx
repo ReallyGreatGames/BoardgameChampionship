@@ -1,18 +1,44 @@
 import { ScheduleList } from "@/lib/components/Schedule";
-import { useMemo } from "react";
-import { StyleSheet, View } from "react-native";
+import { useMemo, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../../../../lib/bootstrap/ThemeProvider";
 import { TournamentSettings } from "../../../../lib/components/TournamentSettings";
-import { inset } from "../../../../lib/theme/spacing";
+import { inset, space } from "../../../../lib/theme/spacing";
+
+type Tab = "tableOverview" | "schedule" | "tournamentSettings";
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: "tableOverview", label: "Table Overview" },
+  { key: "schedule", label: "Schedule" },
+  { key: "tournamentSettings", label: "Settings" },
+];
 
 export default function AdminDashboard() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const [activeTab, setActiveTab] = useState<Tab>("tableOverview");
 
   return (
     <View style={styles.container}>
-      <TournamentSettings />
-      <ScheduleList />
+      <View style={styles.tabBar}>
+        {TABS.map((tab) => (
+          <Pressable
+            key={tab.key}
+            style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+            onPress={() => setActiveTab(tab.key)}
+          >
+            <Text style={[styles.tabLabel, activeTab === tab.key && styles.tabLabelActive]}>
+              {tab.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <View style={styles.content}>
+        {activeTab === "tableOverview" && <View />}
+        {activeTab === "schedule" && <ScheduleList />}
+        {activeTab === "tournamentSettings" && <TournamentSettings />}
+      </View>
     </View>
   );
 }
@@ -22,8 +48,35 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     container: {
       flex: 1,
       backgroundColor: colors.background,
+    },
+    tabBar: {
+      flexDirection: "row",
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
       paddingHorizontal: inset.screen,
-      paddingTop: inset.screenTopTall,
+    },
+    tab: {
+      paddingVertical: space[3],
+      paddingHorizontal: space[4],
+      marginRight: space[2],
+      borderBottomWidth: 2,
+      borderBottomColor: "transparent",
+    },
+    tabActive: {
+      borderBottomColor: colors.primary,
+    },
+    tabLabel: {
+      fontSize: 14,
+      color: colors.textMuted,
+    },
+    tabLabelActive: {
+      color: colors.primary,
+      fontWeight: "600",
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: inset.screen,
+      paddingTop: inset.group,
       paddingBottom: inset.screenBottom,
     },
   });
