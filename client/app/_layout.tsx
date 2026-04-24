@@ -1,19 +1,19 @@
 import { BootstrapProvider } from "@/lib/bootstrap/BootstrapProvider";
+import { useTournament } from "@/lib/bootstrap/TournamentProvider";
 import { AppDrawer, drawerScreenOptions } from "@/lib/components/AppDrawer";
 import "@/lib/i18n/i18n";
-import { Drawer } from "expo-router/drawer";
-import "react-native-url-polyfill/auto";
-import { useFonts } from "expo-font";
-import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
 import { BarlowCondensed_600SemiBold } from "@expo-google-fonts/barlow-condensed/600SemiBold";
 import { BarlowCondensed_700Bold } from "@expo-google-fonts/barlow-condensed/700Bold";
 import { BarlowCondensed_800ExtraBold } from "@expo-google-fonts/barlow-condensed/800ExtraBold";
 import { DMSans_400Regular } from "@expo-google-fonts/dm-sans/400Regular";
 import { DMSans_500Medium } from "@expo-google-fonts/dm-sans/500Medium";
 import { DMSans_700Bold } from "@expo-google-fonts/dm-sans/700Bold";
+import { useFonts } from "expo-font";
+import { Drawer } from "expo-router/drawer";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { useTournament } from "@/lib/bootstrap/TournamentProvider";
+import "react-native-url-polyfill/auto";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -68,14 +68,30 @@ export default function RootLayout() {
           }}
         />
         <Drawer.Screen
-          name="(pages)/admin"
+          name="(pages)/(admin)/admin"
           options={{ drawerLabel: "Dashboard", title: "Admin Dashboard" }}
+        />
+        <Drawer.Screen
+          name="(pages)/(user)/game"
+          options={{ drawerLabel: t("entries.game"), title: t("entries.game"), }}
+        />
+        <Drawer.Screen
+          name="(pages)/(user)/schedule"
+          options={{ drawerLabel: t("entries.schedule"), title: t("entries.schedule") }}
         />
         <Drawer.Screen
           name="(pages)/(team-player)/choose-your-character"
           options={{
             title: t("entries.chooseYourCharacter"),
           }}
+        />
+        <Drawer.Screen
+          name="(pages)/(admin)/active-bells"
+          options={{ drawerLabel: t("entries.activeBells"), title: t("entries.activeBells"), }}
+        />
+        <Drawer.Screen
+          name="(pages)/(user)/rules"
+          options={{ drawerLabel: t("entries.rules"), title: t("entries.rules"), }}
         />
       </Drawer>
     </BootstrapProvider>

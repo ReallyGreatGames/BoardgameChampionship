@@ -1,4 +1,7 @@
 import { useAuth } from "@/lib/auth";
+import { useTheme } from "@/lib/bootstrap/ThemeProvider";
+import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
+import { dark } from "@/lib/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import {
   DrawerContentComponentProps,
@@ -6,14 +9,16 @@ import {
   DrawerItem,
 } from "@react-navigation/drawer";
 import { router, usePathname } from "expo-router";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { type } from "../theme/typography";
 import { inset } from "../theme/spacing";
-import { colors } from "../theme/colors";
+import { type } from "../theme/typography";
 
 function DrawerHeader() {
   const { t } = useTranslation(["menu"]);
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
     <View style={styles.header}>
@@ -32,6 +37,8 @@ function DrawerHeader() {
 
 function DrawerFooter() {
   const { user, logout } = useAuth();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   async function handleAuthPress() {
     if (user) {
@@ -64,38 +71,63 @@ function DrawerFooter() {
   );
 }
 
+// Static options for the navigator — uses dark palette as fallback since the
+// Drawer navigator lives above the ThemeProvider in the tree.
 export const drawerScreenOptions = {
-  headerStyle: { backgroundColor: colors.background },
-  headerTintColor: colors.primary,
+  headerStyle: { backgroundColor: dark.background },
+  headerTintColor: dark.primary,
   headerTitleStyle: {
     fontFamily: "BarlowCondensed_700Bold",
     fontSize: 20,
-    color: colors.text,
+    color: dark.text,
   },
   headerShadowVisible: false,
   headerShown: true,
-  drawerStyle: { backgroundColor: colors.background },
-  drawerActiveTintColor: colors.primary,
-  drawerInactiveTintColor: colors.textMuted,
+  drawerStyle: { backgroundColor: dark.background },
+  drawerActiveTintColor: dark.primary,
+  drawerInactiveTintColor: dark.textMuted,
 } as const;
 
 export function AppDrawer(props: DrawerContentComponentProps) {
   const pathname = usePathname();
   const { t } = useTranslation(["menu"]);
   const { isAdmin, isPinVerified } = useAuth();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const bellCollection = useTableBellStore((s) => s.collection);
+  const activeBellCount = useMemo(
+    () => bellCollection.filter((b) => !b.acknowledgeTime).length,
+    [bellCollection],
+  );
 
   const entries = [
     {
       translationId: "entries.home",
       route: "/",
       icon: "home-outline",
+      scope: "public",
+      badgeCount: undefined as number | undefined,
+    },
+    {
+      translationId: "entries.schedule",
+      route: "/schedule",
+      icon: "list-outline",
       scope: "private",
+      badgeCount: undefined as number | undefined,
+    },
+    {
+      translationId: "entries.activeBells",
+      route: "/active-bells",
+      icon: "notifications-outline",
+      scope: "admin",
+      badgeCount: isAdmin ? activeBellCount : undefined,
     },
     {
       translationId: "entries.dashboard",
       route: "/admin",
       icon: "grid-outline",
       scope: "admin",
+      badgeCount: undefined as number | undefined,
     },
   ];
 
@@ -117,7 +149,23 @@ export function AppDrawer(props: DrawerContentComponentProps) {
         .map((entry, i) => (
           <DrawerItem
             key={i}
-            label={t(entry.translationId)}
+            label={entry.badgeCount !== undefined
+              ? () => (
+                <View style={styles.labelRow}>
+                  <Text style={[styles.labelText, { color: colors.text }]}>
+                    {t(entry.translationId)}
+                  </Text>
+                  {entry.badgeCount! > 0 && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{entry.badgeCount}</Text>
+                    </View>
+                  )}
+                </View>
+              )
+              : () => (<Text style={[styles.labelText, { color: colors.text }]}>
+                {t(entry.translationId)}
+              </Text>)
+            }
             focused={pathname === entry.route}
             onPress={() => router.push(entry.route as any)}
             activeTintColor={colors.primary}
@@ -135,42 +183,69 @@ export function AppDrawer(props: DrawerContentComponentProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: inset.card,
-    paddingTop: inset.card,
-    paddingBottom: inset.group,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.divider,
-    marginBottom: inset.tight,
-  },
-  headerTitle: {
-    ...type.h3,
-    color: colors.text,
-  },
-  spacer: {
-    flex: 1,
-  },
-  footer: {
-    borderTopWidth: 1,
-    borderTopColor: colors.divider,
-    padding: inset.card,
-  },
-  footerActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  iconButton: {
-    padding: 6,
-    borderRadius: 8,
-    backgroundColor: colors.surface,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
+  return StyleSheet.create({
+    container: {
+      flexGrow: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: inset.card,
+      paddingTop: inset.card,
+      paddingBottom: inset.group,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+      marginBottom: inset.tight,
+    },
+    headerTitle: {
+      ...type.h3,
+      color: colors.text,
+    },
+    spacer: {
+      flex: 1,
+    },
+    footer: {
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+      padding: inset.card,
+    },
+    footerActions: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    iconButton: {
+      padding: 6,
+      borderRadius: 8,
+      backgroundColor: colors.surface,
+    },
+    labelRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      flex: 1,
+    },
+    labelText: {
+      ...type.bodySmall,
+      color: colors.text,
+      flex: 1,
+    },
+    badge: {
+      backgroundColor: colors.accent,
+      borderRadius: 10,
+      minWidth: 20,
+      height: 20,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: 5,
+    },
+    badgeText: {
+      ...type.eyebrow,
+      color: "#fff",
+      letterSpacing: 0,
+    },
+  });
+}

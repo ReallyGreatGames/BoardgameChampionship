@@ -1,6 +1,7 @@
+import { BackButton } from "@/lib/components/BackButton";
 import { useQuery } from "@tanstack/react-query";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -11,13 +12,12 @@ import {
   View,
 } from "react-native";
 import { Query } from "react-native-appwrite";
-import { tablesDB } from "../appwrite";
+import { DATABASE_ID, tablesDB } from "../appwrite";
 import { Team } from "../bootstrap/PlayerProvider";
-import { type } from "../theme/typography";
+import { useTheme } from "../bootstrap/ThemeProvider";
 import { inset } from "../theme/spacing";
-import { colors } from "../theme/colors";
+import { type } from "../theme/typography";
 
-const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
 
 async function fetchTeams(): Promise<Team[]> {
   const res = await tablesDB.listRows({
@@ -45,6 +45,8 @@ function AnimatedTeamCard({
   team: Team;
   onPress: () => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const scale = useRef(new Animated.Value(1)).current;
 
   return (
@@ -86,6 +88,8 @@ function AnimatedPlayerCard({
   id: string;
   onConfirm: () => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const scale = useRef(new Animated.Value(1)).current;
   const confirmed = useRef(false);
 
@@ -130,6 +134,8 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
   const [step, setStep] = useState<"team" | "player">("team");
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   useFocusEffect(
     useCallback(() => {
@@ -188,9 +194,7 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
     return (
       <View style={styles.container}>
         <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
-          <Pressable onPress={() => setStep("team")}>
-            <Text style={styles.back}>← Back</Text>
-          </Pressable>
+          <BackButton onPress={() => setStep("team")} />
 
           <View style={styles.playerHeaderZone}>
             <Text style={styles.title}>{selectedTeam.name}</Text>
@@ -217,11 +221,7 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
 
   return (
     <View style={styles.container}>
-      {onBack && (
-        <Pressable onPress={onBack}>
-          <Text style={styles.back}>← Back</Text>
-        </Pressable>
-      )}
+      {onBack && <BackButton onPress={onBack} />}
       <ScrollView
         style={styles.list}
         contentContainerStyle={styles.listContent}
@@ -238,115 +238,111 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingHorizontal: inset.screen,
-    paddingTop: inset.screenTop,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: colors.background,
-    gap: inset.tight,
-  },
-  back: {
-    ...type.bodySmall,
-    color: colors.primary,
-    marginBottom: inset.group,
-  },
+function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      paddingHorizontal: inset.screen,
+      paddingTop: inset.screenTop,
+    },
+    centered: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: colors.background,
+      gap: inset.tight,
+    },
+    // Team selection
+    teamHeaderZone: {
+      marginBottom: inset.group,
+    },
+    title: {
+      ...type.h1,
+      color: colors.text,
+    },
+    list: {
+      flex: 1,
+    },
+    listContent: {
+      gap: inset.list,
+      paddingBottom: inset.screenBottom,
+    },
+    teamCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: inset.group,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingVertical: inset.card,
+      paddingHorizontal: inset.card,
+    },
+    teamCode: {
+      ...type.h2,
+      color: colors.primary,
+      width: 56,
+      textAlign: "center",
+    },
+    teamInfo: {
+      flex: 1,
+      gap: 2,
+    },
+    teamName: {
+      ...type.body,
+      fontFamily: "DMSans_700Bold",
+      color: colors.text,
+    },
+    teamCountry: {
+      ...type.caption,
+      color: colors.textSecondary,
+    },
+    errorText: {
+      ...type.body,
+      color: colors.error,
+    },
+    errorHint: {
+      ...type.bodySmall,
+      color: colors.textMuted,
+    },
 
-  // Team selection
-  teamHeaderZone: {
-    marginBottom: inset.group,
-  },
-  title: {
-    ...type.h1,
-    color: colors.text,
-  },
-  list: {
-    flex: 1,
-  },
-  listContent: {
-    gap: inset.list,
-    paddingBottom: inset.screenBottom,
-  },
-  teamCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: inset.group,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingVertical: inset.card,
-    paddingHorizontal: inset.card,
-  },
-  teamCode: {
-    ...type.h2,
-    color: colors.primary,
-    width: 56,
-    textAlign: "center",
-  },
-  teamInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  teamName: {
-    ...type.body,
-    fontFamily: "DMSans_700Bold",
-    color: colors.text,
-  },
-  teamCountry: {
-    ...type.caption,
-    color: colors.textSecondary,
-  },
-  errorText: {
-    ...type.body,
-    color: colors.error,
-  },
-  errorHint: {
-    ...type.bodySmall,
-    color: colors.textMuted,
-  },
-
-  // Player selection
-  playerHeaderZone: {
-    gap: 4,
-    marginBottom: inset.section,
-  },
-  subtitle: {
-    ...type.bodyLarge,
-    color: colors.textSecondary,
-  },
-  playerGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: inset.card,
-  },
-  playerCardPressable: {
-    flex: 1,
-    minWidth: "40%",
-    aspectRatio: 1,
-  },
-  playerCard: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: inset.tight,
-  },
-  playerNumber: {
-    ...type.bigNumber,
-    color: colors.text,
-  },
-  playerLabel: {
-    ...type.bodySmall,
-    color: colors.textSecondary,
-  },
-});
+    // Player selection
+    playerHeaderZone: {
+      gap: 4,
+      marginBottom: inset.section,
+    },
+    subtitle: {
+      ...type.bodyLarge,
+      color: colors.textSecondary,
+    },
+    playerGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: inset.card,
+    },
+    playerCardPressable: {
+      flex: 1,
+      minWidth: "40%",
+      aspectRatio: 1,
+    },
+    playerCard: {
+      flex: 1,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      justifyContent: "center",
+      alignItems: "center",
+      gap: inset.tight,
+    },
+    playerNumber: {
+      ...type.bigNumber,
+      color: colors.text,
+    },
+    playerLabel: {
+      ...type.bodySmall,
+      color: colors.textSecondary,
+    },
+  });
+}

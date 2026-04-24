@@ -1,15 +1,14 @@
 import {
   createContext,
+  ReactNode,
   useContext,
   useEffect,
   useState,
-  ReactNode,
 } from "react";
-import { Query, Models } from "react-native-appwrite";
+import { Models, Query } from "react-native-appwrite";
+import { account, DATABASE_ID, tablesDB } from "./appwrite";
 import * as SecureStore from "./secureStorage";
-import { account, tablesDB } from "./appwrite";
 
-const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
 const PIN_COLLECTION_ID = "tournament";
 export const PIN_STORE_KEY = "bgcs_pin_auth";
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -32,11 +31,11 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 async function getOrCreateAnonymousSession(): Promise<
-  Models.User<Models.Preferences>
+  Models.User<Models.Preferences> | null
 > {
   return account.get().catch(async () => {
     await account.createAnonymousSession();
-    return account.get();
+    return account.get().catch(() => null);
   });
 }
 

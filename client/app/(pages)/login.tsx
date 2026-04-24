@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
@@ -16,15 +16,16 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../../lib/auth";
+import { useTheme } from "../../lib/bootstrap/ThemeProvider";
 import { type } from "../../lib/theme/typography";
 import { inset } from "../../lib/theme/spacing";
-import { colors } from "../../lib/theme/colors";
 
 const SECRET_TAPS = 7;
 
 export default function LoginScreen() {
   const { t } = useTranslation(["login"]);
   const { login, loginWithPin } = useAuth();
+  const { colors } = useTheme();
   const [pin, setPin] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,6 +37,8 @@ export default function LoginScreen() {
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const buttonScale = useRef(new Animated.Value(1)).current;
   const badgeAnim = useRef(new Animated.Value(0)).current;
+
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   // Admin badge spring-in when mode activates
   useEffect(() => {
@@ -101,7 +104,7 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <TouchableWithoutFeedback onPress={Platform.OS !== "web" ? Keyboard.dismiss : undefined}>
         <View style={styles.inner}>
           {/* Zone 1 — Title */}
           <View style={styles.headerZone}>
@@ -205,69 +208,71 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  inner: {
-    flex: 1,
-    paddingHorizontal: inset.screen,
-    paddingTop: inset.screenTopTall,
-    paddingBottom: inset.screenBottom,
-  },
-  headerZone: {
-    marginBottom: inset.section,
-  },
-  title: {
-    ...type.h1,
-    color: colors.text,
-  },
-  adminBadge: {
-    ...type.eyebrow,
-    color: colors.accent,
-    marginTop: inset.tight,
-  },
-  formZone: {
-    gap: inset.list,
-  },
-  input: {
-    ...type.body,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    padding: inset.card,
-    color: colors.text,
-    backgroundColor: colors.surface,
-  },
-  pinContainer: {
-    gap: inset.tight,
-  },
-  pinLabel: {
-    ...type.bodySmall,
-    color: colors.textSecondary,
-  },
-  pinInput: {
-    ...type.h2,
-    letterSpacing: 10,
-    color: colors.text,
-    textAlign: "center",
-  },
-  pinInputFocused: {
-    borderColor: colors.primary,
-    backgroundColor: colors.surfaceHigh,
-  },
-  actionZone: {
-    marginTop: inset.section,
-  },
-  button: {
-    backgroundColor: colors.accent,
-    borderRadius: 8,
-    padding: inset.card,
-    alignItems: "center",
-  },
-  buttonText: {
-    ...type.button,
-    color: "#fff",
-  },
-});
+function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    inner: {
+      flex: 1,
+      paddingHorizontal: inset.screen,
+      paddingTop: inset.screenTopTall,
+      paddingBottom: inset.screenBottom,
+    },
+    headerZone: {
+      marginBottom: inset.section,
+    },
+    title: {
+      ...type.h1,
+      color: colors.text,
+    },
+    adminBadge: {
+      ...type.eyebrow,
+      color: colors.accent,
+      marginTop: inset.tight,
+    },
+    formZone: {
+      gap: inset.list,
+    },
+    input: {
+      ...type.body,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: inset.card,
+      color: colors.text,
+      backgroundColor: colors.surface,
+    },
+    pinContainer: {
+      gap: inset.tight,
+    },
+    pinLabel: {
+      ...type.bodySmall,
+      color: colors.textSecondary,
+    },
+    pinInput: {
+      ...type.h2,
+      letterSpacing: 10,
+      color: colors.text,
+      textAlign: "center",
+    },
+    pinInputFocused: {
+      borderColor: colors.primary,
+      backgroundColor: colors.surfaceHigh,
+    },
+    actionZone: {
+      marginTop: inset.section,
+    },
+    button: {
+      backgroundColor: colors.accent,
+      borderRadius: 8,
+      padding: inset.card,
+      alignItems: "center",
+    },
+    buttonText: {
+      ...type.button,
+      color: "#fff",
+    },
+  });
+}
