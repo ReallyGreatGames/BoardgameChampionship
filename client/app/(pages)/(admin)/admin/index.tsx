@@ -1,4 +1,5 @@
 import { ScheduleList } from "@/lib/components/Schedule";
+import { TableOverview } from "@/lib/components/TableOverview";
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../../../../lib/bootstrap/ThemeProvider";
@@ -35,7 +36,7 @@ export default function AdminDashboard() {
       </View>
 
       <View style={styles.content}>
-        {activeTab === "tableOverview" && <View />}
+        {activeTab === "tableOverview" && <TableOverview />}
         {activeTab === "schedule" && <ScheduleList />}
         {activeTab === "tournamentSettings" && <TournamentSettings />}
       </View>
