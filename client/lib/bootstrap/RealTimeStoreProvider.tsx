@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import { useAuth } from "../auth";
 import { useTableBellNotifications } from "../notifications/useTableBellNotifications";
-import { useGameStore } from "../stores/appwrite/game-store";
 import { useRuleStore } from "../stores/appwrite/rule-store";
 import { useScheduleStore } from "../stores/appwrite/schedule-store";
 import { useTableBellStore } from "../stores/appwrite/table-bell-store";
+import { useTimerSettingsStore } from "../stores/appwrite/timer-settings-store";
 import { useTimerStore } from "../stores/appwrite/timer-store";
 
 
@@ -26,11 +26,11 @@ export function RealTimeStoreProvider() {
     useScheduleStore,
     useTableBellStore,
     useRuleStore,
+    useTimerStore,
+    useTimerSettingsStore
   ];
 
   const adminInits: any[] = [
-    useTimerStore,
-    useGameStore,
   ];
 
   useEffect(() => {

@@ -1,8 +1,10 @@
-import { useMemo } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../bootstrap/ThemeProvider";
-import { useGameStore } from "../stores/appwrite/game-store";
 import { useScheduleStore } from "../stores/appwrite/schedule-store";
+import { useTableBellStore } from "../stores/appwrite/table-bell-store";
 import { useTimerStore } from "../stores/appwrite/timer-store";
 import { inset } from "../theme/spacing";
 import { type } from "../theme/typography";
@@ -37,25 +39,33 @@ function formatTime(s: number) {
   return `${m}:${sec}`;
 }
 
+function formatElapsed(startTime: string) {
+  const s = Math.floor((Date.now() - new Date(startTime).getTime()) / 1000);
+  const m = Math.floor(s / 60).toString().padStart(2, "0");
+  const sec = (s % 60).toString().padStart(2, "0");
+  return `${m}:${sec}`;
+}
+
+// TODO: This is not meant to show only timers but all tables.
+// TODO: For each table show active times, active bells and the state of submitted game results
 export function TableOverview() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t } = useTranslation(["tableOverview"]);
+  const [, setTick] = useState(0);
 
   const { collection: schedules } = useScheduleStore();
   const { collection: timers } = useTimerStore();
-  const { collection: games } = useGameStore();
+  const bells = useTableBellStore((s) => s.collection);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const activeSchedule = useMemo(
     () => schedules.find((s) => s.isActive),
     [schedules],
-  );
-
-  const activeGame = useMemo(
-    () =>
-      activeSchedule?.gameId
-        ? games.find((g) => g.$id === activeSchedule.gameId)
-        : null,
-    [games, activeSchedule],
   );
 
   const activeTimers = useMemo(() => {
@@ -70,7 +80,7 @@ export function TableOverview() {
   if (!activeSchedule) {
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyText}>No active schedule item</Text>
+        <Text style={styles.emptyText}>{t("noActiveSchedule")}</Text>
       </View>
     );
   }
@@ -78,7 +88,7 @@ export function TableOverview() {
   if (!activeSchedule.gameId) {
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyText}>Active schedule item has no game</Text>
+        <Text style={styles.emptyText}>{t("noGame")}</Text>
       </View>
     );
   }
@@ -86,7 +96,7 @@ export function TableOverview() {
   if (activeTimers.length === 0) {
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyText}>No active timers for this game</Text>
+        <Text style={styles.emptyText}>{t("noTimers")}</Text>
       </View>
     );
   }
@@ -96,22 +106,51 @@ export function TableOverview() {
       contentContainerStyle={styles.list}
       showsVerticalScrollIndicator={false}
     >
-      {activeGame && <Text style={styles.gameLabel}>{activeGame.name}</Text>}
-      {activeTimers.map((timer) => (
-        <View key={timer.$id} style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.tableLabel}>Table {timer.table}</Text>
+      {activeSchedule && <Text style={styles.gameLabel}>{activeSchedule.title}</Text>}
+      {activeTimers.map((timer) => {
+        const bell = bells.find((b) => b.table === timer.table);
+        const bellColor = bell?.acknowledgeTime ? colors.success : colors.accent;
+
+        return (
+          <View key={timer.$id} style={[styles.card, bell && !bell.acknowledgeTime && styles.cardBellActive, bell?.acknowledgeTime && styles.cardBellAcknowledged]}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.tableLabel}>Table {timer.table}</Text>
+              {bell && (
+                <View style={styles.bellStatus}>
+                  {bell.acknowledgeTime && (
+                    <Ionicons name="walk-outline" size={12} color={bellColor} />
+                  )}
+                  <Ionicons
+                    name={bell.acknowledgeTime ? "notifications-off-outline" : "notifications-outline"}
+                    size={14}
+                    color={bellColor}
+                  />
+                  <Text style={[styles.bellTime, { color: bellColor }]}>
+                    {formatElapsed(bell.startTime)}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.playersRow}>
+              {toNumberArray(timer.playerTimes).map((t, i) => {
+                const isActive = timer.activePlayerTimer === i;
+                return (
+                  <View key={i} style={styles.playerCell}>
+                    <Text style={styles.playerLabel}>P{i + 1}</Text>
+                    <Text style={[
+                      styles.playerTime,
+                      isActive && styles.playerTimeActive,
+                    ]}>{formatTime(t)}</Text>
+                    {isActive && timer.paused && (
+                      <Ionicons name="pause" size={10} color={colors.textMuted} />
+                    )}
+                  </View>
+                );
+              })}
+            </View>
           </View>
-          <View style={styles.playersRow}>
-            {toNumberArray(timer.playerTimes).map((t, i) => (
-              <View key={i} style={styles.playerCell}>
-                <Text style={styles.playerLabel}>P{i + 1}</Text>
-                <Text style={styles.playerTime}>{formatTime(t)}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      ))}
+        );
+      })}
     </ScrollView>
   );
 }
@@ -143,16 +182,34 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       borderRadius: 12,
       overflow: "hidden",
     },
+    cardBellActive: {
+      borderColor: colors.accent,
+    },
+    cardBellAcknowledged: {
+      borderColor: colors.success,
+    },
     cardHeader: {
       backgroundColor: colors.surfaceHigh,
       paddingHorizontal: inset.card,
       paddingVertical: 8,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
     },
     tableLabel: {
       ...type.eyebrow,
       color: colors.textSecondary,
+    },
+    bellStatus: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+    },
+    bellTime: {
+      ...type.eyebrow,
+      letterSpacing: 0.5,
     },
     playersRow: {
       flexDirection: "row",
@@ -174,6 +231,10 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       fontSize: 22,
       lineHeight: 26,
       color: colors.text,
+    },
+    playerTimeActive: {
+      textDecorationLine: "underline",
+      fontFamily: "BarlowCondensed_800ExtraBold",
     },
   });
 }

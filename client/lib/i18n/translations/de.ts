@@ -105,6 +105,32 @@ const translations = {
       cancel: "Abbrechen",
     },
   },
+  timer: {
+    paused: "PAUSIERT",
+    timeOut: "ZEIT ABGELAUFEN",
+    ringBell: "Tischklingel läuten",
+    bellRinging: "Klingel läutet…",
+    bellAcknowledged: "Klingel bestätigt",
+    resetTimers: "Timer zurücksetzen",
+    closeTimer: "Timer schließen",
+    confirmRing: {
+      title: "Tischklingel läuten",
+      message: "Die Schiedsrichter:innen auf euren Tisch aufmerksam machen?",
+      confirm: "Klingeln",
+      cancel: "Abbrechen",
+    },
+    confirmDismiss: {
+      title: "Klingel entfernen",
+      message: "Tischklingel-Benachrichtigung entfernen?",
+      confirm: "Entfernen",
+      cancel: "Abbrechen",
+    },
+  },
+  tableOverview: {
+    noActiveSchedule: "Kein aktiver Zeitplaneintrag",
+    noGame: "Aktiver Zeitplaneintrag hat kein Spiel",
+    noTimers: "Keine aktiven Timer für dieses Spiel",
+  },
   components: {
     schedule: {
       title: "Zeitplan",
@@ -150,6 +176,18 @@ const translations = {
           info: "Info",
         },
       },
+    },
+    timerSettingsModal: {
+      addTitle: "Timer-Einstellungen erstellen",
+      editTitle: "Timer-Einstellungen bearbeiten",
+      nameField: "Spielname",
+      namePlaceholder: "z.B. Schach",
+      durationField: "Gesamtdauer (min)",
+      durationPlaceholder: "z.B. 60",
+      directionField: "Zählrichtung",
+      directionDown: "Rückwärts",
+      directionUp: "Vorwärts",
+      save: "Speichern",
     },
     tournamentSettings: {
       activeBadge: "AKTIV",

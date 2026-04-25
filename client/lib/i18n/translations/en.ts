@@ -105,6 +105,32 @@ const translations = {
       cancel: "Cancel",
     },
   },
+  timer: {
+    paused: "PAUSED",
+    timeOut: "TIME OUT",
+    ringBell: "Ring table bell",
+    bellRinging: "Bell ringing…",
+    bellAcknowledged: "Bell acknowledged",
+    resetTimers: "Reset timers",
+    closeTimer: "Close timer",
+    confirmRing: {
+      title: "Ring Table Bell",
+      message: "Alert the judges that your table needs assistance?",
+      confirm: "Ring",
+      cancel: "Cancel",
+    },
+    confirmDismiss: {
+      title: "Dismiss Bell",
+      message: "Clear the table bell notification?",
+      confirm: "Dismiss",
+      cancel: "Cancel",
+    },
+  },
+  tableOverview: {
+    noActiveSchedule: "No active schedule item",
+    noGame: "Active schedule item has no game",
+    noTimers: "No active timers for this game",
+  },
   components: {
     schedule: {
       title: "Schedule",
@@ -150,6 +176,18 @@ const translations = {
           info: "Info",
         },
       },
+    },
+    timerSettingsModal: {
+      addTitle: "Create Timer Settings",
+      editTitle: "Edit Timer Settings",
+      nameField: "Game Name",
+      namePlaceholder: "e.g. Chess",
+      durationField: "Total Duration (min)",
+      durationPlaceholder: "e.g. 60",
+      directionField: "Count Direction",
+      directionDown: "Count Down",
+      directionUp: "Count Up",
+      save: "Save",
     },
     tournamentSettings: {
       activeBadge: "ACTIVE",

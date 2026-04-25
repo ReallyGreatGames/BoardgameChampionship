@@ -39,6 +39,7 @@ type Props = {
   item?: Schedule;
   nextSortIndex: number;
   onClose: () => void;
+  onTimer?: (gameId: string) => void;
   /** Resolves on success, throws on failure */
   onSave: (data: ScheduleFormData) => Promise<void>;
   onRules?: (gameId: string) => void;
@@ -149,7 +150,7 @@ function iconPickerStyles(colors: ReturnType<typeof useTheme>["colors"]) {
 }
 
 
-export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSave, onRules }: Props) {
+export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSave, onRules, onTimer }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useTranslation(["components"]);
@@ -314,6 +315,7 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
               />
             </FormField>
 
+            // TODO: Find a better way to link items to schedule?
             <FormField
               icon="game-controller-outline"
               label={t("schedule.form.gameIdField")}
@@ -335,6 +337,7 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
               <TouchableOpacity
                 style={[styles.actionBtn, !item && styles.actionBtnDisabled]}
                 disabled={!item}
+                onPress={() => item?.gameId && onTimer?.(item.gameId)}
               >
                 <Ionicons name="timer-outline" size={16} color={!item ? colors.textMuted : colors.text} />
                 <Text style={[styles.actionBtnText, !item && styles.actionBtnTextDisabled]}>

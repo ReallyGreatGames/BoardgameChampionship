@@ -26,6 +26,7 @@ import { deepClone } from "../utils";
 import { useDialog } from "./Dialog";
 import { ScheduleFormData, ScheduleItemModal } from "./ScheduleItemModal";
 import { Table } from "./Table";
+import { TimerSettingsModal } from "./TimerSettingsModal";
 
 if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -298,6 +299,8 @@ export function ScheduleList() {
   const [isLoading, setIsLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<Schedule | undefined>(undefined);
+  const [timerModalVisible, setTimerModalVisible] = useState(false);
+  const [timerGameId, setTimerGameId] = useState<string | null>(null);
   const sortedScheduleItems = useMemo(
     () => [...collection].sort((a, b) => a.sortIndex - b.sortIndex),
     [collection],
@@ -424,8 +427,20 @@ export function ScheduleList() {
         onSave={handleModalSave}
         onRules={(gameId) => {
           router.push(`/rules?gameId=${gameId}`);
-
-          setModalVisible(false)
+          setModalVisible(false);
+        }}
+        onTimer={(gameId) => {
+          setTimerGameId(gameId ?? null);
+          setTimerModalVisible(true);
+          setModalVisible(false);
+        }}
+      />
+      <TimerSettingsModal
+        visible={timerModalVisible}
+        gameId={timerGameId}
+        onClose={() => setTimerModalVisible(false)}
+        onCreated={async (newId) => {
+          if (editingItem) await update({ ...editingItem, gameId: newId });
         }}
       />
       <ScrollView
