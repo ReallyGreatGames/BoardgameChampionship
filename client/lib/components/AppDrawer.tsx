@@ -1,7 +1,6 @@
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
-import { dark } from "@/lib/theme/colors";
 import { Ionicons } from "@expo/vector-icons";
 import {
   DrawerContentComponentProps,
@@ -71,22 +70,6 @@ function DrawerFooter() {
   );
 }
 
-// Static options for the navigator — uses dark palette as fallback since the
-// Drawer navigator lives above the ThemeProvider in the tree.
-export const drawerScreenOptions = {
-  headerStyle: { backgroundColor: dark.background },
-  headerTintColor: dark.primary,
-  headerTitleStyle: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 20,
-    color: dark.text,
-  },
-  headerShadowVisible: false,
-  headerShown: true,
-  drawerStyle: { backgroundColor: dark.background },
-  drawerActiveTintColor: dark.primary,
-  drawerInactiveTintColor: dark.textMuted,
-} as const;
 
 export function AppDrawer(props: DrawerContentComponentProps) {
   const pathname = usePathname();

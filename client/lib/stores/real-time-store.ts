@@ -66,6 +66,7 @@ export async function addToCollection<T>(
 export async function updateInCollection<T>(
   key: Key,
   data: Partial<T & Models.Document> & { $id: string },
+  silent = false,
 ): Promise<boolean> {
   const dataToUpdate = Object.fromEntries(
     Object.entries(data).filter(([k, v]) => !k.startsWith("$") && v !== undefined)
@@ -82,7 +83,7 @@ export async function updateInCollection<T>(
     });
     return true;
   } catch (e: any) {
-    Alert.alert("Error", e?.message ?? "Failed to update item.");
+    if (!silent) Alert.alert("Error", e?.message ?? "Failed to update item.");
     return false;
   }
 }
@@ -213,8 +214,19 @@ function updateRealtimeCollectionUpdate<T extends Models.Document>(
 
   console.debug([`[realtime] collection update`, payload]);
 
+  // Appwrite realtime payloads may omit relationship fields (returning null/[]).
+  // Preserve existing non-null values so relationship-based filters don't break.
+  const merged: any = { ...existing, ...payload };
+  for (const key of Object.keys(existing)) {
+    const pv = (payload as any)[key];
+    const ev = existing[key];
+    if (ev != null && (pv === null || pv === undefined || (Array.isArray(pv) && pv.length === 0))) {
+      merged[key] = ev;
+    }
+  }
+
   collection = collection.map((item) =>
-    item.$id === payload.$id ? payload : item,
+    item.$id === payload.$id ? (merged as T) : item,
   );
 
   return collection;
@@ -237,13 +249,15 @@ function updateRealtimeCollectionDelete<T extends Models.Document>(
 }
 
 function isNewUpdate(key: string, payload: any, eventType: string): boolean {
-  const dedupeKey = `${key}:${payload.$id}:${eventType}`;
+  // Include $updatedAt so each distinct update has a unique key.
+  // Only true duplicate events (same document, same timestamp, fired twice) are dropped.
+  const updatedAt = payload.$updatedAt ?? payload.$createdAt ?? "";
+  const dedupeKey = `${key}:${payload.$id}:${eventType}:${updatedAt}`;
   const now = Date.now();
-  const last = recentEvents.get(dedupeKey) ?? 0;
+  const last = recentEvents.get(dedupeKey);
 
-  // ignore duplicate events within 2s window
-  if (now - last < 2000) {
-    console.debug(`[realtime] deduped delete event ${dedupeKey}`);
+  if (last !== undefined && now - last < 5000) {
+    console.debug(`[realtime] deduped event ${dedupeKey}`);
     return false;
   }
 

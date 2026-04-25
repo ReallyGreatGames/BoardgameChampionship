@@ -7,7 +7,7 @@ import { useAuth } from "../lib/auth";
 
 export default function Index() {
   const { user, loading, isAdmin, isPinVerified } = useAuth();
-  const { routeDeterministic } = useRouter();
+  const { routeDeterministic, navigate } = useRouter();
   const { colors } = useTheme();
 
   const styles = useMemo(() => StyleSheet.create({
@@ -39,9 +39,11 @@ export default function Index() {
     <View style={styles.container}>
       <Text style={{ color: "red" }}>PLATZHALTER</Text>
       <Text style={{ color: colors.text }}>Das ist die Startseite. Hier steht wie alles geht!</Text>
-      <Pressable style={styles.button}>
-        <Text style={{ color: colors.text }}>Hier gehts zum Login</Text>
-      </Pressable>
+      {!user && (
+        <Pressable style={styles.button} onPress={() => navigate("/(pages)/login")}>
+          <Text style={{ color: colors.text }}>Hier gehts zum Login</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
