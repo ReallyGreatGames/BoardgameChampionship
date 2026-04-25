@@ -11,14 +11,14 @@ import {
 export default function ScheduleScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, isPinVerified } = useAuth();
 
   useEffect(() => {
     if (loading) return;
-    if (!user || !isAdmin) {
-      router.replace("/login");
+    if (!isPinVerified && !isAdmin) {
+      router.replace("/(pages)/login");
     }
-  }, [user, loading, isAdmin]);
+  }, [user, loading, isAdmin, isPinVerified]);
 
   return (
     <View style={styles.container}>

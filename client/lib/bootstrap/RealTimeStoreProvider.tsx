@@ -1,9 +1,11 @@
 import { useEffect } from "react";
 import { useAuth } from "../auth";
 import { useTableBellNotifications } from "../notifications/useTableBellNotifications";
+import { useGameStore } from "../stores/appwrite/game-store";
 import { useRuleStore } from "../stores/appwrite/rule-store";
 import { useScheduleStore } from "../stores/appwrite/schedule-store";
 import { useTableBellStore } from "../stores/appwrite/table-bell-store";
+import { useTimerStore } from "../stores/appwrite/timer-store";
 
 
 
@@ -27,7 +29,8 @@ export function RealTimeStoreProvider() {
   ];
 
   const adminInits: any[] = [
-    // add admin-scoped store inits here
+    useTimerStore,
+    useGameStore,
   ];
 
   useEffect(() => {
