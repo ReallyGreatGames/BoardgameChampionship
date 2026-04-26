@@ -2,7 +2,7 @@ import { PIN_STORE_KEY, useAuth } from "@/lib/auth";
 import { usePlayer, PLAYER_INFO_KEY } from "@/lib/bootstrap/PlayerProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import * as SecureStorage from "@/lib/secureStorage";
-import i18n from "@/lib/i18n/i18n";
+import i18n, { LANGUAGE_STORE_KEY } from "@/lib/i18n/i18n";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
@@ -57,6 +57,7 @@ function LanguagePicker() {
                   ]}
                   onPress={() => {
                     i18n.changeLanguage(code);
+                    SecureStorage.setItemAsync(LANGUAGE_STORE_KEY, code);
                     setOpen(false);
                   }}
                 >

@@ -3,7 +3,7 @@ import { createContext, FC, PropsWithChildren, useContext } from "react";
 import { useTranslation } from "react-i18next";
 import { Query } from "react-native-appwrite";
 import { DATABASE_ID, tablesDB } from "../appwrite";
-import { EMPTY } from "../empty";
+import { EMPTY } from "../utils";
 
 export type Tournament = {
   locale: "en" | "de";

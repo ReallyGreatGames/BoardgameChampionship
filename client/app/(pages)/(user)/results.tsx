@@ -239,6 +239,7 @@ export default function ResultsPage() {
   const isSubmitted = existingResult?.submitted ?? false;
   const anySigned = signatureIds.some(Boolean);
   const signatureCount = signatureIds.filter(Boolean).length;
+  const twoSigned = signatureCount >= 2;
   const hasNote = note.trim().length > 0;
 
   const allPlayersSet = players.every((p) => p !== "");
@@ -398,14 +399,14 @@ export default function ResultsPage() {
                   value={players[i]}
                   onChange={(v) => setPlayer(i, v)}
                   takenValues={takenByOthers}
-                  disabled={isSubmitted || anySigned}
+                  disabled={isSubmitted || twoSigned}
                   colors={colors}
                   t={t}
                 />
 
                 <View
-                  style={[styles.scoreInputWrapper, (isSubmitted || anySigned) && styles.inputDisabled]}
-                  pointerEvents={isSubmitted || anySigned ? "none" : "auto"}
+                  style={[styles.scoreInputWrapper, (isSubmitted || twoSigned) && styles.inputDisabled]}
+                  pointerEvents={isSubmitted || twoSigned ? "none" : "auto"}
                 >
                   <TextInput
                     style={[styles.input, styles.scoreInput]}
