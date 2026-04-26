@@ -125,6 +125,16 @@ const translations = {
       confirm: "Entfernen",
       cancel: "Abbrechen",
     },
+    customTimer: "Benutzerdefinierter Timer",
+    customTimerModal: {
+      title: "Benutzerdefinierter Timer",
+      durationField: "Gesamtdauer (min)",
+      durationPlaceholder: "z.B. 60",
+      directionField: "Zählrichtung",
+      directionDown: "Rückwärts",
+      directionUp: "Vorwärts",
+      save: "Anwenden & Zurücksetzen",
+    },
   },
   tableOverview: {
     noActiveSchedule: "Kein aktiver Zeitplaneintrag",

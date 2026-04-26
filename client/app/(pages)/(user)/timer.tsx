@@ -1,5 +1,6 @@
 import { useScreenOrientation } from "@/lib/bootstrap/ScreenOrientationProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
+import { CustomTimerModal } from "@/lib/components/CustomTimerModal";
 import { useDialog } from "@/lib/components/Dialog";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-store";
@@ -93,9 +94,19 @@ export default function TimerPage() {
     () => timerSettingsStore.collection.find((g) => g.$id === params.gameId),
     [timerSettingsStore.collection, params.gameId]
   );
+
+  // Find the canonical timer document for this table+game in the real-time collection
+  const existingTimer = useMemo(
+    () => timerStore.collection.find(
+      (t) => t.table === TABLE && resolveGameId(t.games) === (params.gameId ?? null)
+    ),
+    [timerStore.collection, params.gameId]
+  );
+
   const playerCount = 4;
-  const totalSeconds = timerSettings ? (timerSettings.durationMinutesTotal * 60) / playerCount : DEFAULT_SECONDS;
-  const direction = timerSettings?.direction ?? "down";
+  const effectiveDuration = existingTimer?.durationMinutesTotal ?? timerSettings?.durationMinutesTotal;
+  const totalSeconds = effectiveDuration ? (effectiveDuration * 60) / playerCount : DEFAULT_SECONDS;
+  const direction = existingTimer?.direction ?? timerSettings?.direction ?? "down";
 
   const [times, setTimes] = useState<number[]>(() =>
     Array(playerCount).fill(totalSeconds)
@@ -106,14 +117,6 @@ export default function TimerPage() {
   if (activeIdx !== null) timerStartedRef.current = true;
 
   const timerDocIdRef = useRef<string | null>(null);
-
-  // Find the canonical timer document for this table+game in the real-time collection
-  const existingTimer = useMemo(
-    () => timerStore.collection.find(
-      (t) => t.table === TABLE && resolveGameId(t.games) === (params.gameId ?? null)
-    ),
-    [timerStore.collection, params.gameId]
-  );
 
   // On every real-time update: adopt doc ID, sync active player, paused state and times
   useEffect(() => {
@@ -182,6 +185,7 @@ export default function TimerPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [bellLoading, setBellLoading] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [customTimerOpen, setCustomTimerOpen] = useState(false);
 
   const bell = useMemo(
     () => tableBellStore.collection.find((x) => x.table === TABLE),
@@ -308,6 +312,39 @@ export default function TimerPage() {
     saveState(defaultTimes, 0, true);
     setMenuOpen(false);
   };
+
+  const handleSaveCustomTimer = useCallback(async (durationMinutes: number, dir: "up" | "down") => {
+    const newTotalSeconds = (durationMinutes * 60) / playerCount;
+    const defaultTimes = Array(playerCount).fill(newTotalSeconds);
+    timerStartedRef.current = false;
+    setTimes(defaultTimes);
+    setActiveIdx(0);
+    setPaused(true);
+    depleteAnims.current.forEach((anim) => anim.setValue(0));
+
+    const id = timerDocIdRef.current;
+    if (id) {
+      await timerStore.update({
+        $id: id,
+        durationMinutesTotal: durationMinutes,
+        direction: dir,
+        playerTimes: defaultTimes,
+        activePlayerTimer: 0 as any,
+        paused: true,
+      }, true);
+    } else {
+      const doc = await timerStore.add({
+        table: TABLE,
+        games: params.gameId ?? null,
+        durationMinutesTotal: durationMinutes,
+        direction: dir,
+        playerTimes: defaultTimes,
+        activePlayerTimer: 0,
+        paused: true,
+      });
+      if (doc) timerDocIdRef.current = doc.$id;
+    }
+  }, [timerStore, params.gameId, playerCount]);
 
   const handleToggleBell = async () => {
     try {
@@ -505,6 +542,16 @@ export default function TimerPage() {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
             <MenuButton
+              icon="time-outline"
+              label={t("customTimer")}
+              color={colors.text}
+              onPress={() => { setMenuOpen(false); setCustomTimerOpen(true); }}
+              colors={colors}
+            />
+
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            <MenuButton
               icon="close-outline"
               label={t("closeTimer")}
               color={colors.error}
@@ -514,6 +561,14 @@ export default function TimerPage() {
           </View>
         </Pressable>
       )}
+
+      <CustomTimerModal
+        visible={customTimerOpen}
+        onClose={() => setCustomTimerOpen(false)}
+        initialDuration={existingTimer?.durationMinutesTotal ?? timerSettings?.durationMinutesTotal}
+        initialDirection={existingTimer?.direction ?? timerSettings?.direction}
+        onSave={handleSaveCustomTimer}
+      />
     </View>
   );
 }

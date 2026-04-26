@@ -108,11 +108,11 @@ const translations = {
   timer: {
     paused: "PAUSED",
     timeOut: "TIME OUT",
-    ringBell: "Ring table bell",
+    ringBell: "Ring Table Bell",
     bellRinging: "Bell ringing…",
     bellAcknowledged: "Bell acknowledged",
-    resetTimers: "Reset timers",
-    closeTimer: "Close timer",
+    resetTimers: "Reset Timer",
+    closeTimer: "Close Timer",
     confirmRing: {
       title: "Ring Table Bell",
       message: "Alert the judges that your table needs assistance?",
@@ -124,6 +124,16 @@ const translations = {
       message: "Clear the table bell notification?",
       confirm: "Dismiss",
       cancel: "Cancel",
+    },
+    customTimer: "Custom Timer",
+    customTimerModal: {
+      title: "Custom Timer",
+      durationField: "Total Duration (min)",
+      durationPlaceholder: "e.g. 60",
+      directionField: "Count Direction",
+      directionDown: "Count Down",
+      directionUp: "Count Up",
+      save: "Apply & Reset",
     },
   },
   tableOverview: {

@@ -6,4 +6,6 @@ export type Timer = {
   games: string | null;
   activePlayerTimer: number | null;
   paused?: boolean;
+  durationMinutesTotal?: number;
+  direction?: "up" | "down";
 } & Models.Document;
