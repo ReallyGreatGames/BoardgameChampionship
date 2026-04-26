@@ -18,6 +18,9 @@ const translations = {
       activeBells: "Active Calls",
       game: "Game",
       rules: "Rules",
+      timer: "Timer",
+      results: "Results",
+      signature: "Signature"
     },
     dmmib: "DMMiB",
     europemasters: "Europe Masters",
@@ -136,10 +139,42 @@ const translations = {
       save: "Apply & Reset",
     },
   },
+  results: {
+    title: "Results",
+    playerPlaceholder: "Player",
+    playerValue: "Player {n}",
+    scorePlaceholder: "Score",
+    note: "Note",
+    notePlaceholder: "Add a note...",
+    save: "Save",
+    submit: "Submit",
+    submitted: "Submitted",
+    hintNote: "A note is required before submitting.",
+    hintSignatures: "At least 3 signatures required to submit.",
+    confirmSubmit: {
+      title: "Submit Results",
+      message: "Submit the results? This cannot be undone.",
+      confirm: "Submit",
+      cancel: "Cancel",
+    },
+    confirmOverwrite: {
+      title: "Overwrite Results",
+      message: "Your changes differ from the saved record. Overwrite the saved data?",
+      confirm: "Overwrite",
+      cancel: "Discard",
+    },
+  },
   tableOverview: {
     noActiveSchedule: "No active schedule item",
     noGame: "Active schedule item has no game",
     noTimers: "No active timers for this game",
+  },
+  signature: {
+    title: "Signature",
+    subtitle: "Place {n} — sign below",
+    placeholder: "Sign here…",
+    clear: "Clear",
+    save: "Save Signature",
   },
   components: {
     schedule: {

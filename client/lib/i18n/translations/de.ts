@@ -18,6 +18,9 @@ const translations = {
       activeBells: "Aktive Klingeln",
       game: "Spiel",
       rules: "Regeln",
+      timer: "Timer",
+      results: "Ergebnisse",
+      signature: "Unterschrift"
     },
     dmmib: "DMMiB",
     europemasters: "Europe Masters",
@@ -136,10 +139,42 @@ const translations = {
       save: "Anwenden & Zurücksetzen",
     },
   },
+  results: {
+    title: "Ergebnisse",
+    playerPlaceholder: "Spieler:in",
+    playerValue: "Spieler:in {n}",
+    scorePlaceholder: "Punkte",
+    note: "Notiz",
+    notePlaceholder: "Notiz hinzufügen...",
+    save: "Speichern",
+    submit: "Einreichen",
+    submitted: "Eingereicht",
+    hintNote: "Eine Notiz ist zum Einreichen erforderlich.",
+    hintSignatures: "Mindestens 3 Unterschriften zum Einreichen erforderlich.",
+    confirmSubmit: {
+      title: "Ergebnisse einreichen",
+      message: "Ergebnisse einreichen? Dies kann nicht rückgängig gemacht werden.",
+      confirm: "Einreichen",
+      cancel: "Abbrechen",
+    },
+    confirmOverwrite: {
+      title: "Ergebnisse überschreiben",
+      message: "Deine Änderungen weichen vom gespeicherten Eintrag ab. Gespeicherte Daten überschreiben?",
+      confirm: "Überschreiben",
+      cancel: "Verwerfen",
+    },
+  },
   tableOverview: {
     noActiveSchedule: "Kein aktiver Zeitplaneintrag",
     noGame: "Aktiver Zeitplaneintrag hat kein Spiel",
     noTimers: "Keine aktiven Timer für dieses Spiel",
+  },
+  signature: {
+    title: "Unterschrift",
+    subtitle: "Platz {n} — hier unterschreiben",
+    placeholder: "Hier unterschreiben…",
+    clear: "Löschen",
+    save: "Unterschrift speichern",
   },
   components: {
     schedule: {

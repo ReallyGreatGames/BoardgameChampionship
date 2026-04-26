@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useAuth } from "../auth";
 import { useTableBellNotifications } from "../notifications/useTableBellNotifications";
+import { useResultStore } from "../stores/appwrite/result-store";
 import { useRuleStore } from "../stores/appwrite/rule-store";
 import { useScheduleStore } from "../stores/appwrite/schedule-store";
 import { useTableBellStore } from "../stores/appwrite/table-bell-store";
@@ -27,7 +28,8 @@ export function RealTimeStoreProvider() {
     useTableBellStore,
     useRuleStore,
     useTimerStore,
-    useTimerSettingsStore
+    useTimerSettingsStore,
+    useResultStore,
   ];
 
   const adminInits: any[] = [

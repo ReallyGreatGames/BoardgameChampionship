@@ -30,7 +30,7 @@ const ACTION_BUTTONS: ActionButton[] = [
   { key: "lottery", icon: "shuffle", labelKey: "actions.lottery", onPress: (gameId) => { } },
   { key: "rules", icon: "book-outline", labelKey: "actions.rules", onPress: (gameId) => router.push(`/rules?gameId=${gameId}`) },
   { key: "timer", icon: "timer-outline", labelKey: "actions.timer", onPress: (gameId) => router.push(`/(pages)/(user)/timer?gameId=${gameId}`) },
-  { key: "results", icon: "trophy-outline", labelKey: "actions.results", onPress: (gameId) => { } },
+  { key: "results", icon: "trophy-outline", labelKey: "actions.results", onPress: (gameId) => router.push(`/(pages)/(user)/results?gameId=${gameId}`) },
 ];
 
 function formatElapsed(seconds: number) {
