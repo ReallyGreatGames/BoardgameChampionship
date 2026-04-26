@@ -3,6 +3,7 @@ import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BackButton } from "@/lib/components/BackButton";
 import { useResultStore } from "@/lib/stores/appwrite/result-store";
 import { inset } from "@/lib/theme/spacing";
+import { ui } from "@/lib/theme/ui";
 import { type } from "@/lib/theme/typography";
 import { Ionicons } from "@expo/vector-icons";
 import { File as FSFile, Paths } from "expo-file-system";
@@ -335,13 +336,13 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       alignItems: "center",
       justifyContent: "center",
       gap: 6,
-      backgroundColor: colors.primary,
-      borderRadius: 10,
+      backgroundColor: colors.accent,
+      borderRadius: ui.buttonRadius,
       paddingVertical: 14,
     },
     saveBtnText: {
       ...type.button,
-      color: "#fff",
+      color: colors.onAccent,
     },
     btnDisabled: {
       opacity: 0.4,

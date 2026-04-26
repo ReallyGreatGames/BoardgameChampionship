@@ -3,6 +3,9 @@ import { usePlayer, PLAYER_INFO_KEY } from "@/lib/bootstrap/PlayerProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import * as SecureStorage from "@/lib/secureStorage";
 import i18n, { LANGUAGE_STORE_KEY } from "@/lib/i18n/i18n";
+import { inset } from "@/lib/theme/spacing";
+import { ui } from "@/lib/theme/ui";
+import { type } from "@/lib/theme/typography";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
@@ -242,22 +245,13 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     container: {
       flex: 1,
       backgroundColor: colors.background,
-      padding: 24,
-      paddingTop: 64,
-    },
-    title: {
-      fontSize: 32,
-      fontWeight: "700",
-      color: colors.text,
-      marginBottom: 32,
+      padding: inset.screen,
+      paddingTop: inset.screenTop,
     },
     sectionLabel: {
-      fontSize: 11,
-      fontWeight: "700",
+      ...type.eyebrow,
       color: colors.textSecondary,
-      letterSpacing: 1.5,
-      textTransform: "uppercase",
-      marginBottom: 8,
+      marginBottom: inset.tight,
       marginLeft: 4,
     },
     card: {
@@ -282,11 +276,11 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       marginRight: 12,
     },
     rowLabel: {
-      fontSize: 16,
+      ...type.body,
       color: colors.text,
     },
     rowValue: {
-      fontSize: 14,
+      ...type.bodySmall,
       color: colors.textSecondary,
       flexShrink: 1,
       textAlign: "right",
@@ -309,13 +303,13 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       paddingHorizontal: 10,
     },
     comboboxText: {
-      fontSize: 14,
+      ...type.bodySmall,
       color: colors.text,
     },
     // Modal dropdown
     backdrop: {
       flex: 1,
-      backgroundColor: "rgba(0,0,0,0.6)",
+      backgroundColor: ui.backdropColor,
       justifyContent: "center",
       alignItems: "center",
     },
@@ -338,7 +332,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       backgroundColor: colors.surfaceHigh,
     },
     dropdownText: {
-      fontSize: 16,
+      ...type.body,
       color: colors.textSecondary,
     },
     dropdownTextActive: {

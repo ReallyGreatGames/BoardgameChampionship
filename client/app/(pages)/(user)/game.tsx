@@ -188,8 +188,8 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     container: {
       flex: 1,
       backgroundColor: colors.background,
-      padding: 24,
-      paddingTop: 32,
+      padding: inset.screen,
+      paddingTop: inset.group,
     },
     header: {
       marginBottom: inset.group,

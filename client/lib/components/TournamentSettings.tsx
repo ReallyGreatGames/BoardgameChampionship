@@ -312,7 +312,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     activeBadgeText: {
       ...type.eyebrow,
-      color: "#fff",
+      color: colors.onAccent,
       fontSize: 9,
     },
     divider: {
@@ -373,7 +373,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     saveButtonText: {
       ...type.button,
-      color: "#fff",
+      color: colors.onAccent,
       fontSize: 14,
     },
     errorText: {

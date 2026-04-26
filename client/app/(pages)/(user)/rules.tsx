@@ -1,23 +1,18 @@
-import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BackButton } from "@/lib/components/BackButton";
 import { RuleList } from "@/lib/components/RuleList";
+import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 
 export default function RulesPage() {
   const { gameId } = useLocalSearchParams<{ gameId: string }>();
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin } = useRequireAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-
-  useEffect(() => {
-    if (loading) return;
-    if (!user) router.replace("/(pages)/login");
-  }, [user, loading]);
 
   const handleBack = () => {
     if (gameId) router.replace(`/game?gameId=${gameId}`);

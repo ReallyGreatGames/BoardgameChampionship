@@ -5,6 +5,7 @@ import { TableBell } from "@/lib/models/table-bell";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
+import { formatElapsed } from "@/lib/utils";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -18,12 +19,6 @@ import {
   View,
 } from "react-native";
 
-function formatElapsed(startTime: string) {
-  const s = Math.floor((Date.now() - new Date(startTime).getTime()) / 1000);
-  const m = Math.floor(s / 60).toString().padStart(2, "0");
-  const sec = (s % 60).toString().padStart(2, "0");
-  return `${m}:${sec}`;
-}
 
 export default function ActiveBellsPage() {
   const { user, loading, isAdmin } = useAuth();
@@ -33,7 +28,7 @@ export default function ActiveBellsPage() {
   const tableBellStore = useTableBellStore();
   const { confirm } = useDialog();
   const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [, setTick] = useState(0);
+  const [now, setNow] = useState(Date.now);
 
   useEffect(() => {
     if (loading) return;
@@ -41,7 +36,7 @@ export default function ActiveBellsPage() {
   }, [loading, isAdmin]);
 
   useEffect(() => {
-    const id = setInterval(() => setTick((n) => n + 1), 1000);
+    const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -130,7 +125,7 @@ export default function ActiveBellsPage() {
                 </View>
 
                 <Text style={[styles.bellTimer, { color: bellColor }]}>
-                  {formatElapsed(bell.startTime)}
+                  {formatElapsed(bell.startTime, now)}
                 </Text>
               </TouchableOpacity>
             );

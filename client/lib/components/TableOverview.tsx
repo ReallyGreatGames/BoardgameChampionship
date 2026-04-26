@@ -1,52 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import { useTheme } from "../bootstrap/ThemeProvider";
 import type { Result } from "../models/result";
 import type { TableBell } from "../models/table-bell";
 import type { Timer } from "../models/timer";
 import { useResultStore } from "../stores/appwrite/result-store";
+import { formatElapsed, formatTime, resolveGameId, toNumberArray } from "../utils";
+import { SearchInput } from "./SearchInput";
 import { useScheduleStore } from "../stores/appwrite/schedule-store";
 import { useTableBellStore } from "../stores/appwrite/table-bell-store";
 import { useTimerStore } from "../stores/appwrite/timer-store";
 import { inset } from "../theme/spacing";
 import { type } from "../theme/typography";
 
-/** Normalizes playerTimes — real-time payloads may serialize arrays as JSON strings */
-function toNumberArray(value: unknown): number[] {
-  if (Array.isArray(value)) return value as number[];
-  if (typeof value === "string") {
-    try { return JSON.parse(value) as number[]; } catch { return []; }
-  }
-  return [];
-}
-
-/** Handles string, object, or array shapes Appwrite may return for relationship fields */
-function resolveGameId(ref: unknown): string | null {
-  if (!ref) return null;
-  if (typeof ref === "string") return ref;
-  if (Array.isArray(ref)) {
-    const first = ref[0];
-    if (!first) return null;
-    return typeof first === "string" ? first : (first as any).$id ?? null;
-  }
-  return (ref as any).$id ?? null;
-}
-
-function formatTime(s: number) {
-  const clamped = Math.max(0, s);
-  const m = Math.floor(clamped / 60).toString().padStart(2, "0");
-  const sec = (clamped % 60).toString().padStart(2, "0");
-  return `${m}:${sec}`;
-}
-
-function formatElapsed(startTime: string, now: number) {
-  const s = Math.floor((now - new Date(startTime).getTime()) / 1000);
-  const m = Math.floor(s / 60).toString().padStart(2, "0");
-  const sec = (s % 60).toString().padStart(2, "0");
-  return `${m}:${sec}`;
-}
 
 type TablePlayer = { team: string; playerNumber: number };
 type StaticTable = { id: number; gameId: string; players: TablePlayer[] };
@@ -245,26 +213,11 @@ export function TableOverview() {
     >
       <Text style={styles.gameLabel}>{activeSchedule.title}</Text>
 
-      <View style={styles.searchRow}>
-        <Ionicons name="search-outline" size={16} color={colors.textMuted} />
-        <TextInput
-          style={styles.searchInput}
-          value={search}
-          onChangeText={setSearch}
-          placeholder={t("searchPlaceholder")}
-          placeholderTextColor={colors.textPlaceholder}
-          returnKeyType="search"
-          clearButtonMode="while-editing"
-        />
-        {search.length > 0 && (
-          <TouchableOpacity
-            onPress={() => setSearch("")}
-            hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
-          >
-            <Ionicons name="close-circle" size={16} color={colors.textMuted} />
-          </TouchableOpacity>
-        )}
-      </View>
+      <SearchInput
+        value={search}
+        onChangeText={setSearch}
+        placeholder={t("searchPlaceholder")}
+      />
 
       <View style={styles.filtersRow}>
         <ToggleFilter<BellFilter>
@@ -406,24 +359,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       ...type.h2,
       color: colors.text,
       marginBottom: inset.tight,
-    },
-    searchRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 10,
-      paddingHorizontal: inset.card,
-      paddingVertical: 10,
-      gap: 8,
-      marginBottom: inset.tight,
-    },
-    searchInput: {
-      ...type.body,
-      color: colors.text,
-      flex: 1,
-      padding: 0,
     },
     filtersRow: {
       flexDirection: "row",

@@ -272,7 +272,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     buttonText: {
       ...type.button,
-      color: "#fff",
+      color: colors.onAccent,
     },
   });
 }

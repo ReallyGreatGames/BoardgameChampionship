@@ -1,9 +1,10 @@
-import { useAuth } from "@/lib/auth";
+import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BackButton } from "@/lib/components/BackButton";
 import { useDialog } from "@/lib/components/Dialog";
 import { useResultStore } from "@/lib/stores/appwrite/result-store";
 import { inset } from "@/lib/theme/spacing";
+import { ui } from "@/lib/theme/ui";
 import { type } from "@/lib/theme/typography";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -136,7 +137,7 @@ function makePickerStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     backdrop: {
       flex: 1,
-      backgroundColor: "rgba(0,0,0,0.55)",
+      backgroundColor: ui.backdropColor,
       justifyContent: "center",
       alignItems: "center",
       padding: inset.screen,
@@ -181,7 +182,7 @@ function makePickerStyles(colors: ReturnType<typeof useTheme>["colors"]) {
 
 export default function ResultsPage() {
   const { gameId } = useLocalSearchParams<{ gameId: string }>();
-  const { user, loading } = useAuth();
+  const { user, loading } = useRequireAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useTranslation(["results"]);
@@ -225,11 +226,6 @@ export default function ResultsPage() {
       setSignatureIds(padArray(existingResult.signatureIds ?? [], PLAYER_COUNT, ""));
     }
   }, [existingResult]));
-
-  useEffect(() => {
-    if (loading) return;
-    if (!user) router.replace("/(pages)/login");
-  }, [user, loading]);
 
   const handleBack = useCallback(() => {
     if (gameId) router.replace(`/game?gameId=${gameId}`);
@@ -676,13 +672,13 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       alignItems: "center",
       justifyContent: "center",
       gap: 6,
-      backgroundColor: colors.primary,
-      borderRadius: 10,
+      backgroundColor: colors.accent,
+      borderRadius: ui.buttonRadius,
       paddingVertical: 14,
     },
     submitBtnText: {
       ...type.button,
-      color: "#fff",
+      color: colors.onAccent,
     },
     submitBtnTextMuted: {
       color: colors.textMuted,

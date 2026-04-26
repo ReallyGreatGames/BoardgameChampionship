@@ -31,6 +31,7 @@ export const dark = {
   accent: "#e02883",
   error: "#f05252",
   success: "#4caf50",
+  onAccent: "#ffffff",  // text on accent/primary CTA buttons
 } as const;
 
 export const light = {
@@ -56,6 +57,7 @@ export const light = {
   accent: "#d61f7a",
   error: "#d63232",
   success: "#4caf50",
+  onAccent: "#ffffff",  // text on accent/primary CTA buttons
 } as const;
 
 /** Fallback static palette — prefer useTheme() from ThemeProvider for dynamic theming */

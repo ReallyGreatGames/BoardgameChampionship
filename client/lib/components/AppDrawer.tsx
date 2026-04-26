@@ -227,7 +227,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     badgeText: {
       ...type.eyebrow,
-      color: "#fff",
+      color: colors.onAccent,
       letterSpacing: 0,
     },
   });

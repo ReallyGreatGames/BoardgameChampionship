@@ -5,6 +5,7 @@ import { useDialog } from "@/lib/components/Dialog";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-store";
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
+import { ui } from "@/lib/theme/ui";
 import { type } from "@/lib/theme/typography";
 import { Ionicons } from "@expo/vector-icons";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
@@ -658,7 +659,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "#00000088",
+    backgroundColor: ui.backdropColor,
     justifyContent: "center",
     alignItems: "center",
   },

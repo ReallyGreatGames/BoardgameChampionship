@@ -641,7 +641,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     goToGameButtonText: {
       ...type.bodySmall,
-      color: "#fff",
+      color: colors.onAccent,
       fontWeight: "600",
     },
     // Game section
