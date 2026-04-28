@@ -47,6 +47,7 @@ function LanguagePicker() {
         transparent
         animationType="fade"
         onRequestClose={() => setOpen(false)}
+        supportedOrientations={["portrait"]}
       >
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
           <View style={styles.dropdown}>

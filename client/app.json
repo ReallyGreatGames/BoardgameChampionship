@@ -2,14 +2,18 @@
   "expo": {
     "name": "Boardgame Championship",
     "slug": "boardgame-championship",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "boardgamechampionship",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "games.reallygreat.bgchampion",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -50,7 +54,8 @@
         }
       ],
       [
-        "expo-screen-orientation", {
+        "expo-screen-orientation",
+        {
           "initialOrientation": "PORTRAIT"
         }
       ]
