@@ -1,8 +1,19 @@
 const translations = {
+  home: {
+    welcome: "Willkommen",
+    welcomeDescription: "Logge dich mit der PIN ein, die auf der Leinwand angezeigt wird.\nWähle danach dein Team und deine Spielernummer.",
+    login: "Zum Login",
+    now: "Jetzt",
+    upNext: "Danach",
+    goToGame: "Zum Spiel",
+    startsAt: "Beginnt um {{time}}",
+    noSchedule: "Kein aktiver Zeitplaneintrag",
+  },
   login: {
     login: "Einloggen",
     logout: "Ausloggen",
-    enterPin: "Pin eingeben",
+    enterPin: "PIN eingeben",
+    pinHint: "Deine PIN steht auf der Leinwand.",
     welcome: "Willkommen",
     password: "Passwort",
   },

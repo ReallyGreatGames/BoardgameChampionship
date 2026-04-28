@@ -150,6 +150,7 @@ export default function LoginScreen() {
             ) : (
               <View style={styles.pinContainer}>
                 <Text style={styles.pinLabel}>{t("enterPin")}</Text>
+                <Text style={styles.pinHint}>{t("pinHint")}</Text>
                 <TextInput
                   style={[
                     styles.input,
@@ -250,6 +251,10 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     pinLabel: {
       ...type.bodySmall,
       color: colors.textSecondary,
+    },
+    pinHint: {
+      ...type.caption,
+      color: colors.textMuted,
     },
     pinInput: {
       ...type.h2,

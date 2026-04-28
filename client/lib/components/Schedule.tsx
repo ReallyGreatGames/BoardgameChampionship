@@ -22,7 +22,7 @@ import { Schedule } from "../models/schedule";
 import { useScheduleStore } from "../stores/appwrite/schedule-store";
 import { inset } from "../theme/spacing";
 import { type } from "../theme/typography";
-import { deepClone } from "../utils";
+import { addMinutesToTime, deepClone } from "../utils";
 import { useDialog } from "./Dialog";
 import { ScheduleFormData, ScheduleItemModal } from "./ScheduleItemModal";
 import { Table } from "./Table";
@@ -30,14 +30,6 @@ import { TimerSettingsModal } from "./TimerSettingsModal";
 
 if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
-}
-
-function addMinutesToTime(time: string, minutes: number): string {
-  const [h, m] = time.split(":").map(Number);
-  const total = h * 60 + m + minutes;
-  const hh = Math.floor(total / 60) % 24;
-  const mm = total % 60;
-  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
 }
 
 // Animated.loop doesn't reset values between iterations, so we use a recursive
