@@ -11,6 +11,7 @@ import {
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useTheme } from "../bootstrap/ThemeProvider";
 import { inset } from "../theme/spacing";
+import { ui } from "../theme/ui";
 import { type } from "../theme/typography";
 
 export type DialogOptions = {
@@ -102,7 +103,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
   return StyleSheet.create({
     overlay: {
       flex: 1,
-      backgroundColor: "rgba(0,0,0,0.6)",
+      backgroundColor: ui.backdropColor,
       justifyContent: "center",
       alignItems: "center",
       padding: inset.screen,
@@ -153,7 +154,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     confirmLabel: {
       ...type.button,
-      color: "#fff",
+      color: colors.onAccent,
     },
   });
 }

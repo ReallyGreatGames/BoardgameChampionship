@@ -1,6 +1,6 @@
 import { BootstrapProvider } from "@/lib/bootstrap/BootstrapProvider";
-import { useTournament } from "@/lib/bootstrap/TournamentProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
+import { useTournament } from "@/lib/bootstrap/TournamentProvider";
 import { AppDrawer } from "@/lib/components/AppDrawer";
 import "@/lib/i18n/i18n";
 import { BarlowCondensed_600SemiBold } from "@expo-google-fonts/barlow-condensed/600SemiBold";
@@ -95,7 +95,15 @@ function AppNavigator() {
       />
       <Drawer.Screen
         name="(pages)/(user)/timer"
-        options={{ title: "Timer", drawerItemStyle: { display: "none" }, headerShown: false, swipeEnabled: false }}
+        options={{ title: t("entries.timer"), drawerItemStyle: { display: "none" }, headerShown: false, swipeEnabled: false }}
+      />
+      <Drawer.Screen
+        name="(pages)/(user)/results"
+        options={{ title: t("entries.results"), drawerItemStyle: { display: "none" }, headerShown: true, swipeEnabled: false }}
+      />
+      <Drawer.Screen
+        name="(pages)/(user)/signature"
+        options={{ title: t("entries.signature"), drawerItemStyle: { display: "none" }, headerShown: true, swipeEnabled: false }}
       />
     </Drawer>
   );

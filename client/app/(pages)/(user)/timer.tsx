@@ -1,14 +1,18 @@
 import { useScreenOrientation } from "@/lib/bootstrap/ScreenOrientationProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
-import { useGameStore } from "@/lib/stores/appwrite/game-store";
+import { CustomTimerModal } from "@/lib/components/CustomTimerModal";
+import { useDialog } from "@/lib/components/Dialog";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
+import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-store";
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
+import { ui } from "@/lib/theme/ui";
 import { type } from "@/lib/theme/typography";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { OrientationLock } from "expo-screen-orientation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Animated,
@@ -24,6 +28,25 @@ import {
 const DEFAULT_SECONDS = 10 * 60;
 const TABLE = 1; // TODO: pass via route params when table selection is implemented
 
+function resolveGameId(ref: unknown): string | null {
+  if (!ref) return null;
+  if (typeof ref === "string") return ref;
+  if (Array.isArray(ref)) {
+    const first = ref[0];
+    if (!first) return null;
+    return typeof first === "string" ? first : (first as any).$id ?? null;
+  }
+  return (ref as any).$id ?? null;
+}
+
+function toNumberArray(value: unknown): number[] {
+  if (Array.isArray(value)) return value as number[];
+  if (typeof value === "string") {
+    try { return JSON.parse(value) as number[]; } catch { return []; }
+  }
+  return [];
+}
+
 // Classic board game meeple colors — active (bright) and muted (visible but calm) per player
 const PLAYER_COLORS = [
   { active: "#ff4136", muted: "#a82a23" }, // red
@@ -31,6 +54,12 @@ const PLAYER_COLORS = [
   { active: "#00e676", muted: "#00894a" }, // green
   { active: "#ffd600", muted: "#b8960a" }, // yellow
 ] as const;
+
+function formatElapsed(seconds: number) {
+  const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+  const s = (seconds % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+}
 
 function formatTime(s: number) {
   const clamped = Math.max(0, s);
@@ -41,36 +70,44 @@ function formatTime(s: number) {
 
 export default function TimerPage() {
   const { colors } = useTheme();
+  const { t } = useTranslation(["timer"]);
+  const { confirm } = useDialog();
 
   const { width, height } = useWindowDimensions();
   const { forceOrientation, unlockOrientation } = useScreenOrientation();
   const params = useLocalSearchParams<{ gameId?: string }>();
   const tableBellStore = useTableBellStore();
-  const gameStore = useGameStore();
+  const timerSettingsStore = useTimerSettingsStore();
   const timerStore = useTimerStore();
-  const initTableBells = useTableBellStore((s) => s.init);
-  const initGame = useGameStore((s) => s.init);
 
   useFocusEffect(
     useCallback(() => {
       forceOrientation(OrientationLock.LANDSCAPE_RIGHT);
       activateKeepAwakeAsync();
-      initTableBells();
-      initGame();
       return () => {
         unlockOrientation().catch(console.error);
         deactivateKeepAwake();
       };
-    }, [forceOrientation, unlockOrientation, initTableBells, initGame])
+    }, [forceOrientation, unlockOrientation])
   );
 
-  const game = useMemo(
-    () => gameStore.collection.find((g) => g.$id === params.gameId),
-    [gameStore.collection, params.gameId]
+  const timerSettings = useMemo(
+    () => timerSettingsStore.collection.find((g) => g.$id === params.gameId),
+    [timerSettingsStore.collection, params.gameId]
   );
+
+  // Find the canonical timer document for this table+game in the real-time collection
+  const existingTimer = useMemo(
+    () => timerStore.collection.find(
+      (t) => t.table === TABLE && resolveGameId(t.games) === (params.gameId ?? null)
+    ),
+    [timerStore.collection, params.gameId]
+  );
+
   const playerCount = 4;
-  const totalSeconds = game ? (game.durationMinutesTotal * 60) / playerCount : DEFAULT_SECONDS;
-  const direction = game?.direction ?? "down";
+  const effectiveDuration = existingTimer?.durationMinutesTotal ?? timerSettings?.durationMinutesTotal;
+  const totalSeconds = effectiveDuration ? (effectiveDuration * 60) / playerCount : DEFAULT_SECONDS;
+  const direction = existingTimer?.direction ?? timerSettings?.direction ?? "down";
 
   const [times, setTimes] = useState<number[]>(() =>
     Array(playerCount).fill(totalSeconds)
@@ -82,40 +119,95 @@ export default function TimerPage() {
 
   const timerDocIdRef = useRef<string | null>(null);
 
-  const saveTimerTimes = useCallback(async (currentTimes: number[]) => {
-    if (!timerDocIdRef.current) return;
+  // On every real-time update: adopt doc ID, sync active player, paused state and times
+  useEffect(() => {
+    if (!existingTimer) return;
+    timerDocIdRef.current = existingTimer.$id;
+
+    setActiveIdx(existingTimer.activePlayerTimer ?? null);
+    setPaused(existingTimer.paused ?? false);
+
+    const remoteTimes = toNumberArray(existingTimer.playerTimes);
+    if (remoteTimes.length !== playerCount) return;
+    setTimes(remoteTimes);
+    remoteTimes.forEach((remoteTime, i) => {
+      depleteAnims.current[i].setValue(1 - Math.min(remoteTime, totalSeconds) / totalSeconds);
+    });
+  }, [existingTimer, playerCount, totalSeconds]);
+
+  // Single update call for all mutable timer state
+  const saveState = useCallback(async (
+    currentTimes: number[],
+    activePlayer: number | null,
+    isPaused: boolean,
+  ) => {
+    const id = timerDocIdRef.current;
+    if (!id) return;
     const ok = await timerStore.update({
-      $id: timerDocIdRef.current,
+      $id: id,
       playerTimes: currentTimes,
-      games: params.gameId ?? null,
-      table: TABLE,
+      activePlayerTimer: activePlayer as any,
+      paused: isPaused,
     }, true);
     if (!ok) {
-      // Row was deleted externally — create a fresh one
       timerDocIdRef.current = null;
-      const doc = await timerStore.add({
-        table: TABLE,
-        playerTimes: currentTimes,
-        games: params.gameId ?? null,
-      });
-      if (doc) timerDocIdRef.current = doc.$id;
+      const inCollection = timerStore.collection.find(
+        (t) => t.table === TABLE && resolveGameId(t.games) === (params.gameId ?? null)
+      );
+      if (inCollection) {
+        timerDocIdRef.current = inCollection.$id;
+        await timerStore.update({
+          $id: inCollection.$id,
+          playerTimes: currentTimes,
+          activePlayerTimer: activePlayer as any,
+          paused: isPaused,
+        }, true);
+      } else {
+        const doc = await timerStore.add({
+          table: TABLE,
+          playerTimes: currentTimes,
+          games: params.gameId ?? null,
+          activePlayerTimer: activePlayer,
+          paused: isPaused,
+        });
+        if (doc) timerDocIdRef.current = doc.$id;
+      }
     }
   }, [timerStore, params.gameId]);
 
-  // Sync times when game data loads/updates, but not once the timer has been started
+  // Reset to default when game settings change, unless the timer is already in use
   useEffect(() => {
     if (timerStartedRef.current) return;
     setTimes(Array(playerCount).fill(totalSeconds));
     depleteAnims.current.forEach((anim) => anim.setValue(0));
   }, [totalSeconds, playerCount]);
+
   const [paused, setPaused] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [bellLoading, setBellLoading] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [customTimerOpen, setCustomTimerOpen] = useState(false);
 
   const bell = useMemo(
     () => tableBellStore.collection.find((x) => x.table === TABLE),
     [tableBellStore.collection]
   );
+
+  const bellColor = bell?.acknowledgeTime
+    ? colors.success
+    : colors.accent;
+
+  useEffect(() => {
+    if (!bell) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const update = () =>
+      setElapsedSeconds(Math.floor((Date.now() - new Date(bell.startTime).getTime()) / 1000));
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [bell]);
 
   // One Animated.Value per player: 0 = full time remaining, 1 = depleted
   const depleteAnims = useRef(
@@ -125,8 +217,7 @@ export default function TimerPage() {
   const activeIdxRef = useRef(activeIdx);
   activeIdxRef.current = activeIdx;
 
-  // Pause when menu is open
-  const effectivelyPaused = paused || menuOpen;
+  const effectivelyPaused = paused;
 
   useEffect(() => {
     if (activeIdx === null || effectivelyPaused) return;
@@ -163,30 +254,41 @@ export default function TimerPage() {
   const handlePress = (idx: number) => {
     if (times[idx] <= 0) return;
     if (activeIdx === idx) {
-      if (!paused) {
-        // Pausing: save current times and snap depletion animation
-        saveTimerTimes(times);
+      const newPaused = !paused;
+      if (newPaused) {
+        // Going to paused: snap depletion animation to exact position
         depleteAnims.current[idx].stopAnimation();
         depleteAnims.current[idx].setValue(1 - times[idx] / totalSeconds);
       }
-      setPaused((p) => !p);
+      setPaused(newPaused);
+      saveState(times, idx, newPaused);
     } else {
       if (!timerStartedRef.current) {
         // First/re-start: reuse existing row or create a new one
         if (timerDocIdRef.current) {
-          saveTimerTimes(times);
+          saveState(times, idx, false);
         } else {
-          timerStore.add({
-            table: TABLE,
-            playerTimes: times,
-            games: params.gameId ?? null,
-          }).then((doc) => {
-            if (doc) timerDocIdRef.current = doc.$id;
-          });
+          // Guard: check store collection before creating to avoid duplicates
+          const inCollection = timerStore.collection.find(
+            (t) => t.table === TABLE && resolveGameId(t.games) === (params.gameId ?? null)
+          );
+          if (inCollection) {
+            timerDocIdRef.current = inCollection.$id;
+            saveState(times, idx, false);
+          } else {
+            timerStore.add({
+              table: TABLE,
+              playerTimes: times,
+              games: params.gameId ?? null,
+              activePlayerTimer: idx,
+              paused: false,
+            }).then((doc) => {
+              if (doc) timerDocIdRef.current = doc.$id;
+            });
+          }
         }
       } else if (activeIdx !== null) {
-        // Player switch: save previous player's time
-        saveTimerTimes(times);
+        saveState(times, idx, false);
       }
       setActiveIdx(idx);
       setPaused(false);
@@ -194,8 +296,6 @@ export default function TimerPage() {
   };
 
   const handleOpenMenu = () => {
-    // Menu open acts as a pause: save times
-    if (activeIdx !== null && !paused) saveTimerTimes(times);
     setMenuOpen(true);
   };
 
@@ -204,31 +304,83 @@ export default function TimerPage() {
   };
 
   const handleReset = () => {
+    const defaultTimes = Array(playerCount).fill(totalSeconds);
     timerStartedRef.current = false;
-    setTimes(Array(playerCount).fill(totalSeconds));
-    setActiveIdx(null);
-    setPaused(false);
-    depleteAnims.current.forEach((anim) => {
-      anim.setValue(0);
-    });
+    setTimes(defaultTimes);
+    setActiveIdx(0);
+    setPaused(true);
+    depleteAnims.current.forEach((anim) => anim.setValue(0));
+    saveState(defaultTimes, 0, true);
     setMenuOpen(false);
   };
 
-  const handleRingBell = async () => {
-    if (bell) return; // already ringing
+  const handleSaveCustomTimer = useCallback(async (durationMinutes: number, dir: "up" | "down") => {
+    const newTotalSeconds = (durationMinutes * 60) / playerCount;
+    const defaultTimes = Array(playerCount).fill(newTotalSeconds);
+    timerStartedRef.current = false;
+    setTimes(defaultTimes);
+    setActiveIdx(0);
+    setPaused(true);
+    depleteAnims.current.forEach((anim) => anim.setValue(0));
+
+    const id = timerDocIdRef.current;
+    if (id) {
+      await timerStore.update({
+        $id: id,
+        durationMinutesTotal: durationMinutes,
+        direction: dir,
+        playerTimes: defaultTimes,
+        activePlayerTimer: 0 as any,
+        paused: true,
+      }, true);
+    } else {
+      const doc = await timerStore.add({
+        table: TABLE,
+        games: params.gameId ?? null,
+        durationMinutesTotal: durationMinutes,
+        direction: dir,
+        playerTimes: defaultTimes,
+        activePlayerTimer: 0,
+        paused: true,
+      });
+      if (doc) timerDocIdRef.current = doc.$id;
+    }
+  }, [timerStore, params.gameId, playerCount]);
+
+  const handleToggleBell = async () => {
     try {
-      setBellLoading(true);
-      await tableBellStore.add({ table: TABLE, startTime: new Date().toISOString() });
+      if (bell) {
+        const ok = await confirm({
+          title: t("confirmDismiss.title"),
+          message: t("confirmDismiss.message"),
+          confirmLabel: t("confirmDismiss.confirm"),
+          cancelLabel: t("confirmDismiss.cancel"),
+          destructive: true,
+        });
+        if (!ok) return;
+        setBellLoading(true);
+        await tableBellStore.delete(bell);
+      } else {
+        const ok = await confirm({
+          title: t("confirmRing.title"),
+          message: t("confirmRing.message"),
+          confirmLabel: t("confirmRing.confirm"),
+          cancelLabel: t("confirmRing.cancel"),
+        });
+        if (!ok) return;
+        setBellLoading(true);
+        await tableBellStore.add({ table: TABLE, startTime: new Date().toISOString() });
+      }
+      setMenuOpen(false);
     } finally {
       setBellLoading(false);
-      setMenuOpen(false);
     }
   };
 
   const renderCell = (idx: number) => {
     const timeLeft = times[idx];
     const isRunning = activeIdx === idx && !effectivelyPaused;
-    const isPausedHere = activeIdx === idx && paused && !menuOpen;
+    const isPausedHere = activeIdx === idx && paused;
     const isDepleted = timeLeft <= 0;
     const rotation = rotations[idx] ?? "0deg";
 
@@ -288,12 +440,12 @@ export default function TimerPage() {
           )}
           {isPausedHere && (
             <Text style={[type.eyebrow, { color: colors.textMuted, marginTop: 4 }]}>
-              PAUSED
+              {t("paused")}
             </Text>
           )}
           {isDepleted && (
             <Text style={[type.eyebrow, { color: colors.error, marginTop: 4 }]}>
-              TIME OUT
+              {t("timeOut")}
             </Text>
           )}
         </View>
@@ -316,17 +468,43 @@ export default function TimerPage() {
         </View>
       </View>
 
-      {/* Center menu trigger */}
+      {/* Center menu trigger + bell badge */}
       <View style={styles.centerOverlay} pointerEvents="box-none">
         <Pressable
           style={[
             styles.menuTrigger,
             { backgroundColor: colors.surfaceHigh + "ee", borderColor: colors.border },
+            bell && !bell.acknowledgeTime && { borderColor: colors.accent },
+            bell?.acknowledgeTime && { borderColor: colors.success },
           ]}
           onPress={handleOpenMenu}
         >
           <Ionicons name="ellipsis-horizontal" size={16} color={colors.textSecondary} />
         </Pressable>
+
+        {bell && (
+          <View style={[
+            styles.bellBadge,
+            {
+              backgroundColor: colors.surface,
+              borderColor: bell.acknowledgeTime ? colors.success : colors.accent,
+            },
+          ]}>
+            <View style={styles.bellBadgeIcons}>
+              {bell.acknowledgeTime && (
+                <Ionicons name="walk-outline" size={10} color={bellColor} />
+              )}
+              <Ionicons
+                name={bell.acknowledgeTime ? "notifications-off-outline" : "notifications-outline"}
+                size={12}
+                color={bellColor}
+              />
+            </View>
+            <Text style={[styles.bellBadgeTime, { color: bellColor }]}>
+              {formatElapsed(elapsedSeconds)}
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Menu overlay — in-tree to avoid Modal/Drawer conflicts */}
@@ -339,15 +517,15 @@ export default function TimerPage() {
             ]}
           >
             <Text style={[type.eyebrow, { color: colors.textMuted, marginBottom: 8, paddingHorizontal: 20, paddingTop: 8 }]}>
-              PAUSED
+              {t("paused")}
             </Text>
 
             <MenuButton
-              icon="notifications-outline"
-              label={bell ? "Bell ringing…" : "Ring table bell"}
-              color={bell ? colors.textMuted : colors.text}
-              onPress={handleRingBell}
-              disabled={!!bell || bellLoading}
+              icon={bell ? "notifications-off-outline" : "notifications-outline"}
+              label={bell?.acknowledgeTime ? t("bellAcknowledged") : bell ? t("bellRinging") : t("ringBell")}
+              color={bell?.acknowledgeTime ? colors.success : bell ? colors.accent : colors.text}
+              onPress={handleToggleBell}
+              disabled={bellLoading}
               loading={bellLoading}
               colors={colors}
             />
@@ -356,7 +534,7 @@ export default function TimerPage() {
 
             <MenuButton
               icon="refresh-outline"
-              label="Reset timers"
+              label={t("resetTimers")}
               color={colors.text}
               onPress={handleReset}
               colors={colors}
@@ -365,8 +543,18 @@ export default function TimerPage() {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
             <MenuButton
+              icon="time-outline"
+              label={t("customTimer")}
+              color={colors.text}
+              onPress={() => { setMenuOpen(false); setCustomTimerOpen(true); }}
+              colors={colors}
+            />
+
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            <MenuButton
               icon="close-outline"
-              label="Close timer"
+              label={t("closeTimer")}
               color={colors.error}
               onPress={() => { setMenuOpen(false); router.replace(params.gameId ? `/(pages)/(user)/game?gameId=${params.gameId}` : "/(pages)/(user)/schedule"); }}
               colors={colors}
@@ -374,6 +562,14 @@ export default function TimerPage() {
           </View>
         </Pressable>
       )}
+
+      <CustomTimerModal
+        visible={customTimerOpen}
+        onClose={() => setCustomTimerOpen(false)}
+        initialDuration={existingTimer?.durationMinutesTotal ?? timerSettings?.durationMinutesTotal}
+        initialDirection={existingTimer?.direction ?? timerSettings?.direction}
+        onSave={handleSaveCustomTimer}
+      />
     </View>
   );
 }
@@ -463,7 +659,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "#00000088",
+    backgroundColor: ui.backdropColor,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -486,5 +682,25 @@ const styles = StyleSheet.create({
   divider: {
     height: StyleSheet.hairlineWidth,
     marginHorizontal: 20,
+  },
+  bellBadge: {
+    marginTop: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  bellBadgeIcons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  bellBadgeTime: {
+    fontFamily: "BarlowCondensed_700Bold",
+    fontSize: 11,
+    letterSpacing: 0.5,
   },
 });

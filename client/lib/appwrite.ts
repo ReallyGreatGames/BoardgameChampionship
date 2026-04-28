@@ -1,4 +1,4 @@
-import { Account, Client, TablesDB } from "react-native-appwrite";
+import { Account, Client, ID, Storage, TablesDB } from "react-native-appwrite";
 
 const client = new Client()
   .setEndpoint(process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT!)
@@ -7,9 +7,10 @@ const client = new Client()
 
 const account = new Account(client);
 const tablesDB = new TablesDB(client);
+const storage = new Storage(client);
 
 export const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
+export const SIGNATURES_BUCKET_ID = "signatures";
 
-
-export { account, client, tablesDB };
+export { account, client, ID, storage, tablesDB };
 

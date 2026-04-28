@@ -6,7 +6,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -17,6 +16,7 @@ import { inset } from "../theme/spacing";
 import { type } from "../theme/typography";
 import { useDialog } from "./Dialog";
 import { RuleFormData, RuleModal, typeColor } from "./RuleModal";
+import { SearchInput } from "./SearchInput";
 
 const RULE_TYPES: RuleType[] = ["change", "addition", "clarification"];
 
@@ -116,22 +116,12 @@ export function RuleList({ gameId, isAdmin }: Props) {
         onSave={handleSave}
       />
 
-      <View style={styles.searchRow}>
-        <Ionicons name="search-outline" size={16} color={colors.textMuted} />
-        <TextInput
-          style={styles.searchInput}
+      <View style={styles.searchWrapper}>
+        <SearchInput
           value={search}
           onChangeText={setSearch}
           placeholder={t("search")}
-          placeholderTextColor={colors.textPlaceholder}
-          returnKeyType="search"
-          clearButtonMode="while-editing"
         />
-        {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch("")} hitSlop={8}>
-            <Ionicons name="close-circle" size={16} color={colors.textMuted} />
-          </TouchableOpacity>
-        )}
       </View>
 
       <ScrollView
@@ -213,23 +203,8 @@ export function RuleList({ gameId, isAdmin }: Props) {
 
 function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
   return StyleSheet.create({
-    searchRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 10,
-      paddingHorizontal: inset.card,
-      paddingVertical: 10,
-      gap: 8,
+    searchWrapper: {
       marginBottom: inset.list,
-    },
-    searchInput: {
-      ...type.body,
-      color: colors.text,
-      flex: 1,
-      padding: 0,
     },
     list: {
       paddingBottom: 88,
