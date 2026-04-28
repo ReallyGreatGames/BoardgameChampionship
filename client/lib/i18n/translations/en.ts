@@ -230,6 +230,7 @@ const translations = {
         descriptionPlaceholder: "Optional details...",
         gameIdField: "Game ID",
         gameIdPlaceholder: "Optional",
+        allowUserChangeField: "Allow Team / Player Change",
         validationStartTime: "Use HH:MM format",
         validationDuration: "Must be a positive number",
         actionTimer: "Default Timer",

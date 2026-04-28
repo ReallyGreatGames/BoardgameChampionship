@@ -3,6 +3,7 @@ import { usePlayer, PLAYER_INFO_KEY } from "@/lib/bootstrap/PlayerProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import * as SecureStorage from "@/lib/secureStorage";
 import i18n, { LANGUAGE_STORE_KEY } from "@/lib/i18n/i18n";
+import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
 import { inset } from "@/lib/theme/spacing";
 import { ui } from "@/lib/theme/ui";
 import { type } from "@/lib/theme/typography";
@@ -90,8 +91,15 @@ export default function SettingsScreen() {
   const { user, logout } = useAuth();
   const { player } = usePlayer();
   const { colors, isDark, toggleTheme } = useTheme();
+  const scheduleCollection = useScheduleStore((s) => s.collection);
 
   const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  const activeItem = useMemo(
+    () => scheduleCollection.find((s) => s.isActive),
+    [scheduleCollection],
+  );
+  const canChangeUser = !player || activeItem?.allowUserChange !== false;
 
   async function handleDebugReset() {
     Alert.alert(
@@ -210,29 +218,31 @@ export default function SettingsScreen() {
                 </View>
               </>
             )}
-            <Pressable
-              style={[styles.row, player && styles.rowBorderTop]}
-              onPress={() =>
-                router.push(
-                  "/(pages)/(team-player)/choose-your-character?from=settings",
-                )
-              }
-            >
-              <View style={styles.rowLeft}>
+            {canChangeUser && (
+              <Pressable
+                style={[styles.row, player && styles.rowBorderTop]}
+                onPress={() =>
+                  router.push(
+                    "/(pages)/(team-player)/choose-your-character?from=settings",
+                  )
+                }
+              >
+                <View style={styles.rowLeft}>
+                  <Ionicons
+                    name="people-outline"
+                    size={20}
+                    color={colors.textMuted}
+                    style={styles.rowIcon}
+                  />
+                  <Text style={styles.rowLabel}>{t("settings:changeTeam")}</Text>
+                </View>
                 <Ionicons
-                  name="people-outline"
-                  size={20}
+                  name="chevron-forward"
+                  size={18}
                   color={colors.textMuted}
-                  style={styles.rowIcon}
                 />
-                <Text style={styles.rowLabel}>{t("settings:changeTeam")}</Text>
-              </View>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={colors.textMuted}
-              />
-            </Pressable>
+              </Pressable>
+            )}
           </View>
         </>
       )}
