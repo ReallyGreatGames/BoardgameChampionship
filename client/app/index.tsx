@@ -65,7 +65,12 @@ export default function Index() {
   }, [user, loading, isAdmin, isPinVerified, routeDeterministic]);
 
   if (!user) {
-    return <WelcomeScreen onLoginPress={() => navigate("/(pages)/login")} />;
+    return (
+      <WelcomeScreen
+        onLoginPress={() => navigate("/(pages)/login")}
+        onFaqPress={() => navigate("/(pages)/info")}
+      />
+    );
   }
 
   return (

@@ -12,7 +12,7 @@ i18n.use(initReactI18next).init({
     de: german,
     en: english,
   },
-  lng: "en",
+  lng: "de",
 });
 
 getItemAsync(LANGUAGE_STORE_KEY).then((lang) => {

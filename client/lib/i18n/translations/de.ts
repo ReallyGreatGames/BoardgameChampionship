@@ -1,8 +1,10 @@
 const translations = {
   home: {
     welcome: "Willkommen",
-    welcomeDescription: "Logge dich mit der PIN ein, die auf der Leinwand angezeigt wird.\nWähle danach dein Team und deine Spielernummer.",
+    welcomeDescription:
+      "Logge dich mit der PIN ein, die auf der Leinwand angezeigt wird.\nWähle danach dein Team und deine Spielernummer.",
     login: "Zum Login",
+    faqLink: "Fragen? FAQ ansehen",
     now: "Jetzt",
     upNext: "Danach",
     goToGame: "Zum Spiel",
@@ -23,7 +25,7 @@ const translations = {
       home: "Startseite",
       dashboard: "Dashboard",
       settings: "Einstellungen",
-      info: "Informationen",
+      info: "FAQ",
       chooseYourCharacter: "Team auswählen",
       schedule: "Zeitplan",
       activeBells: "Aktive Klingeln",
@@ -31,7 +33,7 @@ const translations = {
       rules: "Regeln",
       timer: "Timer",
       results: "Ergebnisse",
-      signature: "Unterschrift"
+      signature: "Unterschrift",
     },
     dmmib: "DMMiB",
     europemasters: "Europe Masters",
@@ -164,13 +166,15 @@ const translations = {
     hintSignatures: "Mindestens 3 Unterschriften zum Einreichen erforderlich.",
     confirmSubmit: {
       title: "Ergebnisse einreichen",
-      message: "Ergebnisse einreichen? Dies kann nicht rückgängig gemacht werden.",
+      message:
+        "Ergebnisse einreichen? Dies kann nicht rückgängig gemacht werden.",
       confirm: "Einreichen",
       cancel: "Abbrechen",
     },
     confirmOverwrite: {
       title: "Ergebnisse überschreiben",
-      message: "Deine Änderungen weichen vom gespeicherten Eintrag ab. Gespeicherte Daten überschreiben?",
+      message:
+        "Deine Änderungen weichen vom gespeicherten Eintrag ab. Gespeicherte Daten überschreiben?",
       confirm: "Überschreiben",
       cancel: "Verwerfen",
     },
@@ -269,7 +273,35 @@ const translations = {
       retry: "Erneut versuchen",
       empty: "Keine Turniere gefunden.",
     },
-  }
+  },
+  info: {
+    faq: [
+      {
+        q: "Wie melde ich mich an?",
+        a: "Gib die PIN ein, die auf der Leinwand im Veranstaltungsbereich angezeigt wird. Danach wählst du dein Team und deine Spielernummer.",
+      },
+      {
+        q: "Woher weiß ich, an welchen Tisch ich muss?",
+        a: 'Die Startseite zeigt den aktuellen Zeitplan. Tippe auf "Zum Spiel", um zur Übersicht deines Tisches zu navigieren.',
+      },
+      {
+        q: "Wie reiche ich Ergebnisse ein?",
+        a: 'Tippe im Spielbildschirm auf "Ergebnisse". Gib Platzierung und Punkte für alle Spieler am Tisch ein. Lasse jeden deiner Mitspieler unterschreiben und tippe dann auf "Einreichen".',
+      },
+      {
+        q: "Wie funktionieren Unterschriften?",
+        a: 'Tippe auf dem Ergebnisbildschirm auf das Stiftsymbol neben einer Platzierung. Der Spieler auf dieser Position unterschreibt direkt auf dem Bildschirm. Zum Einreichen sind mindestens 3 Unterschriften erforderlich. Wenn eine Unterschrift fehlt, erkläre im Feld "Notizen", warum das der Fall ist.',
+      },
+      {
+        q: "Was macht die Tischklingel?",
+        a: "Die Tischklingel benachrichtigt die Schiedsrichter:innen, dass dein Tisch Hilfe benötigt – z. B. bei Regelstreitigkeiten. Ein:e Schiedsrichter:in kommt zu deinem Tisch. Du wirst benachrichtigt, wenn ein:e Schiedsrichter:in auf dem Weg ist.",
+      },
+      {
+        q: "Wie funktioniert der Timer?",
+        a: 'Tippe im Spielbildschirm auf "Timer". Er zeigt die Spielzeit pro Spieler:in an. Die Zeit pro Spiel wird automatisch eingestellt. Bei Bedarf können diese Einstellungen überschrieben werden.',
+      },
+    ],
+  },
 };
 
 export default translations;

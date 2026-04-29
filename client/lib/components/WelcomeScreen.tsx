@@ -14,9 +14,10 @@ const LOGOS: Partial<Record<string, number>> = {
 
 interface Props {
   onLoginPress: () => void;
+  onFaqPress: () => void;
 }
 
-export function WelcomeScreen({ onLoginPress }: Props) {
+export function WelcomeScreen({ onLoginPress, onFaqPress }: Props) {
   const { colors } = useTheme();
   const { t } = useTranslation(["home"]);
   const { type: tournamentType } = useTournament();
@@ -62,6 +63,11 @@ export function WelcomeScreen({ onLoginPress }: Props) {
           ...type.button,
           color: colors.onAccent,
         },
+        faqLink: {
+          ...type.bodySmall,
+          color: colors.textMuted,
+          marginTop: space[4],
+        },
       }),
     [colors],
   );
@@ -74,6 +80,9 @@ export function WelcomeScreen({ onLoginPress }: Props) {
       <Pressable style={styles.loginButton} onPress={onLoginPress}>
         <Text style={styles.loginButtonText}>{t("login")}</Text>
         <Ionicons name="arrow-forward" size={16} color={colors.onAccent} />
+      </Pressable>
+      <Pressable onPress={onFaqPress}>
+        <Text style={styles.faqLink}>{t("faqLink")}</Text>
       </Pressable>
     </View>
   );

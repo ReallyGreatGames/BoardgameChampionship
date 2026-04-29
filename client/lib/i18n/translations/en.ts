@@ -1,8 +1,10 @@
 const translations = {
   home: {
     welcome: "Welcome",
-    welcomeDescription: "Log in with the PIN shown on the projector.\nThen choose your team and player number.",
+    welcomeDescription:
+      "Log in with the PIN shown on the projector.\nThen choose your team and player number.",
     login: "Log in",
+    faqLink: "Have questions? View FAQ",
     now: "Now",
     upNext: "Up Next",
     goToGame: "Go to Game",
@@ -23,7 +25,7 @@ const translations = {
       home: "Home",
       dashboard: "Dashboard",
       settings: "Settings",
-      info: "Info",
+      info: "FAQ",
       chooseYourCharacter: "Choose Team",
       schedule: "Schedule",
       activeBells: "Active Calls",
@@ -31,7 +33,7 @@ const translations = {
       rules: "Rules",
       timer: "Timer",
       results: "Results",
-      signature: "Signature"
+      signature: "Signature",
     },
     dmmib: "DMMiB",
     europemasters: "Europe Masters",
@@ -170,7 +172,8 @@ const translations = {
     },
     confirmOverwrite: {
       title: "Overwrite Results",
-      message: "Your changes differ from the saved record. Overwrite the saved data?",
+      message:
+        "Your changes differ from the saved record. Overwrite the saved data?",
       confirm: "Overwrite",
       cancel: "Discard",
     },
@@ -269,7 +272,35 @@ const translations = {
       retry: "Retry",
       empty: "No tournament rows found.",
     },
-  }
+  },
+  info: {
+    faq: [
+      {
+        q: "How do I log in?",
+        a: "Enter the PIN shown on the screen in the event area. Then choose your team and player number.",
+      },
+      {
+        q: "How do I know which table I need to go to?",
+        a: 'The home screen shows the current schedule. Tap "Go to Game" to navigate to your table overview.',
+      },
+      {
+        q: "How do I submit results?",
+        a: 'From the game screen, tap "Results". Enter the placement and score for all players at your table. Have each of your fellow players sign, then tap "Submit".',
+      },
+      {
+        q: "How do signatures work?",
+        a: 'On the results screen, tap the pencil icon next to a placement. The player in that position signs directly on the screen. At least 3 signatures are required to submit. If a signature is missing, explain why in the "Notes" field.',
+      },
+      {
+        q: "What does the Table Bell do?",
+        a: "The Table Bell notifies the judges that your table needs help — e.g. in case of a rule dispute. A judge will come to your table. You will be notified when a judge is on the way.",
+      },
+      {
+        q: "How does the timer work?",
+        a: 'From the game screen, tap "Timer". It shows the playing time per player. The time per game is set automatically. If needed, these settings can be overridden.',
+      },
+    ],
+  },
 };
 
 export default translations;
