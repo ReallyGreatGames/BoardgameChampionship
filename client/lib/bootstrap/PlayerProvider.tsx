@@ -22,13 +22,15 @@ export type Player = {
 export type PlayerContext = {
   player: Player | null;
   playerLoading: boolean;
-  assignPlayer: (player: Player) => void;
+  assignPlayer: (player: Player) => Promise<void>;
+  clearPlayer: () => Promise<void>;
 };
 
 export const PLAYER_INFO_KEY = "player_info";
 
 export const playerContext = createContext<PlayerContext>({
-  assignPlayer: () => void 0,
+  assignPlayer: () => Promise.resolve(),
+  clearPlayer: () => Promise.resolve(),
   player: null,
   playerLoading: true,
 });
@@ -54,8 +56,13 @@ export const PlayerProvider: FC<PropsWithChildren> = ({ children }) => {
     await SecureStorage.setItemAsync(PLAYER_INFO_KEY, JSON.stringify(player));
   };
 
+  const clearPlayer = async () => {
+    setPlayer(null);
+    await SecureStorage.deleteItemAsync(PLAYER_INFO_KEY);
+  };
+
   return (
-    <playerContext.Provider value={{ player, playerLoading, assignPlayer }}>
+    <playerContext.Provider value={{ player, playerLoading, assignPlayer, clearPlayer }}>
       {children}
     </playerContext.Provider>
   );

@@ -1,5 +1,5 @@
 import { PIN_STORE_KEY, useAuth } from "@/lib/auth";
-import { usePlayer, PLAYER_INFO_KEY } from "@/lib/bootstrap/PlayerProvider";
+import { usePlayer } from "@/lib/bootstrap/PlayerProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import * as SecureStorage from "@/lib/secureStorage";
 import i18n, { LANGUAGE_STORE_KEY } from "@/lib/i18n/i18n";
@@ -90,7 +90,7 @@ function LanguagePicker() {
 export default function SettingsScreen() {
   const { t } = useTranslation(["settings"]);
   const { user, logout } = useAuth();
-  const { player } = usePlayer();
+  const { player, clearPlayer } = usePlayer();
   const { colors, isDark, toggleTheme } = useTheme();
   const scheduleCollection = useScheduleStore((s) => s.collection);
 
@@ -112,7 +112,7 @@ export default function SettingsScreen() {
           text: "Nuke it",
           style: "destructive",
           onPress: async () => {
-            await SecureStorage.deleteItemAsync(PLAYER_INFO_KEY);
+            await clearPlayer();
             await SecureStorage.deleteItemAsync(PIN_STORE_KEY);
             if (user) {
               await logout();

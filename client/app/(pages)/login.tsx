@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -19,6 +19,7 @@ import { useAuth } from "../../lib/auth";
 import { useTheme } from "../../lib/bootstrap/ThemeProvider";
 import { type } from "../../lib/theme/typography";
 import { inset } from "../../lib/theme/spacing";
+import { useRouter } from "@/lib/routing/useRouter"
 
 const SECRET_TAPS = 7;
 
@@ -37,8 +38,16 @@ export default function LoginScreen() {
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const buttonScale = useRef(new Animated.Value(1)).current;
   const badgeAnim = useRef(new Animated.Value(0)).current;
+  const { user } = useAuth();
+  const { navigate } = useRouter();
 
   const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  useFocusEffect(() => {
+    if (user) {
+      navigate("/")
+    }
+  })
 
   // Admin badge spring-in when mode activates
   useEffect(() => {
