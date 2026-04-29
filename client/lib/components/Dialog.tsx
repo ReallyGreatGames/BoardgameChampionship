@@ -67,6 +67,12 @@ export const DialogProvider: FC<PropsWithChildren> = ({ children }) => {
         animationType="fade"
         visible={visible}
         onRequestClose={handleCancel}
+        supportedOrientations={[
+          "portrait",
+          "landscape",
+          "landscape-left",
+          "landscape-right",
+        ]}
       >
         <View style={styles.overlay}>
           <View style={styles.card}>

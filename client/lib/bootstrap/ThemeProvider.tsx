@@ -4,7 +4,7 @@ import { dark, light } from "@/lib/theme/colors";
 
 const THEME_STORE_KEY = "app_theme_dark";
 
-type ColorPalette = typeof dark;
+type ColorPalette = typeof dark | typeof light;
 
 type ThemeContextValue = {
   isDark: boolean;
@@ -13,7 +13,7 @@ type ThemeContextValue = {
 };
 
 const ThemeContext = createContext<ThemeContextValue>({
-  isDark: true,
+  isDark: false,
   toggleTheme: () => {},
   colors: dark,
 });
@@ -21,7 +21,7 @@ const ThemeContext = createContext<ThemeContextValue>({
 export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider: FC<PropsWithChildren> = ({ children }) => {
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
     SecureStorage.getItemAsync(THEME_STORE_KEY).then((stored) => {
@@ -37,7 +37,7 @@ export const ThemeProvider: FC<PropsWithChildren> = ({ children }) => {
     await SecureStorage.setItemAsync(THEME_STORE_KEY, String(next));
   }, [isDark]);
 
-  const value = useMemo(
+  const value: ThemeContextValue = useMemo(
     () => ({ isDark, toggleTheme, colors: isDark ? dark : light }),
     [isDark, toggleTheme],
   );

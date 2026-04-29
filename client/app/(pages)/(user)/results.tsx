@@ -65,7 +65,7 @@ function PlayerPicker({ value, onChange, takenValues, disabled, colors, t }: Pla
         )}
       </TouchableOpacity>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)} supportedOrientations={["portrait"]}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
           <View style={styles.sheet}>
             {PLAYER_OPTIONS.map((opt) => {

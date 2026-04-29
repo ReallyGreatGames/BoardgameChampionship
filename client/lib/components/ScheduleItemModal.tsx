@@ -7,6 +7,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -53,7 +54,13 @@ function isValidDuration(v: string): boolean {
   return !isNaN(n) && n > 0;
 }
 
-function IconPicker({ value, onChange }: { value: string; onChange: (name: string) => void }) {
+function IconPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (name: string) => void;
+}) {
   const { colors } = useTheme();
   const styles = useMemo(() => iconPickerStyles(colors), [colors]);
   const { t } = useTranslation(["components"]);
@@ -78,7 +85,9 @@ function IconPicker({ value, onChange }: { value: string; onChange: (name: strin
               size={22}
               color={selected ? colors.accent : colors.textMuted}
             />
-            <Text style={[styles.chipLabel, selected && styles.chipLabelSelected]}>
+            <Text
+              style={[styles.chipLabel, selected && styles.chipLabelSelected]}
+            >
               {t(`schedule.form.icons.${icon.translationKey}`)}
             </Text>
           </TouchableOpacity>
@@ -91,14 +100,35 @@ function IconPicker({ value, onChange }: { value: string; onChange: (name: strin
 function iconPickerStyles(colors: ReturnType<typeof useTheme>["colors"]) {
   return StyleSheet.create({
     row: { flexDirection: "row", gap: inset.tight, paddingVertical: 2 },
-    chip: { alignItems: "center", gap: 4, paddingVertical: 8, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 10, backgroundColor: colors.surfaceHigh, minWidth: 68 },
-    chipSelected: { borderColor: colors.accent, backgroundColor: colors.surface },
+    chip: {
+      alignItems: "center",
+      gap: 4,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      backgroundColor: colors.surfaceHigh,
+      minWidth: 68,
+    },
+    chipSelected: {
+      borderColor: colors.accent,
+      backgroundColor: colors.surface,
+    },
     chipLabel: { ...type.caption, color: colors.textMuted },
     chipLabelSelected: { color: colors.accent },
   });
 }
 
-export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSave, onRules, onTimer }: Props) {
+export function ScheduleItemModal({
+  visible,
+  item,
+  nextSortIndex,
+  onClose,
+  onSave,
+  onRules,
+  onTimer,
+}: Props) {
   const { colors } = useTheme();
   const sheetStyles = useMemo(() => makeSheetStyles(colors), [colors]);
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -110,6 +140,7 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
   const [duration, setDuration] = useState("");
   const [description, setDescription] = useState("");
   const [gameId, setGameId] = useState("");
+  const [allowUserChange, setAllowUserChange] = useState(false);
   const [saving, setSaving] = useState(false);
   const [timeBlurred, setTimeBlurred] = useState(false);
   const [durBlurred, setDurBlurred] = useState(false);
@@ -123,6 +154,7 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
       setDuration(String(item.durationPlanned));
       setDescription(item.description ?? "");
       setGameId(item.gameId ?? "");
+      setAllowUserChange(item.allowUserChange ?? false);
     } else {
       setTitle("");
       setIcon("");
@@ -130,6 +162,7 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
       setDuration("");
       setDescription("");
       setGameId("");
+      setAllowUserChange(false);
     }
     setSaving(false);
     setTimeBlurred(false);
@@ -138,7 +171,8 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
 
   const timeValid = isValidTime(startTime);
   const durValid = isValidDuration(duration);
-  const isValid = title.trim().length > 0 && icon !== "" && timeValid && durValid;
+  const isValid =
+    title.trim().length > 0 && icon !== "" && timeValid && durValid;
 
   async function handleSave() {
     if (!isValid || saving) return;
@@ -154,6 +188,7 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
         sortIndex: item ? item.sortIndex : nextSortIndex,
         isActive: item ? item.isActive : false,
         isFinished: item ? item.isFinished : false,
+        allowUserChange: item ? item.allowUserChange : false,
       });
       onClose();
     } catch (e: any) {
@@ -176,18 +211,41 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
               disabled={!item}
               onPress={() => item?.gameId && onTimer?.(item.gameId)}
             >
-              <Ionicons name="timer-outline" size={16} color={!item ? colors.textMuted : colors.text} />
-              <Text style={[styles.actionBtnText, !item && styles.actionBtnTextDisabled]}>
+              <Ionicons
+                name="timer-outline"
+                size={16}
+                color={!item ? colors.textMuted : colors.text}
+              />
+              <Text
+                style={[
+                  styles.actionBtnText,
+                  !item && styles.actionBtnTextDisabled,
+                ]}
+              >
                 {t("schedule.form.actionTimer")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.actionBtn, (!item?.gameId || !onRules) && styles.actionBtnDisabled]}
+              style={[
+                styles.actionBtn,
+                (!item?.gameId || !onRules) && styles.actionBtnDisabled,
+              ]}
               disabled={!item?.gameId || !onRules}
               onPress={() => item?.gameId && onRules?.(item.gameId)}
             >
-              <Ionicons name="list-outline" size={16} color={(!item?.gameId || !onRules) ? colors.textMuted : colors.text} />
-              <Text style={[styles.actionBtnText, (!item?.gameId || !onRules) && styles.actionBtnTextDisabled]}>
+              <Ionicons
+                name="list-outline"
+                size={16}
+                color={
+                  !item?.gameId || !onRules ? colors.textMuted : colors.text
+                }
+              />
+              <Text
+                style={[
+                  styles.actionBtnText,
+                  (!item?.gameId || !onRules) && styles.actionBtnTextDisabled,
+                ]}
+              >
                 {t("schedule.form.actionRules")}
               </Text>
             </TouchableOpacity>
@@ -195,26 +253,45 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
               style={[styles.actionBtn, !item && styles.actionBtnDisabled]}
               disabled={!item}
             >
-              <Ionicons name="gift-outline" size={16} color={!item ? colors.textMuted : colors.text} />
-              <Text style={[styles.actionBtnText, !item && styles.actionBtnTextDisabled]}>
+              <Ionicons
+                name="gift-outline"
+                size={16}
+                color={!item ? colors.textMuted : colors.text}
+              />
+              <Text
+                style={[
+                  styles.actionBtnText,
+                  !item && styles.actionBtnTextDisabled,
+                ]}
+              >
                 {t("schedule.form.actionLotteries")}
               </Text>
             </TouchableOpacity>
           </View>
           <Pressable
-            style={[sheetStyles.saveBtn, (!isValid || saving) && sheetStyles.saveBtnDisabled]}
+            style={[
+              sheetStyles.saveBtn,
+              (!isValid || saving) && sheetStyles.saveBtnDisabled,
+            ]}
             onPress={handleSave}
             disabled={!isValid || saving}
           >
-            {saving
-              ? <ActivityIndicator size="small" color={colors.onAccent} />
-              : <Text style={sheetStyles.saveBtnText}>{t("schedule.form.save")}</Text>
-            }
+            {saving ? (
+              <ActivityIndicator size="small" color={colors.onAccent} />
+            ) : (
+              <Text style={sheetStyles.saveBtnText}>
+                {t("schedule.form.save")}
+              </Text>
+            )}
           </Pressable>
         </>
       }
     >
-      <FormField icon="text-outline" label={t("schedule.form.titleField")} required>
+      <FormField
+        icon="text-outline"
+        label={t("schedule.form.titleField")}
+        required
+      >
         <TextInput
           style={sheetStyles.input}
           value={title}
@@ -224,7 +301,11 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
         />
       </FormField>
 
-      <FormField icon="shapes-outline" label={t("schedule.form.iconField")} required>
+      <FormField
+        icon="shapes-outline"
+        label={t("schedule.form.iconField")}
+        required
+      >
         <IconPicker value={icon} onChange={setIcon} />
       </FormField>
 
@@ -232,12 +313,25 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
         icon="time-outline"
         label={t("schedule.form.startTimeField")}
         required
-        error={timeBlurred && startTime !== "" && !timeValid ? t("schedule.form.validationStartTime") : undefined}
+        error={
+          timeBlurred && startTime !== "" && !timeValid
+            ? t("schedule.form.validationStartTime")
+            : undefined
+        }
       >
         <TextInput
-          style={[sheetStyles.input, timeBlurred && startTime !== "" && !timeValid && sheetStyles.inputError]}
+          style={[
+            sheetStyles.input,
+            timeBlurred &&
+              startTime !== "" &&
+              !timeValid &&
+              sheetStyles.inputError,
+          ]}
           value={startTime}
-          onChangeText={(v) => { setStartTime(v); if (timeBlurred && isValidTime(v)) setTimeBlurred(false); }}
+          onChangeText={(v) => {
+            setStartTime(v);
+            if (timeBlurred && isValidTime(v)) setTimeBlurred(false);
+          }}
           onBlur={() => setTimeBlurred(true)}
           placeholder={t("schedule.form.startTimePlaceholder")}
           placeholderTextColor={colors.textPlaceholder}
@@ -249,12 +343,25 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
         icon="hourglass-outline"
         label={t("schedule.form.durationField")}
         required
-        error={durBlurred && duration !== "" && !durValid ? t("schedule.form.validationDuration") : undefined}
+        error={
+          durBlurred && duration !== "" && !durValid
+            ? t("schedule.form.validationDuration")
+            : undefined
+        }
       >
         <TextInput
-          style={[sheetStyles.input, durBlurred && duration !== "" && !durValid && sheetStyles.inputError]}
+          style={[
+            sheetStyles.input,
+            durBlurred &&
+              duration !== "" &&
+              !durValid &&
+              sheetStyles.inputError,
+          ]}
           value={duration}
-          onChangeText={(v) => { setDuration(v); if (durBlurred && isValidDuration(v)) setDurBlurred(false); }}
+          onChangeText={(v) => {
+            setDuration(v);
+            if (durBlurred && isValidDuration(v)) setDurBlurred(false);
+          }}
           onBlur={() => setDurBlurred(true)}
           placeholder={t("schedule.form.durationPlaceholder")}
           placeholderTextColor={colors.textPlaceholder}
@@ -262,7 +369,10 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
         />
       </FormField>
 
-      <FormField icon="document-text-outline" label={t("schedule.form.descriptionField")}>
+      <FormField
+        icon="document-text-outline"
+        label={t("schedule.form.descriptionField")}
+      >
         <TextInput
           style={[sheetStyles.input, sheetStyles.inputMultiline]}
           value={description}
@@ -274,7 +384,10 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
         />
       </FormField>
 
-      <FormField icon="game-controller-outline" label={t("schedule.form.gameIdField")}>
+      <FormField
+        icon="game-controller-outline"
+        label={t("schedule.form.gameIdField")}
+      >
         <TextInput
           style={sheetStyles.input}
           value={gameId}
@@ -283,6 +396,18 @@ export function ScheduleItemModal({ visible, item, nextSortIndex, onClose, onSav
           placeholderTextColor={colors.textPlaceholder}
           autoCapitalize="none"
           autoCorrect={false}
+        />
+      </FormField>
+
+      <FormField
+        icon="people-outline"
+        label={t("schedule.form.allowUserChangeField")}
+      >
+        <Switch
+          value={allowUserChange}
+          onValueChange={setAllowUserChange}
+          trackColor={{ false: colors.border, true: colors.primary }}
+          thumbColor={colors.text}
         />
       </FormField>
     </BottomSheet>

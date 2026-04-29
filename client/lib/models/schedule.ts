@@ -16,4 +16,5 @@ export type Schedule = {
   startTimePlanned: string;
   isActive?: boolean;
   isFinished?: boolean;
+  allowUserChange?: boolean;
 } & Models.Document;

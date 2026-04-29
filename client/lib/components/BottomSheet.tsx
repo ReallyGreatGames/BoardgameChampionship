@@ -24,12 +24,30 @@ type BottomSheetProps = {
   children: React.ReactNode;
 };
 
-export function BottomSheet({ visible, onClose, title, footer, children }: BottomSheetProps) {
+export function BottomSheet({
+  visible,
+  onClose,
+  title,
+  footer,
+  children,
+}: BottomSheetProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeSheetStyles(colors), [colors]);
-
+  
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+      supportedOrientations={[
+        "portrait",
+        "portrait-upside-down",
+        "landscape",
+        "landscape-left",
+        "landscape-right",
+      ]}
+    >
       <KeyboardAvoidingView
         style={styles.overlay}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -53,9 +71,7 @@ export function BottomSheet({ visible, onClose, title, footer, children }: Botto
             {children}
           </ScrollView>
 
-          <View style={styles.footer}>
-            {footer}
-          </View>
+          <View style={styles.footer}>{footer}</View>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -100,7 +116,7 @@ export function makeSheetStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       borderRadius: 8,
     },
     scroll: {
-      flexGrow: 0,
+      flexShrink: 1,
     },
     scrollContent: {
       padding: inset.card,

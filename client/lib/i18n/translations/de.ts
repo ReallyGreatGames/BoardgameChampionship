@@ -1,8 +1,21 @@
 const translations = {
+  home: {
+    welcome: "Willkommen",
+    welcomeDescription:
+      "Logge dich mit der PIN ein, die auf der Leinwand angezeigt wird.\nWähle danach dein Team und deine Spielernummer.",
+    login: "Zum Login",
+    faqLink: "Fragen? FAQ ansehen",
+    now: "Jetzt",
+    upNext: "Danach",
+    goToGame: "Zum Spiel",
+    startsAt: "Beginnt um {{time}}",
+    noSchedule: "Kein aktiver Zeitplaneintrag",
+  },
   login: {
     login: "Einloggen",
     logout: "Ausloggen",
-    enterPin: "Pin eingeben",
+    enterPin: "PIN eingeben",
+    pinHint: "Deine PIN steht auf der Leinwand.",
     welcome: "Willkommen",
     password: "Passwort",
   },
@@ -12,7 +25,7 @@ const translations = {
       home: "Startseite",
       dashboard: "Dashboard",
       settings: "Einstellungen",
-      info: "Informationen",
+      info: "FAQ",
       chooseYourCharacter: "Team auswählen",
       schedule: "Zeitplan",
       activeBells: "Aktive Klingeln",
@@ -20,7 +33,8 @@ const translations = {
       rules: "Regeln",
       timer: "Timer",
       results: "Ergebnisse",
-      signature: "Unterschrift"
+      signature: "Unterschrift",
+      legal: "Impressum & Datenschutz",
     },
     dmmib: "DMMiB",
     europemasters: "Europe Masters",
@@ -34,6 +48,8 @@ const translations = {
     currentTeam: "Team",
     currentPlayer: "Spieler",
     changeTeam: "Team / Spieler wechseln",
+    legal: "Rechtliches",
+    legalNotice: "Impressum & Datenschutz",
     languages: {
       en: "Englisch",
       de: "Deutsch",
@@ -153,13 +169,15 @@ const translations = {
     hintSignatures: "Mindestens 3 Unterschriften zum Einreichen erforderlich.",
     confirmSubmit: {
       title: "Ergebnisse einreichen",
-      message: "Ergebnisse einreichen? Dies kann nicht rückgängig gemacht werden.",
+      message:
+        "Ergebnisse einreichen? Dies kann nicht rückgängig gemacht werden.",
       confirm: "Einreichen",
       cancel: "Abbrechen",
     },
     confirmOverwrite: {
       title: "Ergebnisse überschreiben",
-      message: "Deine Änderungen weichen vom gespeicherten Eintrag ab. Gespeicherte Daten überschreiben?",
+      message:
+        "Deine Änderungen weichen vom gespeicherten Eintrag ab. Gespeicherte Daten überschreiben?",
       confirm: "Überschreiben",
       cancel: "Verwerfen",
     },
@@ -219,6 +237,7 @@ const translations = {
         descriptionPlaceholder: "Optionale Details...",
         gameIdField: "Spiel-ID",
         gameIdPlaceholder: "Optional",
+        allowUserChangeField: "Teamwechsel erlauben",
         validationStartTime: "Format: HH:MM",
         validationDuration: "Positive Zahl erforderlich",
         actionTimer: "Standard-Timer",
@@ -257,7 +276,45 @@ const translations = {
       retry: "Erneut versuchen",
       empty: "Keine Turniere gefunden.",
     },
-  }
+  },
+  info: {
+    faq: [
+      {
+        q: "Wie melde ich mich an?",
+        a: "Gib die PIN ein, die auf der Leinwand im Veranstaltungsbereich angezeigt wird. Danach wählst du dein Team und deine Spielernummer.",
+      },
+      {
+        q: "Woher weiß ich, an welchen Tisch ich muss?",
+        a: 'Die Startseite zeigt den aktuellen Zeitplan. Tippe auf "Zum Spiel", um zur Übersicht deines Tisches zu navigieren.',
+      },
+      {
+        q: "Wie reiche ich Ergebnisse ein?",
+        a: 'Tippe im Spielbildschirm auf "Ergebnisse". Gib Platzierung und Punkte für alle Spieler am Tisch ein. Lasse jeden deiner Mitspieler unterschreiben und tippe dann auf "Einreichen".',
+      },
+      {
+        q: "Wie funktionieren Unterschriften?",
+        a: 'Tippe auf dem Ergebnisbildschirm auf das Stiftsymbol neben einer Platzierung. Der Spieler auf dieser Position unterschreibt direkt auf dem Bildschirm. Zum Einreichen sind mindestens 3 Unterschriften erforderlich. Wenn eine Unterschrift fehlt, erkläre im Feld "Notizen", warum das der Fall ist.',
+      },
+      {
+        q: "Was macht die Tischklingel?",
+        a: "Die Tischklingel benachrichtigt die Schiedsrichter:innen, dass dein Tisch Hilfe benötigt – z. B. bei Regelstreitigkeiten. Ein:e Schiedsrichter:in kommt zu deinem Tisch. Du wirst benachrichtigt, wenn ein:e Schiedsrichter:in auf dem Weg ist.",
+      },
+      {
+        q: "Wie funktioniert der Timer?",
+        a: 'Tippe im Spielbildschirm auf "Timer". Er zeigt die Spielzeit pro Spieler:in an. Die Zeit pro Spiel wird automatisch eingestellt. Bei Bedarf können diese Einstellungen überschrieben werden.',
+      },
+    ],
+  },
+  legal: {
+    imprint: {
+      title: "Impressum",
+      body: "Deutsche Mannschaftsmeisterschaft im Brettspiel\n\nDMMiB\nSpielzeit weltweit e.V.\nI.Parallelstr. 71\n44791 Bochum\nE-Mail: dm_brett@dmmib.de\nwww.dmmib.de",
+    },
+    privacy: {
+      title: "Datenschutzerklärung",
+      body: "Stand: April 2026\n\nVerantwortliche Stelle\nSpielzeit weltweit e.V. (DMMiB)\nI.Parallelstr. 71, 44791 Bochum\nE-Mail: dm_brett@dmmib.de\n\nWelche Daten werden verarbeitet?\n\nDie App verarbeitet ausschließlich Daten, die für die Durchführung des Turniers erforderlich sind:\n\n• Anonyme Sitzung: Beim ersten Start wird automatisch eine anonyme Sitzung erstellt. Dabei werden keine personenbezogenen Daten erhoben.\n• PIN: Die Turnier-PIN wird zur Authentifizierung mit dem Server abgeglichen und verschlüsselt auf deinem Gerät gespeichert.\n• Name und Team: Dein Name und dein Team sind für andere Teilnehmer:innen innerhalb der App während des Turniers sichtbar.\n• Unterschriften: Digitale Unterschriften werden auf Servern innerhalb der EU gespeichert und innerhalb von 7 Tagen nach Turnierende gelöscht.\n\nRechtsgrundlage\n\nDie Verarbeitung erfolgt auf Grundlage von Art. 6 Abs. 1 lit. b und f DSGVO (Turnierorganisation und berechtigtes Interesse an einem geordneten Ablauf).\n\nSpeicherdauer\n\nAlle auf dem Server gespeicherten Turnierdaten werden spätestens 7 Tage nach Ende der Veranstaltung gelöscht. Auf deinem Gerät gespeicherte Daten (PIN) werden beim Ausloggen entfernt.\n\nDatenspeicherung\n\nAlle Daten werden ausschließlich auf Servern innerhalb der Europäischen Union gespeichert und nicht an Dritte weitergegeben.\n\nDeine Rechte\n\nDu hast das Recht auf Auskunft, Berichtigung, Löschung und Widerspruch. Kontakt: dm_brett@dmmib.de",
+    },
+  },
 };
 
 export default translations;

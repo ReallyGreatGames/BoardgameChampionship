@@ -1,8 +1,21 @@
 const translations = {
+  home: {
+    welcome: "Welcome",
+    welcomeDescription:
+      "Log in with the PIN shown on the projector.\nThen choose your team and player number.",
+    login: "Log in",
+    faqLink: "Have questions? View FAQ",
+    now: "Now",
+    upNext: "Up Next",
+    goToGame: "Go to Game",
+    startsAt: "Starts at {{time}}",
+    noSchedule: "No active schedule item",
+  },
   login: {
     login: "Log in",
     logout: "Log out",
     enterPin: "Enter PIN",
+    pinHint: "Find your PIN on the projector screen.",
     welcome: "Welcome",
     password: "Password",
   },
@@ -12,7 +25,7 @@ const translations = {
       home: "Home",
       dashboard: "Dashboard",
       settings: "Settings",
-      info: "Info",
+      info: "FAQ",
       chooseYourCharacter: "Choose Team",
       schedule: "Schedule",
       activeBells: "Active Calls",
@@ -20,7 +33,8 @@ const translations = {
       rules: "Rules",
       timer: "Timer",
       results: "Results",
-      signature: "Signature"
+      signature: "Signature",
+      legal: "Imprint & Privacy",
     },
     dmmib: "DMMiB",
     europemasters: "Europe Masters",
@@ -34,6 +48,8 @@ const translations = {
     currentTeam: "Team",
     currentPlayer: "Player",
     changeTeam: "Change Team / Player",
+    legal: "Legal",
+    legalNotice: "Imprint & Privacy Policy",
     languages: {
       en: "English",
       de: "German",
@@ -159,7 +175,8 @@ const translations = {
     },
     confirmOverwrite: {
       title: "Overwrite Results",
-      message: "Your changes differ from the saved record. Overwrite the saved data?",
+      message:
+        "Your changes differ from the saved record. Overwrite the saved data?",
       confirm: "Overwrite",
       cancel: "Discard",
     },
@@ -219,6 +236,7 @@ const translations = {
         descriptionPlaceholder: "Optional details...",
         gameIdField: "Game ID",
         gameIdPlaceholder: "Optional",
+        allowUserChangeField: "Allow Team / Player Change",
         validationStartTime: "Use HH:MM format",
         validationDuration: "Must be a positive number",
         actionTimer: "Default Timer",
@@ -257,7 +275,45 @@ const translations = {
       retry: "Retry",
       empty: "No tournament rows found.",
     },
-  }
+  },
+  info: {
+    faq: [
+      {
+        q: "How do I log in?",
+        a: "Enter the PIN shown on the screen in the event area. Then choose your team and player number.",
+      },
+      {
+        q: "How do I know which table I need to go to?",
+        a: 'The home screen shows the current schedule. Tap "Go to Game" to navigate to your table overview.',
+      },
+      {
+        q: "How do I submit results?",
+        a: 'From the game screen, tap "Results". Enter the placement and score for all players at your table. Have each of your fellow players sign, then tap "Submit".',
+      },
+      {
+        q: "How do signatures work?",
+        a: 'On the results screen, tap the pencil icon next to a placement. The player in that position signs directly on the screen. At least 3 signatures are required to submit. If a signature is missing, explain why in the "Notes" field.',
+      },
+      {
+        q: "What does the Table Bell do?",
+        a: "The Table Bell notifies the judges that your table needs help — e.g. in case of a rule dispute. A judge will come to your table. You will be notified when a judge is on the way.",
+      },
+      {
+        q: "How does the timer work?",
+        a: 'From the game screen, tap "Timer". It shows the playing time per player. The time per game is set automatically. If needed, these settings can be overridden.',
+      },
+    ],
+  },
+  legal: {
+    imprint: {
+      title: "Imprint",
+      body: "Deutsche Mannschaftsmeisterschaft im Brettspiel\n\nDMMiB\nSpielzeit weltweit e.V.\nI.Parallelstr. 71\n44791 Bochum\nE-Mail: dm_brett@dmmib.de\nwww.dmmib.de",
+    },
+    privacy: {
+      title: "Privacy Policy",
+      body: "Last updated: April 2026\n\nController\nSpielzeit weltweit e.V. (DMMiB)\nI.Parallelstr. 71, 44791 Bochum\nE-mail: dm_brett@dmmib.de\n\nWhat data is processed?\n\nThe app processes only data required to run the tournament:\n\n• Anonymous session: On first launch, an anonymous session is created automatically. No personal data is collected in this process.\n• PIN: The tournament PIN is verified against the server and stored encrypted on your device.\n• Name and team: Your name and team are visible to other participants within the app during the tournament.\n• Signatures: Digital signatures are stored on servers within the EU and deleted within 7 days of the tournament ending.\n\nLegal basis\n\nProcessing is based on Art. 6(1)(b) and (f) GDPR (tournament organization and legitimate interest in an orderly event).\n\nRetention period\n\nAll tournament data stored on the server is deleted no later than 7 days after the event ends. Data stored on your device (PIN) is removed when you log out.\n\nData storage\n\nAll data is stored exclusively on servers within the European Union and is not shared with third parties.\n\nYour rights\n\nYou have the right to access, rectification, deletion, and objection. Contact: dm_brett@dmmib.de",
+    },
+  },
 };
 
 export default translations;
