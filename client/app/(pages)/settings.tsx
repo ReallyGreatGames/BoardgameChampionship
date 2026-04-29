@@ -247,6 +247,22 @@ export default function SettingsScreen() {
           </View>
         </>
       )}
+
+      <Text style={styles.sectionLabel}>{t("settings:legal")}</Text>
+      <View style={styles.card}>
+        <Pressable style={styles.row} onPress={() => router.push("/(pages)/legal")}>
+          <View style={styles.rowLeft}>
+            <Ionicons
+              name="document-text-outline"
+              size={20}
+              color={colors.textMuted}
+              style={styles.rowIcon}
+            />
+            <Text style={styles.rowLabel}>{t("settings:legalNotice")}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </Pressable>
+      </View>
     </View>
   );
 }

@@ -34,6 +34,7 @@ const translations = {
       timer: "Timer",
       results: "Results",
       signature: "Signature",
+      legal: "Imprint & Privacy",
     },
     dmmib: "DMMiB",
     europemasters: "Europe Masters",
@@ -47,6 +48,8 @@ const translations = {
     currentTeam: "Team",
     currentPlayer: "Player",
     changeTeam: "Change Team / Player",
+    legal: "Legal",
+    legalNotice: "Imprint & Privacy Policy",
     languages: {
       en: "English",
       de: "German",
@@ -300,6 +303,16 @@ const translations = {
         a: 'From the game screen, tap "Timer". It shows the playing time per player. The time per game is set automatically. If needed, these settings can be overridden.',
       },
     ],
+  },
+  legal: {
+    imprint: {
+      title: "Imprint",
+      body: "Deutsche Mannschaftsmeisterschaft im Brettspiel\n\nDMMiB\nSpielzeit weltweit e.V.\nI.Parallelstr. 71\n44791 Bochum\nE-Mail: dm_brett@dmmib.de\nwww.dmmib.de",
+    },
+    privacy: {
+      title: "Privacy Policy",
+      body: "Last updated: April 2026\n\nController\nSpielzeit weltweit e.V. (DMMiB)\nI.Parallelstr. 71, 44791 Bochum\nE-mail: dm_brett@dmmib.de\n\nWhat data is processed?\n\nThe app processes only data required to run the tournament:\n\n• Anonymous session: On first launch, an anonymous session is created automatically. No personal data is collected in this process.\n• PIN: The tournament PIN is verified against the server and stored encrypted on your device.\n• Name and team: Your name and team are visible to other participants within the app during the tournament.\n• Signatures: Digital signatures are stored on servers within the EU and deleted within 7 days of the tournament ending.\n\nLegal basis\n\nProcessing is based on Art. 6(1)(b) and (f) GDPR (tournament organization and legitimate interest in an orderly event).\n\nRetention period\n\nAll tournament data stored on the server is deleted no later than 7 days after the event ends. Data stored on your device (PIN) is removed when you log out.\n\nData storage\n\nAll data is stored exclusively on servers within the European Union and is not shared with third parties.\n\nYour rights\n\nYou have the right to access, rectification, deletion, and objection. Contact: dm_brett@dmmib.de",
+    },
   },
 };
 

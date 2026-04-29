@@ -105,6 +105,10 @@ function AppNavigator() {
         name="(pages)/(user)/signature"
         options={{ title: t("entries.signature"), drawerItemStyle: { display: "none" }, headerShown: true, swipeEnabled: false }}
       />
+      <Drawer.Screen
+        name="(pages)/legal"
+        options={{ title: t("entries.legal"), drawerItemStyle: { display: "none" } }}
+      />
     </Drawer>
   );
 }

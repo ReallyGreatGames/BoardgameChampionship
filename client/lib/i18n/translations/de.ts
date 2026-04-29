@@ -34,6 +34,7 @@ const translations = {
       timer: "Timer",
       results: "Ergebnisse",
       signature: "Unterschrift",
+      legal: "Impressum & Datenschutz",
     },
     dmmib: "DMMiB",
     europemasters: "Europe Masters",
@@ -47,6 +48,8 @@ const translations = {
     currentTeam: "Team",
     currentPlayer: "Spieler",
     changeTeam: "Team / Spieler wechseln",
+    legal: "Rechtliches",
+    legalNotice: "Impressum & Datenschutz",
     languages: {
       en: "Englisch",
       de: "Deutsch",
@@ -301,6 +304,16 @@ const translations = {
         a: 'Tippe im Spielbildschirm auf "Timer". Er zeigt die Spielzeit pro Spieler:in an. Die Zeit pro Spiel wird automatisch eingestellt. Bei Bedarf können diese Einstellungen überschrieben werden.',
       },
     ],
+  },
+  legal: {
+    imprint: {
+      title: "Impressum",
+      body: "Deutsche Mannschaftsmeisterschaft im Brettspiel\n\nDMMiB\nSpielzeit weltweit e.V.\nI.Parallelstr. 71\n44791 Bochum\nE-Mail: dm_brett@dmmib.de\nwww.dmmib.de",
+    },
+    privacy: {
+      title: "Datenschutzerklärung",
+      body: "Stand: April 2026\n\nVerantwortliche Stelle\nSpielzeit weltweit e.V. (DMMiB)\nI.Parallelstr. 71, 44791 Bochum\nE-Mail: dm_brett@dmmib.de\n\nWelche Daten werden verarbeitet?\n\nDie App verarbeitet ausschließlich Daten, die für die Durchführung des Turniers erforderlich sind:\n\n• Anonyme Sitzung: Beim ersten Start wird automatisch eine anonyme Sitzung erstellt. Dabei werden keine personenbezogenen Daten erhoben.\n• PIN: Die Turnier-PIN wird zur Authentifizierung mit dem Server abgeglichen und verschlüsselt auf deinem Gerät gespeichert.\n• Name und Team: Dein Name und dein Team sind für andere Teilnehmer:innen innerhalb der App während des Turniers sichtbar.\n• Unterschriften: Digitale Unterschriften werden auf Servern innerhalb der EU gespeichert und innerhalb von 7 Tagen nach Turnierende gelöscht.\n\nRechtsgrundlage\n\nDie Verarbeitung erfolgt auf Grundlage von Art. 6 Abs. 1 lit. b und f DSGVO (Turnierorganisation und berechtigtes Interesse an einem geordneten Ablauf).\n\nSpeicherdauer\n\nAlle auf dem Server gespeicherten Turnierdaten werden spätestens 7 Tage nach Ende der Veranstaltung gelöscht. Auf deinem Gerät gespeicherte Daten (PIN) werden beim Ausloggen entfernt.\n\nDatenspeicherung\n\nAlle Daten werden ausschließlich auf Servern innerhalb der Europäischen Union gespeichert und nicht an Dritte weitergegeben.\n\nDeine Rechte\n\nDu hast das Recht auf Auskunft, Berichtigung, Löschung und Widerspruch. Kontakt: dm_brett@dmmib.de",
+    },
   },
 };
 
