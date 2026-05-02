@@ -96,6 +96,9 @@ const translations = {
       confirm: "Delete",
       cancel: "Cancel",
     },
+    notificationTitle: "Table Bell!",
+    notificationBody: "Table {{table}} needs attention!",
+    notificationBodyWithReason: "Table {{table}}: {{reason}}",
   },
   rules: {
     title: "Rules",
@@ -142,6 +145,13 @@ const translations = {
       title: "Dismiss Bell",
       message: "Clear the table bell notification?",
       confirm: "Dismiss",
+      cancel: "Cancel",
+    },
+    timerElapsed: "Timer Elapsed",
+    confirmReset: {
+      title: "Reset Timer",
+      message: "Reset all player timers to the starting time?",
+      confirm: "Reset",
       cancel: "Cancel",
     },
     customTimer: "Custom Timer",

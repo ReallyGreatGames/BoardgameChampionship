@@ -2,11 +2,13 @@ import { useScreenOrientation } from "@/lib/bootstrap/ScreenOrientationProvider"
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { CustomTimerModal } from "@/lib/components/CustomTimerModal";
 import { useDialog } from "@/lib/components/Dialog";
+import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-store";
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
-import { ui } from "@/lib/theme/ui";
 import { type } from "@/lib/theme/typography";
+import { ui } from "@/lib/theme/ui";
+import { formatElapsedSeconds, formatTime } from "@/lib/utils";
 import { Ionicons } from "@expo/vector-icons";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -26,6 +28,7 @@ import {
 } from "react-native";
 
 const DEFAULT_SECONDS = 10 * 60;
+const OVERTIME_SECONDS = 30;
 const TABLE = 1; // TODO: pass via route params when table selection is implemented
 
 function resolveGameId(ref: unknown): string | null {
@@ -47,31 +50,25 @@ function toNumberArray(value: unknown): number[] {
   return [];
 }
 
-// Classic board game meeple colors — active (bright) and muted (visible but calm) per player
+function toBooleanArray(value: unknown): boolean[] {
+  if (Array.isArray(value)) return value as boolean[];
+  if (typeof value === "string") {
+    try { return JSON.parse(value) as boolean[]; } catch { return []; }
+  }
+  return [];
+}
+
+// Classic board game meeple colors — active (bright), muted (paused/idle), elapsed (consumed time) per player
 const PLAYER_COLORS = [
-  { active: "#ff4136", muted: "#a82a23" }, // red
-  { active: "#2196f3", muted: "#1565a8" }, // blue
-  { active: "#00e676", muted: "#00894a" }, // green
-  { active: "#ffd600", muted: "#b8960a" }, // yellow
+  { active: "#ff4136", muted: "#a82a23", elapsed: "#5c1510", elapsedMuted: "#2e0a08" }, // red
+  { active: "#2196f3", muted: "#1565a8", elapsed: "#0a2f60", elapsedMuted: "#051830" }, // blue
+  { active: "#00e676", muted: "#00894a", elapsed: "#0a3d20", elapsedMuted: "#051e10" }, // green
+  { active: "#ffd600", muted: "#b8960a", elapsed: "#604800", elapsedMuted: "#302400" }, // yellow
 ] as const;
-
-function formatElapsed(seconds: number) {
-  const m = Math.floor(seconds / 60).toString().padStart(2, "0");
-  const s = (seconds % 60).toString().padStart(2, "0");
-  return `${m}:${s}`;
-}
-
-function formatTime(s: number) {
-  const clamped = Math.max(0, s);
-  const m = Math.floor(clamped / 60).toString().padStart(2, "0");
-  const sec = (clamped % 60).toString().padStart(2, "0");
-  return `${m}:${sec}`;
-}
 
 export default function TimerPage() {
   const { colors } = useTheme();
   const { t } = useTranslation(["timer"]);
-  const { confirm } = useDialog();
 
   const { width, height } = useWindowDimensions();
   const { forceOrientation, unlockOrientation } = useScreenOrientation();
@@ -79,6 +76,7 @@ export default function TimerPage() {
   const tableBellStore = useTableBellStore();
   const timerSettingsStore = useTimerSettingsStore();
   const timerStore = useTimerStore();
+  const { confirm } = useDialog();
 
   useFocusEffect(
     useCallback(() => {
@@ -113,6 +111,9 @@ export default function TimerPage() {
     Array(playerCount).fill(totalSeconds)
   );
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
+  const [playersInOvertime, setPlayersInOvertime] = useState<boolean[]>(() =>
+    Array(playerCount).fill(false)
+  );
 
   const timerStartedRef = useRef(false);
   if (activeIdx !== null) timerStartedRef.current = true;
@@ -130,8 +131,13 @@ export default function TimerPage() {
     const remoteTimes = toNumberArray(existingTimer.playerTimes);
     if (remoteTimes.length !== playerCount) return;
     setTimes(remoteTimes);
+
+    const remoteOvertime = toBooleanArray((existingTimer as any).playersInOvertime);
+    if (remoteOvertime.length === playerCount) setPlayersInOvertime(remoteOvertime);
+
     remoteTimes.forEach((remoteTime, i) => {
-      depleteAnims.current[i].setValue(1 - Math.min(remoteTime, totalSeconds) / totalSeconds);
+      const base = remoteOvertime[i] ? OVERTIME_SECONDS : totalSeconds;
+      depleteAnims.current[i].setValue(1 - Math.min(remoteTime, base) / base);
     });
   }, [existingTimer, playerCount, totalSeconds]);
 
@@ -140,6 +146,7 @@ export default function TimerPage() {
     currentTimes: number[],
     activePlayer: number | null,
     isPaused: boolean,
+    playersInOvertime: boolean[]
   ) => {
     const id = timerDocIdRef.current;
     if (!id) return;
@@ -148,19 +155,24 @@ export default function TimerPage() {
       playerTimes: currentTimes,
       activePlayerTimer: activePlayer as any,
       paused: isPaused,
+      playersInOvertime
     }, true);
+
     if (!ok) {
       timerDocIdRef.current = null;
       const inCollection = timerStore.collection.find(
         (t) => t.table === TABLE && resolveGameId(t.games) === (params.gameId ?? null)
       );
+
       if (inCollection) {
         timerDocIdRef.current = inCollection.$id;
+
         await timerStore.update({
           $id: inCollection.$id,
           playerTimes: currentTimes,
           activePlayerTimer: activePlayer as any,
           paused: isPaused,
+          playersInOvertime
         }, true);
       } else {
         const doc = await timerStore.add({
@@ -169,7 +181,9 @@ export default function TimerPage() {
           games: params.gameId ?? null,
           activePlayerTimer: activePlayer,
           paused: isPaused,
+          playersInOvertime
         });
+
         if (doc) timerDocIdRef.current = doc.$id;
       }
     }
@@ -182,9 +196,9 @@ export default function TimerPage() {
     depleteAnims.current.forEach((anim) => anim.setValue(0));
   }, [totalSeconds, playerCount]);
 
+  const bellActions = useTableBellActions();
   const [paused, setPaused] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [bellLoading, setBellLoading] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [customTimerOpen, setCustomTimerOpen] = useState(false);
 
@@ -217,6 +231,11 @@ export default function TimerPage() {
   const activeIdxRef = useRef(activeIdx);
   activeIdxRef.current = activeIdx;
 
+  const playersInOvertimeRef = useRef(playersInOvertime);
+  playersInOvertimeRef.current = playersInOvertime;
+
+  const bellFiredRef = useRef(new Set<number>());
+
   const effectivelyPaused = paused;
 
   useEffect(() => {
@@ -229,8 +248,9 @@ export default function TimerPage() {
         const next = [...prev];
         next[idx] -= 1;
 
+        const base = playersInOvertimeRef.current[idx] ? OVERTIME_SECONDS : totalSeconds;
         Animated.timing(depleteAnims.current[idx], {
-          toValue: 1 - next[idx] / totalSeconds,
+          toValue: 1 - next[idx] / base,
           duration: 950,
           useNativeDriver: false,
         }).start();
@@ -242,6 +262,21 @@ export default function TimerPage() {
     return () => clearInterval(interval);
   }, [activeIdx, effectivelyPaused, totalSeconds]);
 
+  useEffect(() => {
+    if (activeIdx === null) return;
+    if (times[activeIdx] !== 0) return;
+    if (bellFiredRef.current.has(activeIdx)) return;
+    bellFiredRef.current.add(activeIdx);
+    if (!bell) {
+      tableBellStore.add({
+        table: TABLE,
+        startTime: new Date().toISOString(),
+        locked: true,
+        reason: t("timerElapsed"),
+      });
+    }
+  }, [times, activeIdx]);
+
   // Measured actual cell size for overlay interpolation
   const [cellSize, setCellSize] = useState({ w: width / 2, h: height / 2 });
   const handleCellLayout = (e: LayoutChangeEvent) => {
@@ -252,21 +287,57 @@ export default function TimerPage() {
   const rotations = ["180deg", "180deg", "0deg", "0deg"] as const;
 
   const handlePress = (idx: number) => {
-    if (times[idx] <= 0) return;
+    if (times[idx] <= 0) {
+      // Time ran out — click starts/restarts the 30s overtime
+      const nextTimes = [...times];
+      // Forfeit running overtime of the outgoing player
+      if (activeIdx !== null && activeIdx !== idx && playersInOvertime[activeIdx] && nextTimes[activeIdx] > 0) {
+        nextTimes[activeIdx] = 0;
+        depleteAnims.current[activeIdx].setValue(1);
+      }
+      nextTimes[idx] = OVERTIME_SECONDS;
+      const nextOvertime = [...playersInOvertime];
+      nextOvertime[idx] = true;
+      setTimes(nextTimes);
+      setPlayersInOvertime(nextOvertime);
+      setActiveIdx(idx);
+      setPaused(false);
+      depleteAnims.current[idx].setValue(0);
+      saveState(nextTimes, idx, false, nextOvertime);
+      return;
+    }
+
     if (activeIdx === idx) {
       const newPaused = !paused;
       if (newPaused) {
         // Going to paused: snap depletion animation to exact position
         depleteAnims.current[idx].stopAnimation();
-        depleteAnims.current[idx].setValue(1 - times[idx] / totalSeconds);
+        const base = playersInOvertime[idx] ? OVERTIME_SECONDS : totalSeconds;
+        depleteAnims.current[idx].setValue(1 - times[idx] / base);
       }
       setPaused(newPaused);
-      saveState(times, idx, newPaused);
+      saveState(times, idx, newPaused, playersInOvertime);
     } else {
+      let nextTimes = [...times];
+
+      // Forfeit remaining overtime of the outgoing player
+      if (activeIdx !== null && playersInOvertime[activeIdx] && nextTimes[activeIdx] > 0) {
+        nextTimes[activeIdx] = 0;
+        depleteAnims.current[activeIdx].setValue(1);
+      }
+
+      // When switching to an overtime player, reset their clock to 30s
+      if (playersInOvertime[idx]) {
+        nextTimes[idx] = OVERTIME_SECONDS;
+        depleteAnims.current[idx].setValue(0);
+      }
+
+      setTimes(nextTimes);
+
       if (!timerStartedRef.current) {
         // First/re-start: reuse existing row or create a new one
         if (timerDocIdRef.current) {
-          saveState(times, idx, false);
+          saveState(nextTimes, idx, false, playersInOvertime);
         } else {
           // Guard: check store collection before creating to avoid duplicates
           const inCollection = timerStore.collection.find(
@@ -274,21 +345,22 @@ export default function TimerPage() {
           );
           if (inCollection) {
             timerDocIdRef.current = inCollection.$id;
-            saveState(times, idx, false);
+            saveState(nextTimes, idx, false, playersInOvertime);
           } else {
             timerStore.add({
               table: TABLE,
-              playerTimes: times,
+              playerTimes: nextTimes,
               games: params.gameId ?? null,
               activePlayerTimer: idx,
               paused: false,
+              playersInOvertime,
             }).then((doc) => {
               if (doc) timerDocIdRef.current = doc.$id;
             });
           }
         }
       } else if (activeIdx !== null) {
-        saveState(times, idx, false);
+        saveState(nextTimes, idx, false, playersInOvertime);
       }
       setActiveIdx(idx);
       setPaused(false);
@@ -303,22 +375,35 @@ export default function TimerPage() {
     setMenuOpen(false);
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
+    const ok = await confirm({
+      title: t("confirmReset.title"),
+      message: t("confirmReset.message"),
+      confirmLabel: t("confirmReset.confirm"),
+      cancelLabel: t("confirmReset.cancel"),
+      destructive: true,
+    });
+    if (!ok) return;
+
     const defaultTimes = Array(playerCount).fill(totalSeconds);
+    const defaultOvertime = Array(playerCount).fill(false);
     timerStartedRef.current = false;
     setTimes(defaultTimes);
+    setPlayersInOvertime(defaultOvertime);
     setActiveIdx(0);
     setPaused(true);
     depleteAnims.current.forEach((anim) => anim.setValue(0));
-    saveState(defaultTimes, 0, true);
+    saveState(defaultTimes, 0, true, defaultOvertime);
     setMenuOpen(false);
   };
 
   const handleSaveCustomTimer = useCallback(async (durationMinutes: number, dir: "up" | "down") => {
     const newTotalSeconds = (durationMinutes * 60) / playerCount;
     const defaultTimes = Array(playerCount).fill(newTotalSeconds);
+    const defaultOvertime = Array(playerCount).fill(false);
     timerStartedRef.current = false;
     setTimes(defaultTimes);
+    setPlayersInOvertime(defaultOvertime);
     setActiveIdx(0);
     setPaused(true);
     depleteAnims.current.forEach((anim) => anim.setValue(0));
@@ -331,6 +416,7 @@ export default function TimerPage() {
         direction: dir,
         playerTimes: defaultTimes,
         activePlayerTimer: 0 as any,
+        playersInOvertime: [false, false, false, false],
         paused: true,
       }, true);
     } else {
@@ -341,6 +427,7 @@ export default function TimerPage() {
         direction: dir,
         playerTimes: defaultTimes,
         activePlayerTimer: 0,
+        playersInOvertime: [false, false, false, false],
         paused: true,
       });
       if (doc) timerDocIdRef.current = doc.$id;
@@ -348,40 +435,28 @@ export default function TimerPage() {
   }, [timerStore, params.gameId, playerCount]);
 
   const handleToggleBell = async () => {
-    try {
-      if (bell) {
-        const ok = await confirm({
-          title: t("confirmDismiss.title"),
-          message: t("confirmDismiss.message"),
-          confirmLabel: t("confirmDismiss.confirm"),
-          cancelLabel: t("confirmDismiss.cancel"),
-          destructive: true,
-        });
-        if (!ok) return;
-        setBellLoading(true);
-        await tableBellStore.delete(bell);
-      } else {
-        const ok = await confirm({
-          title: t("confirmRing.title"),
-          message: t("confirmRing.message"),
-          confirmLabel: t("confirmRing.confirm"),
-          cancelLabel: t("confirmRing.cancel"),
-        });
-        if (!ok) return;
-        setBellLoading(true);
-        await tableBellStore.add({ table: TABLE, startTime: new Date().toISOString() });
-      }
-      setMenuOpen(false);
-    } finally {
-      setBellLoading(false);
-    }
+    const done = bell
+      ? await bellActions.dismiss(bell, {
+        title: t("confirmDismiss.title"),
+        message: t("confirmDismiss.message"),
+        confirmLabel: t("confirmDismiss.confirm"),
+        cancelLabel: t("confirmDismiss.cancel"),
+        destructive: true,
+      })
+      : await bellActions.ring(TABLE, undefined, {
+        title: t("confirmRing.title"),
+        message: t("confirmRing.message"),
+        confirmLabel: t("confirmRing.confirm"),
+        cancelLabel: t("confirmRing.cancel"),
+      });
+    if (done) setMenuOpen(false);
   };
 
   const renderCell = (idx: number) => {
     const timeLeft = times[idx];
     const isRunning = activeIdx === idx && !effectivelyPaused;
     const isPausedHere = activeIdx === idx && paused;
-    const isDepleted = timeLeft <= 0;
+    const isDepleted = timeLeft <= 0 || playersInOvertime[idx];
     const rotation = rotations[idx] ?? "0deg";
 
     // Overlay slides in from the nearest device edge toward the center
@@ -423,7 +498,7 @@ export default function TimerPage() {
         <Animated.View
           style={[
             styles.depletionOverlay,
-            { ...overlayStyle, backgroundColor: colors.background },
+            { ...overlayStyle, backgroundColor: isRunning ? playerColor.elapsed : playerColor.elapsedMuted },
           ]}
           pointerEvents="none"
         />
@@ -501,7 +576,7 @@ export default function TimerPage() {
               />
             </View>
             <Text style={[styles.bellBadgeTime, { color: bellColor }]}>
-              {formatElapsed(elapsedSeconds)}
+              {formatElapsedSeconds(elapsedSeconds)}
             </Text>
           </View>
         )}
@@ -525,8 +600,8 @@ export default function TimerPage() {
               label={bell?.acknowledgeTime ? t("bellAcknowledged") : bell ? t("bellRinging") : t("ringBell")}
               color={bell?.acknowledgeTime ? colors.success : bell ? colors.accent : colors.text}
               onPress={handleToggleBell}
-              disabled={bellLoading}
-              loading={bellLoading}
+              disabled={bellActions.isLoading || (!!bell && !bellActions.canDelete(bell))}
+              loading={bellActions.isLoading}
               colors={colors}
             />
 

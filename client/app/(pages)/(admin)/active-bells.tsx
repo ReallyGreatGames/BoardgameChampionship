@@ -1,6 +1,6 @@
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
-import { useDialog } from "@/lib/components/Dialog";
+import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
 import { TableBell } from "@/lib/models/table-bell";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { inset } from "@/lib/theme/spacing";
@@ -26,8 +26,7 @@ export default function ActiveBellsPage() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useTranslation(["activeBells"]);
   const tableBellStore = useTableBellStore();
-  const { confirm } = useDialog();
-  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const bellActions = useTableBellActions();
   const [now, setNow] = useState(Date.now);
 
   useEffect(() => {
@@ -51,34 +50,21 @@ export default function ActiveBellsPage() {
 
 
   async function handleBellPress(bell: TableBell) {
-    try {
-      if (bell.acknowledgeTime) {
-        const ok = await confirm({
-          title: t("confirmDelete.title"),
-          message: t("confirmDelete.message"),
-          confirmLabel: t("confirmDelete.confirm"),
-          cancelLabel: t("confirmDelete.cancel"),
-          destructive: true,
-        });
-        if (!ok) return;
-        setLoadingId(bell.$id);
-        await tableBellStore.delete(bell);
-      } else {
-        const ok = await confirm({
-          title: t("confirmAcknowledge.title"),
-          message: t("confirmAcknowledge.message"),
-          confirmLabel: t("confirmAcknowledge.confirm"),
-          cancelLabel: t("confirmAcknowledge.cancel"),
-        });
-        if (!ok) return;
-        setLoadingId(bell.$id);
-        await tableBellStore.update({
-          $id: bell.$id,
-          acknowledgeTime: new Date().toISOString(),
-        });
-      }
-    } finally {
-      setLoadingId(null);
+    if (bell.acknowledgeTime) {
+      await bellActions.dismiss(bell, {
+        title: t("confirmDelete.title"),
+        message: t("confirmDelete.message"),
+        confirmLabel: t("confirmDelete.confirm"),
+        cancelLabel: t("confirmDelete.cancel"),
+        destructive: true,
+      });
+    } else {
+      await bellActions.acknowledge(bell, {
+        title: t("confirmAcknowledge.title"),
+        message: t("confirmAcknowledge.message"),
+        confirmLabel: t("confirmAcknowledge.confirm"),
+        cancelLabel: t("confirmAcknowledge.cancel"),
+      });
     }
   }
 
@@ -93,7 +79,8 @@ export default function ActiveBellsPage() {
           sorted.map((bell) => {
             const isAck = !!bell.acknowledgeTime;
             const bellColor = isAck ? colors.success : colors.accent;
-            const isItemLoading = loadingId === bell.$id;
+            const isItemLoading = bellActions.isLoadingBell(bell);
+            const isLocked = !!bell.locked && !bellActions.canDelete(bell);
 
             return (
               <TouchableOpacity
@@ -104,7 +91,7 @@ export default function ActiveBellsPage() {
                 ]}
                 activeOpacity={0.7}
                 onPress={() => handleBellPress(bell)}
-                disabled={isItemLoading}
+                disabled={isItemLoading || (!!bell.acknowledgeTime && !bellActions.canDelete(bell))}
               >
                 <View style={styles.bellIconRow}>
                   {isAck && (
@@ -115,6 +102,9 @@ export default function ActiveBellsPage() {
                     size={28}
                     color={bellColor}
                   />
+                  {isLocked && (
+                    <Ionicons name="lock-closed-outline" size={16} color={bellColor} />
+                  )}
                 </View>
 
                 <View style={styles.bellLabelRow}>
@@ -123,6 +113,9 @@ export default function ActiveBellsPage() {
                   </Text>
                   {isItemLoading && <ActivityIndicator size="small" color={bellColor} />}
                 </View>
+                {bell.reason ? (
+                  <Text style={[styles.bellReason, { color: bellColor }]}>{bell.reason}</Text>
+                ) : null}
 
                 <Text style={[styles.bellTimer, { color: bellColor }]}>
                   {formatElapsed(bell.startTime, now)}
@@ -196,6 +189,10 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     bellTimer: {
       ...type.caption,
       letterSpacing: 1,
+    },
+    bellReason: {
+      ...type.caption,
+      opacity: 0.8,
     },
   });
 }

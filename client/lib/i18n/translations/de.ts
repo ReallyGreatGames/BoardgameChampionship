@@ -96,6 +96,9 @@ const translations = {
       confirm: "Löschen",
       cancel: "Abbrechen",
     },
+    notificationTitle: "Tischklingel!",
+    notificationBody: "Tisch {{table}} braucht Hilfe!",
+    notificationBodyWithReason: "Tisch {{table}}: {{reason}}",
   },
   rules: {
     title: "Regeln",
@@ -127,11 +130,11 @@ const translations = {
   timer: {
     paused: "PAUSIERT",
     timeOut: "ZEIT ABGELAUFEN",
-    ringBell: "Tischklingel läuten",
-    bellRinging: "Klingel läutet…",
-    bellAcknowledged: "Klingel bestätigt",
-    resetTimers: "Timer zurücksetzen",
-    closeTimer: "Timer schließen",
+    ringBell: "Klingeln",
+    bellRinging: "Klingelt…",
+    bellAcknowledged: "Auf dem Weg",
+    resetTimers: "Zurücksetzen",
+    closeTimer: "Schließen",
     confirmRing: {
       title: "Tischklingel läuten",
       message: "Die Schiedsrichter:innen auf euren Tisch aufmerksam machen?",
@@ -144,7 +147,14 @@ const translations = {
       confirm: "Entfernen",
       cancel: "Abbrechen",
     },
-    customTimer: "Benutzerdefinierter Timer",
+    timerElapsed: "Zeit Abgelaufen",
+    confirmReset: {
+      title: "Timer zurücksetzen",
+      message: "Alle Timer auf zurücksetzen?",
+      confirm: "Zurücksetzen",
+      cancel: "Abbrechen",
+    },
+    customTimer: "Benutzerdefiniert",
     customTimerModal: {
       title: "Benutzerdefinierter Timer",
       durationField: "Gesamtdauer (min)",
