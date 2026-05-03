@@ -19,6 +19,7 @@ import { useAuth } from "../auth";
 import { usePlayer } from "../bootstrap/PlayerProvider";
 import { useTheme } from "../bootstrap/ThemeProvider";
 import { Schedule } from "../models/schedule";
+import { useResultStore } from "../stores/appwrite/result-store";
 import { useScheduleStore } from "../stores/appwrite/schedule-store";
 import { inset } from "../theme/spacing";
 import { type } from "../theme/typography";
@@ -288,6 +289,7 @@ export function ScheduleList() {
   const { isAdmin } = useAuth();
   const { confirm } = useDialog();
   const { collection, add, update, delete: deleteItem } = useScheduleStore();
+  const resultCollection = useResultStore((s) => s.collection);
   const [isLoading, setIsLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<Schedule | undefined>(undefined);
@@ -341,13 +343,36 @@ export function ScheduleList() {
   }
 
   async function handleSetActive(storeIndex: number) {
+    const currentActive = sortedScheduleItems.find((s) => s.isActive);
+    // ! TODO: When tables are imported: only show confirm, if not all tables have completed submitted
+    const hasSigned =
+      !!currentActive?.gameId &&
+      resultCollection.some(
+        (r) => r.gameId === currentActive.gameId && r.signatureIds?.some(Boolean),
+      );
+
+    const confirmKey = "confirmSetActive";
     const ok = await confirm({
-      title: t("schedule.confirmSetActive.title"),
-      message: t("schedule.confirmSetActive.message"),
-      confirmLabel: t("schedule.confirmSetActive.confirm"),
-      cancelLabel: t("schedule.confirmSetActive.cancel"),
+      title: t(`schedule.${confirmKey}.title`),
+      message: t(`schedule.${confirmKey}.message`),
+      confirmLabel: t(`schedule.${confirmKey}.confirm`),
+      cancelLabel: t(`schedule.${confirmKey}.cancel`),
+      destructive: hasSigned,
     });
     if (!ok) return;
+
+    if (hasSigned) {
+      const confirmKey = "confirmSetActiveWithSignatures";
+
+      const ok = await confirm({
+        title: t(`schedule.${confirmKey}.title`),
+        message: t(`schedule.${confirmKey}.message`),
+        confirmLabel: t(`schedule.${confirmKey}.confirm`),
+        cancelLabel: t(`schedule.${confirmKey}.cancel`),
+        destructive: hasSigned,
+      });
+      if (!ok) return;
+    }
 
     setIsLoading(true);
     try {

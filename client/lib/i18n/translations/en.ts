@@ -190,6 +190,7 @@ const translations = {
       confirm: "Overwrite",
       cancel: "Discard",
     },
+    notActiveGame: "Results can only be edited for the currently active game.",
   },
   tableOverview: {
     noActiveSchedule: "No active schedule item",
@@ -229,6 +230,12 @@ const translations = {
         title: "Set Active",
         message: "Set this as the currently active schedule item?",
         confirm: "Set Active",
+        cancel: "Cancel",
+      },
+      confirmSetActiveWithSignatures: {
+        title: "Set Active",
+        message: "This game already has signed result entries. Are you sure you want to change the active item?",
+        confirm: "Change Anyway",
         cancel: "Cancel",
       },
       form: {

@@ -191,6 +191,7 @@ const translations = {
       confirm: "Überschreiben",
       cancel: "Verwerfen",
     },
+    notActiveGame: "Ergebnisse können nur für das aktive Spiel bearbeitet werden.",
   },
   tableOverview: {
     noActiveSchedule: "Kein aktiver Zeitplaneintrag",
@@ -230,6 +231,12 @@ const translations = {
         title: "Aktiv setzen",
         message: "Diesen Eintrag als aktiven Zeitplan-Eintrag setzen?",
         confirm: "Aktiv setzen",
+        cancel: "Abbrechen",
+      },
+      confirmSetActiveWithSignatures: {
+        title: "Aktiv setzen",
+        message: "Für dieses Spiel liegen bereits Unterschriften vor. Trotzdem den aktiven Eintrag wechseln?",
+        confirm: "Trotzdem wechseln",
         cancel: "Abbrechen",
       },
       form: {
