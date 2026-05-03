@@ -1,8 +1,8 @@
 import * as Haptics from "expo-haptics";
 import * as Notifications from "expo-notifications";
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Platform } from "react-native";
-import { TableBell } from "../models/table-bell";
 import { useTableBellStore } from "../stores/appwrite/table-bell-store";
 
 // Show notifications even while the app is foregrounded (native only)
@@ -55,7 +55,7 @@ function playWebBellSound() {
   }
 }
 
-async function triggerNotifications(bell: TableBell) {
+async function triggerNotifications(title: string, body: string) {
   if (Platform.OS === "web") {
     playWebBellSound();
 
@@ -64,10 +64,7 @@ async function triggerNotifications(bell: TableBell) {
     }
 
     if ("Notification" in window && Notification.permission === "granted") {
-      new Notification("Table Bell!", {
-        body: `Table ${bell.table} needs attention!`,
-        icon: "/favicon.png",
-      });
+      new Notification(title, { body, icon: "/favicon.png" });
     }
     return;
   }
@@ -76,11 +73,7 @@ async function triggerNotifications(bell: TableBell) {
   await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 
   await Notifications.scheduleNotificationAsync({
-    content: {
-      title: "Table Bell!",
-      body: `Table ${bell.table} needs attention!`,
-      sound: true,
-    },
+    content: { title, body, sound: true },
     trigger: null,
   });
 }
@@ -89,6 +82,7 @@ export function useTableBellNotifications(isAdmin: boolean) {
   const collection = useTableBellStore((s) => s.collection);
   const mountedAtRef = useRef<number | null>(null);
   const permissionsRequestedRef = useRef(false);
+  const { t } = useTranslation(["activeBells"]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -110,6 +104,12 @@ export function useTableBellNotifications(isAdmin: boolean) {
       return createdAt > cutoff && !bell.acknowledgeTime;
     });
 
-    newBells.forEach(triggerNotifications);
-  }, [collection, isAdmin]);
+    newBells.forEach((bell) => {
+      const title = t("notificationTitle");
+      const body = bell.reason
+        ? t("notificationBodyWithReason", { table: bell.table, reason: bell.reason })
+        : t("notificationBody", { table: bell.table });
+      triggerNotifications(title, body);
+    });
+  }, [collection, isAdmin, t]);
 }
