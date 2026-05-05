@@ -13,7 +13,11 @@ export type ImportRowStatus =
   | { state: "error"; message: string };
 
 type ExistingTeam = { $id: string; code: string };
-type ExistingPlayer = { $id: string; team: string | { $id: string }; playerNumber: number };
+type ExistingPlayer = {
+  $id: string;
+  team: string | { $id: string };
+  playerNumber: number;
+};
 
 interface AppwriteError {
   code?: number;
@@ -22,7 +26,10 @@ interface AppwriteError {
 
 function isRateLimit(e: unknown): boolean {
   const err = e as AppwriteError;
-  return err?.code === 429 || err?.message?.toLowerCase().includes("rate limit") === true;
+  return (
+    err?.code === 429 ||
+    err?.message?.toLowerCase().includes("rate limit") === true
+  );
 }
 
 function retry<T>(fn: () => Promise<T>): Promise<T> {
@@ -34,16 +41,20 @@ export async function prefetchExisting(): Promise<{
   playersByTeamAndNumber: Map<string, Map<number, string>>;
 }> {
   const [teamsResult, playersResult] = await Promise.all([
-    retry(() => tablesDB.listRows({
-      databaseId: DATABASE_ID,
-      tableId: TEAMS_TABLE,
-      queries: [Query.limit(500)],
-    })),
-    retry(() => tablesDB.listRows({
-      databaseId: DATABASE_ID,
-      tableId: PLAYERS_TABLE,
-      queries: [Query.limit(500)],
-    })),
+    retry(() =>
+      tablesDB.listRows({
+        databaseId: DATABASE_ID,
+        tableId: TEAMS_TABLE,
+        queries: [Query.limit(500)],
+      }),
+    ),
+    retry(() =>
+      tablesDB.listRows({
+        databaseId: DATABASE_ID,
+        tableId: PLAYERS_TABLE,
+        queries: [Query.limit(500)],
+      }),
+    ),
   ]);
 
   const teamsByCode = new Map<string, ExistingTeam>(
@@ -76,47 +87,68 @@ export async function importTeam(
 
     if (existingTeam) {
       teamId = existingTeam.$id;
-      await retry(() => tablesDB.updateRow({
-        databaseId: DATABASE_ID,
-        tableId: TEAMS_TABLE,
-        rowId: teamId,
-        data: { name: parsed.name, country: parsed.country },
-      }));
+      await retry(() =>
+        tablesDB.updateRow({
+          databaseId: DATABASE_ID,
+          tableId: TEAMS_TABLE,
+          rowId: teamId,
+          data: { name: parsed.name, country: parsed.country },
+        }),
+      );
     } else {
-      const doc = await retry(() => tablesDB.createRow({
-        databaseId: DATABASE_ID,
-        tableId: TEAMS_TABLE,
-        rowId: ID.unique(),
-        data: { name: parsed.name, code: parsed.code, country: parsed.country },
-      }));
+      const doc = await retry(() =>
+        tablesDB.createRow({
+          databaseId: DATABASE_ID,
+          tableId: TEAMS_TABLE,
+          rowId: ID.unique(),
+          data: {
+            name: parsed.name,
+            code: parsed.code,
+            country: parsed.country,
+          },
+        }),
+      );
       teamId = doc.$id;
     }
 
-    const existingPlayerNumbers = playersByTeamAndNumber.get(teamId) ?? new Map<number, string>();
+    const existingPlayerNumbers =
+      playersByTeamAndNumber.get(teamId) ?? new Map<number, string>();
 
     for (const player of parsed.players) {
       const existingPlayerId = existingPlayerNumbers.get(player.playerNumber);
       const playerCode = `${parsed.code}-${player.playerNumber}`;
       if (existingPlayerId) {
-        await retry(() => tablesDB.updateRow({
-          databaseId: DATABASE_ID,
-          tableId: PLAYERS_TABLE,
-          rowId: existingPlayerId,
-          data: { name: player.name, playerCode },
-        }));
+        await retry(() =>
+          tablesDB.updateRow({
+            databaseId: DATABASE_ID,
+            tableId: PLAYERS_TABLE,
+            rowId: existingPlayerId,
+            data: { name: player.name, playerCode },
+          }),
+        );
       } else {
-        await retry(() => tablesDB.createRow({
-          databaseId: DATABASE_ID,
-          tableId: PLAYERS_TABLE,
-          rowId: ID.unique(),
-          data: { name: player.name, team: teamId, playerNumber: player.playerNumber, playerCode },
-        }));
+        await retry(() =>
+          tablesDB.createRow({
+            databaseId: DATABASE_ID,
+            tableId: PLAYERS_TABLE,
+            rowId: ID.unique(),
+            data: {
+              name: player.name,
+              team: teamId,
+              playerNumber: player.playerNumber,
+              playerCode,
+            },
+          }),
+        );
       }
     }
 
     onStatus({ state: "success" });
   } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : (e as AppwriteError)?.message ?? "Unknown error";
+    const message =
+      e instanceof Error
+        ? e.message
+        : ((e as AppwriteError)?.message ?? "Unknown error");
     onStatus({ state: "error", message });
   }
 }
