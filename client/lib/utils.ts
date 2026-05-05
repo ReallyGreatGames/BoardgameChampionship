@@ -1,5 +1,35 @@
 export const EMPTY = Symbol("empty");
 
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  options: {
+    maxRetries?: number;
+    initialDelay?: number;
+    shouldRetry?: (error: unknown) => boolean;
+  } = {},
+): Promise<T> {
+  const { maxRetries = 4, initialDelay = 1000, shouldRetry = () => true } = options;
+  let delay = initialDelay;
+  let attempt = 0;
+  do {
+    try {
+      return await fn();
+    } catch (e: unknown) {
+      if (shouldRetry(e) && attempt < maxRetries) {
+        await sleep(delay);
+        delay *= 2;
+        attempt++;
+      } else {
+        throw e;
+      }
+    }
+  } while (true);
+}
+
 export function addMinutesToTime(time: string, minutes: number): string {
   const [h, m] = time.split(":").map(Number);
   const total = h * 60 + m + minutes;
