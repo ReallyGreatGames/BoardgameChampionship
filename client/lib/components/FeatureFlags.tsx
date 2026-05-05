@@ -14,6 +14,7 @@ import { useFeatureFlagStore } from "../stores/appwrite/feature-flag-store";
 import { updateInCollection } from "../stores/real-time-store";
 import { inset, space } from "../theme/spacing";
 import { type } from "../theme/typography";
+import { useDialog } from "./Dialog";
 
 const COLLECTION_ID = "feature_flags";
 
@@ -23,6 +24,7 @@ export function FeatureFlags() {
   const collection = useFeatureFlagStore((s) => s.collection);
   const [pending, setPending] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
+  const { confirm } = useDialog();
 
   const hasPendingChanges = Object.keys(pending).length > 0;
 
@@ -38,27 +40,21 @@ export function FeatureFlags() {
     return pending[id] !== undefined ? pending[id] : storedValue;
   }
 
-  function handleApply() {
-    Alert.alert(
-      "Apply changes",
-      `Update ${Object.keys(pending).length} feature flag(s)?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Apply",
-          style: "default",
-          onPress: async () => {
-            setSaving(true);
-            const updates = Object.entries(pending).map(([id, enabled]) =>
-              updateInCollection(COLLECTION_ID, { $id: id, enabled }),
-            );
-            await Promise.all(updates);
-            setPending({});
-            setSaving(false);
-          },
-        },
-      ],
-    );
+  async function handleApply() {
+    const ok = await confirm({
+      title: "Apply changes",
+      message: `Update ${Object.keys(pending).length} feature flag(s)?`,
+    });
+
+    if (ok) {
+      setSaving(true);
+      const updates = Object.entries(pending).map(([id, enabled]) =>
+        updateInCollection(COLLECTION_ID, { $id: id, enabled }),
+      );
+      await Promise.all(updates);
+      setPending({});
+      setSaving(false);
+    }
   }
 
   return (
@@ -74,7 +70,10 @@ export function FeatureFlags() {
           const displayValue = getDisplayValue(flag.$id, flag.enabled);
           const isDirty = pending[flag.$id] !== undefined;
           return (
-            <View key={flag.$id} style={[styles.row, isDirty && styles.rowDirty]}>
+            <View
+              key={flag.$id}
+              style={[styles.row, isDirty && styles.rowDirty]}
+            >
               <View style={styles.rowInfo}>
                 <Text style={styles.rowName}>{flag.feature}</Text>
                 <Text style={styles.rowSlug}>{flag.slug}</Text>
@@ -103,7 +102,8 @@ export function FeatureFlags() {
             <ActivityIndicator size="small" color={colors.background} />
           ) : (
             <Text style={styles.applyButtonText}>
-              Apply{hasPendingChanges ? ` (${Object.keys(pending).length})` : ""}
+              Apply
+              {hasPendingChanges ? ` (${Object.keys(pending).length})` : ""}
             </Text>
           )}
         </Pressable>
