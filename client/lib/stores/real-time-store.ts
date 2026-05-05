@@ -7,7 +7,7 @@ export type Set<T extends Models.Document, S extends RealtimeCollectionStore<T> 
   (partialState: Partial<S> | ((state: S) => Partial<S> | S), ...args: any[]) => void;
 
 export interface RealtimeCollectionStore<T extends Models.Document> {
-  collection: Array<T>;
+  collection: T[];
   init: () => void | Promise<void>;
 }
 
@@ -21,7 +21,7 @@ const recentEvents = new Map<string, number>();
 
 export function updateRealtimeCollection<T extends Models.Document>(
   key: Key,
-  collection: Array<T>,
+  collection: T[],
   response: RealtimeResponseEvent<T>,
 ) {
   const { events, payload } = response;
@@ -32,11 +32,11 @@ export function updateRealtimeCollection<T extends Models.Document>(
 
   if (!isNewUpdate(key, payload, eventType)) return collection;
 
-  const handling: Record<string, (collection: Array<T>, payload: T) => Array<T>> = {
+  const handling: Record<string, (collection: T[], payload: T) => T[]> = {
     create: updateRealtimeCollectionCreate,
     update: updateRealtimeCollectionUpdate,
     delete: updateRealtimeCollectionDelete,
-    unknown: (collection: Array<T>, _payload: T) => collection,
+    unknown: (collection: T[], _payload: T) => collection,
   };
 
   return handling[eventType](collection, payload);
@@ -120,7 +120,7 @@ export async function initCollection<T extends Models.Document, S extends Realti
       queries: [Query.limit(Number.MAX_SAFE_INTEGER), ...(queries ?? [])],
     });
     console.debug(`[realtime] initial load for ${key}`, result.total);
-    set({ collection: result.rows as unknown as Array<T> } as Partial<S>);
+    set({ collection: result.rows as unknown as T[] } as Partial<S>);
   } catch (e: any) {
     Alert.alert("Error", e?.message ?? `Failed to load ${key}.`);
   }
@@ -151,15 +151,18 @@ export async function initCollection<T extends Models.Document, S extends Realti
     `databases.${DATABASE_ID}.collections.${key}.documents`,
     (response) => {
       console.debug(`[realtime] ${key} sid=${sid}`);
-
-      set((state: S) => ({
-        ...state,
-        collection: updateRealtimeCollection(
-          key,
-          [...state.collection],
-          response,
-        ),
-      } as S));
+      try {
+        set((state: S) => ({
+          ...state,
+          collection: updateRealtimeCollection(
+            key,
+            [...state.collection],
+            response,
+          ),
+        } as S));
+      } catch (e) {
+        console.error(`[realtime] ${key} callback error`, e);
+      }
     },
   );
 
@@ -175,7 +178,7 @@ export async function initCollection<T extends Models.Document, S extends Realti
 }
 
 function updateRealtimeCollectionCreate<T extends Models.Document>(
-  collection: Array<T>,
+  collection: T[],
   payload: T
 ) {
   // already present — ignore duplicate create
@@ -191,7 +194,7 @@ function updateRealtimeCollectionCreate<T extends Models.Document>(
 }
 
 function updateRealtimeCollectionUpdate<T extends Models.Document>(
-  collection: Array<T>,
+  collection: T[],
   payload: T
 ) {
   // no existing entry — insert to be safe
@@ -233,7 +236,7 @@ function updateRealtimeCollectionUpdate<T extends Models.Document>(
 }
 
 function updateRealtimeCollectionDelete<T extends Models.Document>(
-  collection: Array<T>,
+  collection: T[],
   payload: T
 ) {
   // nothing to delete
@@ -246,6 +249,13 @@ function updateRealtimeCollectionDelete<T extends Models.Document>(
   collection = collection.filter((item) => item.$id !== payload.$id);
 
   return collection;
+}
+
+export function clearAllSubscriptions(): void {
+  subscriptions.forEach(({ unsubscribe }) => {
+    try { unsubscribe?.(); } catch {}
+  });
+  subscriptions.clear();
 }
 
 function isNewUpdate(key: string, payload: any, eventType: string): boolean {

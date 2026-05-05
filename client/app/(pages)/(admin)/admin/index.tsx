@@ -1,3 +1,4 @@
+import { FeatureFlags } from "@/lib/components/FeatureFlags";
 import { ScheduleList } from "@/lib/components/Schedule";
 import { TableOverview } from "@/lib/components/TableOverview";
 import { useMemo, useState } from "react";
@@ -6,12 +7,13 @@ import { useTheme } from "../../../../lib/bootstrap/ThemeProvider";
 import { TournamentSettings } from "../../../../lib/components/TournamentSettings";
 import { inset, space } from "../../../../lib/theme/spacing";
 
-type Tab = "tableOverview" | "schedule" | "tournamentSettings";
+type Tab = "tableOverview" | "schedule" | "tournamentSettings" | "featureFlags";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "tableOverview", label: "Table Overview" },
   { key: "schedule", label: "Schedule" },
   { key: "tournamentSettings", label: "Settings" },
+  { key: "featureFlags", label: "Feature Flags" },
 ];
 
 export default function AdminDashboard() {
@@ -39,6 +41,7 @@ export default function AdminDashboard() {
         {activeTab === "tableOverview" && <TableOverview />}
         {activeTab === "schedule" && <ScheduleList />}
         {activeTab === "tournamentSettings" && <TournamentSettings />}
+        {activeTab === "featureFlags" && <FeatureFlags />}
       </View>
     </View>
   );
