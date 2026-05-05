@@ -18,28 +18,32 @@ export default function Index() {
   const { collection } = useScheduleStore();
   const { t } = useTranslation(["home"]);
 
-  const styles = useMemo(() => StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    content: {
-      padding: inset.screen,
-      paddingTop: inset.section,
-      gap: inset.group,
-    },
-    sectionLabel: {
-      ...type.eyebrow,
-      color: colors.textMuted,
-      marginBottom: inset.tight,
-    },
-    noScheduleText: {
-      ...type.body,
-      color: colors.textMuted,
-      textAlign: "center",
-      marginTop: inset.section,
-    },
-  }), [colors]);
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        content: {
+          padding: inset.screen,
+          paddingTop: inset.section,
+          gap: inset.group,
+        },
+        sectionLabel: {
+          ...type.eyebrow,
+          color: colors.textMuted,
+          marginBottom: inset.tight,
+        },
+        noScheduleText: {
+          ...type.body,
+          color: colors.textMuted,
+          textAlign: "center",
+          marginTop: inset.section,
+        },
+      }),
+    [colors],
+  );
 
   const sortedItems = useMemo(
     () => [...collection].sort((a, b) => a.sortIndex - b.sortIndex),
@@ -53,14 +57,15 @@ export default function Index() {
 
   const upcomingItems = useMemo(() => {
     const activeIndex = sortedItems.findIndex((s) => s.isActive);
-    const remaining = activeIndex !== -1
-      ? sortedItems.slice(activeIndex + 1)
-      : sortedItems;
+    const remaining =
+      activeIndex !== -1 ? sortedItems.slice(activeIndex + 1) : sortedItems;
     return remaining.filter((s) => !s.isFinished).slice(0, 3);
   }, [sortedItems]);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading) {
+      return;
+    }
     routeDeterministic();
   }, [user, loading, isAdmin, isPinVerified, routeDeterministic]);
 

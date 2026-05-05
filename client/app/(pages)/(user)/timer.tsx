@@ -29,20 +29,32 @@ const DEFAULT_SECONDS = 10 * 60;
 const TABLE = 1; // TODO: pass via route params when table selection is implemented
 
 function resolveGameId(ref: unknown): string | null {
-  if (!ref) return null;
-  if (typeof ref === "string") return ref;
+  if (!ref) {
+    return null;
+  }
+  if (typeof ref === "string") {
+    return ref;
+  }
   if (Array.isArray(ref)) {
     const first = ref[0];
-    if (!first) return null;
-    return typeof first === "string" ? first : (first as any).$id ?? null;
+    if (!first) {
+      return null;
+    }
+    return typeof first === "string" ? first : ((first as any).$id ?? null);
   }
   return (ref as any).$id ?? null;
 }
 
 function toNumberArray(value: unknown): number[] {
-  if (Array.isArray(value)) return value as number[];
+  if (Array.isArray(value)) {
+    return value as number[];
+  }
   if (typeof value === "string") {
-    try { return JSON.parse(value) as number[]; } catch { return []; }
+    try {
+      return JSON.parse(value) as number[];
+    } catch {
+      return [];
+    }
   }
   return [];
 }
@@ -56,14 +68,18 @@ const PLAYER_COLORS = [
 ] as const;
 
 function formatElapsed(seconds: number) {
-  const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+  const m = Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, "0");
   const s = (seconds % 60).toString().padStart(2, "0");
   return `${m}:${s}`;
 }
 
 function formatTime(s: number) {
   const clamped = Math.max(0, s);
-  const m = Math.floor(clamped / 60).toString().padStart(2, "0");
+  const m = Math.floor(clamped / 60)
+    .toString()
+    .padStart(2, "0");
   const sec = (clamped % 60).toString().padStart(2, "0");
   return `${m}:${sec}`;
 }
@@ -88,96 +104,128 @@ export default function TimerPage() {
         unlockOrientation().catch(console.error);
         deactivateKeepAwake();
       };
-    }, [forceOrientation, unlockOrientation])
+    }, [forceOrientation, unlockOrientation]),
   );
 
   const timerSettings = useMemo(
     () => timerSettingsStore.collection.find((g) => g.$id === params.gameId),
-    [timerSettingsStore.collection, params.gameId]
+    [timerSettingsStore.collection, params.gameId],
   );
 
   // Find the canonical timer document for this table+game in the real-time collection
   const existingTimer = useMemo(
-    () => timerStore.collection.find(
-      (t) => t.table === TABLE && resolveGameId(t.games) === (params.gameId ?? null)
-    ),
-    [timerStore.collection, params.gameId]
+    () =>
+      timerStore.collection.find(
+        (t) =>
+          t.table === TABLE &&
+          resolveGameId(t.games) === (params.gameId ?? null),
+      ),
+    [timerStore.collection, params.gameId],
   );
 
   const playerCount = 4;
-  const effectiveDuration = existingTimer?.durationMinutesTotal ?? timerSettings?.durationMinutesTotal;
-  const totalSeconds = effectiveDuration ? (effectiveDuration * 60) / playerCount : DEFAULT_SECONDS;
-  const direction = existingTimer?.direction ?? timerSettings?.direction ?? "down";
+  const effectiveDuration =
+    existingTimer?.durationMinutesTotal ?? timerSettings?.durationMinutesTotal;
+  const totalSeconds = effectiveDuration
+    ? (effectiveDuration * 60) / playerCount
+    : DEFAULT_SECONDS;
+  const direction =
+    existingTimer?.direction ?? timerSettings?.direction ?? "down";
 
   const [times, setTimes] = useState<number[]>(() =>
-    Array(playerCount).fill(totalSeconds)
+    Array(playerCount).fill(totalSeconds),
   );
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
 
   const timerStartedRef = useRef(false);
-  if (activeIdx !== null) timerStartedRef.current = true;
+  if (activeIdx !== null) {
+    timerStartedRef.current = true;
+  }
 
   const timerDocIdRef = useRef<string | null>(null);
 
   // On every real-time update: adopt doc ID, sync active player, paused state and times
   useEffect(() => {
-    if (!existingTimer) return;
+    if (!existingTimer) {
+      return;
+    }
     timerDocIdRef.current = existingTimer.$id;
 
     setActiveIdx(existingTimer.activePlayerTimer ?? null);
     setPaused(existingTimer.paused ?? false);
 
     const remoteTimes = toNumberArray(existingTimer.playerTimes);
-    if (remoteTimes.length !== playerCount) return;
+    if (remoteTimes.length !== playerCount) {
+      return;
+    }
     setTimes(remoteTimes);
     remoteTimes.forEach((remoteTime, i) => {
-      depleteAnims.current[i].setValue(1 - Math.min(remoteTime, totalSeconds) / totalSeconds);
+      depleteAnims.current[i].setValue(
+        1 - Math.min(remoteTime, totalSeconds) / totalSeconds,
+      );
     });
   }, [existingTimer, playerCount, totalSeconds]);
 
   // Single update call for all mutable timer state
-  const saveState = useCallback(async (
-    currentTimes: number[],
-    activePlayer: number | null,
-    isPaused: boolean,
-  ) => {
-    const id = timerDocIdRef.current;
-    if (!id) return;
-    const ok = await timerStore.update({
-      $id: id,
-      playerTimes: currentTimes,
-      activePlayerTimer: activePlayer as any,
-      paused: isPaused,
-    }, true);
-    if (!ok) {
-      timerDocIdRef.current = null;
-      const inCollection = timerStore.collection.find(
-        (t) => t.table === TABLE && resolveGameId(t.games) === (params.gameId ?? null)
-      );
-      if (inCollection) {
-        timerDocIdRef.current = inCollection.$id;
-        await timerStore.update({
-          $id: inCollection.$id,
+  const saveState = useCallback(
+    async (
+      currentTimes: number[],
+      activePlayer: number | null,
+      isPaused: boolean,
+    ) => {
+      const id = timerDocIdRef.current;
+      if (!id) {
+        return;
+      }
+      const ok = await timerStore.update(
+        {
+          $id: id,
           playerTimes: currentTimes,
           activePlayerTimer: activePlayer as any,
           paused: isPaused,
-        }, true);
-      } else {
-        const doc = await timerStore.add({
-          table: TABLE,
-          playerTimes: currentTimes,
-          games: params.gameId ?? null,
-          activePlayerTimer: activePlayer,
-          paused: isPaused,
-        });
-        if (doc) timerDocIdRef.current = doc.$id;
+        },
+        true,
+      );
+      if (!ok) {
+        timerDocIdRef.current = null;
+        const inCollection = timerStore.collection.find(
+          (t) =>
+            t.table === TABLE &&
+            resolveGameId(t.games) === (params.gameId ?? null),
+        );
+        if (inCollection) {
+          timerDocIdRef.current = inCollection.$id;
+          await timerStore.update(
+            {
+              $id: inCollection.$id,
+              playerTimes: currentTimes,
+              activePlayerTimer: activePlayer as any,
+              paused: isPaused,
+            },
+            true,
+          );
+        } else {
+          const doc = await timerStore.add({
+            table: TABLE,
+            playerTimes: currentTimes,
+            games: params.gameId ?? null,
+            activePlayerTimer: activePlayer,
+            paused: isPaused,
+          });
+          if (doc) {
+            timerDocIdRef.current = doc.$id;
+          }
+        }
       }
-    }
-  }, [timerStore, params.gameId]);
+    },
+    [timerStore, params.gameId],
+  );
 
   // Reset to default when game settings change, unless the timer is already in use
   useEffect(() => {
-    if (timerStartedRef.current) return;
+    if (timerStartedRef.current) {
+      return;
+    }
     setTimes(Array(playerCount).fill(totalSeconds));
     depleteAnims.current.forEach((anim) => anim.setValue(0));
   }, [totalSeconds, playerCount]);
@@ -190,12 +238,10 @@ export default function TimerPage() {
 
   const bell = useMemo(
     () => tableBellStore.collection.find((x) => x.table === TABLE),
-    [tableBellStore.collection]
+    [tableBellStore.collection],
   );
 
-  const bellColor = bell?.acknowledgeTime
-    ? colors.success
-    : colors.accent;
+  const bellColor = bell?.acknowledgeTime ? colors.success : colors.accent;
 
   useEffect(() => {
     if (!bell) {
@@ -203,7 +249,9 @@ export default function TimerPage() {
       return;
     }
     const update = () =>
-      setElapsedSeconds(Math.floor((Date.now() - new Date(bell.startTime).getTime()) / 1000));
+      setElapsedSeconds(
+        Math.floor((Date.now() - new Date(bell.startTime).getTime()) / 1000),
+      );
     update();
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
@@ -211,7 +259,7 @@ export default function TimerPage() {
 
   // One Animated.Value per player: 0 = full time remaining, 1 = depleted
   const depleteAnims = useRef(
-    Array.from({ length: playerCount }, () => new Animated.Value(0))
+    Array.from({ length: playerCount }, () => new Animated.Value(0)),
   );
 
   const activeIdxRef = useRef(activeIdx);
@@ -220,12 +268,16 @@ export default function TimerPage() {
   const effectivelyPaused = paused;
 
   useEffect(() => {
-    if (activeIdx === null || effectivelyPaused) return;
+    if (activeIdx === null || effectivelyPaused) {
+      return;
+    }
 
     const interval = setInterval(() => {
       setTimes((prev) => {
         const idx = activeIdxRef.current;
-        if (idx === null || prev[idx] <= 0) return prev;
+        if (idx === null || prev[idx] <= 0) {
+          return prev;
+        }
         const next = [...prev];
         next[idx] -= 1;
 
@@ -252,7 +304,9 @@ export default function TimerPage() {
   const rotations = ["180deg", "180deg", "0deg", "0deg"] as const;
 
   const handlePress = (idx: number) => {
-    if (times[idx] <= 0) return;
+    if (times[idx] <= 0) {
+      return;
+    }
     if (activeIdx === idx) {
       const newPaused = !paused;
       if (newPaused) {
@@ -270,21 +324,27 @@ export default function TimerPage() {
         } else {
           // Guard: check store collection before creating to avoid duplicates
           const inCollection = timerStore.collection.find(
-            (t) => t.table === TABLE && resolveGameId(t.games) === (params.gameId ?? null)
+            (t) =>
+              t.table === TABLE &&
+              resolveGameId(t.games) === (params.gameId ?? null),
           );
           if (inCollection) {
             timerDocIdRef.current = inCollection.$id;
             saveState(times, idx, false);
           } else {
-            timerStore.add({
-              table: TABLE,
-              playerTimes: times,
-              games: params.gameId ?? null,
-              activePlayerTimer: idx,
-              paused: false,
-            }).then((doc) => {
-              if (doc) timerDocIdRef.current = doc.$id;
-            });
+            timerStore
+              .add({
+                table: TABLE,
+                playerTimes: times,
+                games: params.gameId ?? null,
+                activePlayerTimer: idx,
+                paused: false,
+              })
+              .then((doc) => {
+                if (doc) {
+                  timerDocIdRef.current = doc.$id;
+                }
+              });
           }
         }
       } else if (activeIdx !== null) {
@@ -314,38 +374,46 @@ export default function TimerPage() {
     setMenuOpen(false);
   };
 
-  const handleSaveCustomTimer = useCallback(async (durationMinutes: number, dir: "up" | "down") => {
-    const newTotalSeconds = (durationMinutes * 60) / playerCount;
-    const defaultTimes = Array(playerCount).fill(newTotalSeconds);
-    timerStartedRef.current = false;
-    setTimes(defaultTimes);
-    setActiveIdx(0);
-    setPaused(true);
-    depleteAnims.current.forEach((anim) => anim.setValue(0));
+  const handleSaveCustomTimer = useCallback(
+    async (durationMinutes: number, dir: "up" | "down") => {
+      const newTotalSeconds = (durationMinutes * 60) / playerCount;
+      const defaultTimes = Array(playerCount).fill(newTotalSeconds);
+      timerStartedRef.current = false;
+      setTimes(defaultTimes);
+      setActiveIdx(0);
+      setPaused(true);
+      depleteAnims.current.forEach((anim) => anim.setValue(0));
 
-    const id = timerDocIdRef.current;
-    if (id) {
-      await timerStore.update({
-        $id: id,
-        durationMinutesTotal: durationMinutes,
-        direction: dir,
-        playerTimes: defaultTimes,
-        activePlayerTimer: 0 as any,
-        paused: true,
-      }, true);
-    } else {
-      const doc = await timerStore.add({
-        table: TABLE,
-        games: params.gameId ?? null,
-        durationMinutesTotal: durationMinutes,
-        direction: dir,
-        playerTimes: defaultTimes,
-        activePlayerTimer: 0,
-        paused: true,
-      });
-      if (doc) timerDocIdRef.current = doc.$id;
-    }
-  }, [timerStore, params.gameId, playerCount]);
+      const id = timerDocIdRef.current;
+      if (id) {
+        await timerStore.update(
+          {
+            $id: id,
+            durationMinutesTotal: durationMinutes,
+            direction: dir,
+            playerTimes: defaultTimes,
+            activePlayerTimer: 0 as any,
+            paused: true,
+          },
+          true,
+        );
+      } else {
+        const doc = await timerStore.add({
+          table: TABLE,
+          games: params.gameId ?? null,
+          durationMinutesTotal: durationMinutes,
+          direction: dir,
+          playerTimes: defaultTimes,
+          activePlayerTimer: 0,
+          paused: true,
+        });
+        if (doc) {
+          timerDocIdRef.current = doc.$id;
+        }
+      }
+    },
+    [timerStore, params.gameId, playerCount],
+  );
 
   const handleToggleBell = async () => {
     try {
@@ -357,7 +425,9 @@ export default function TimerPage() {
           cancelLabel: t("confirmDismiss.cancel"),
           destructive: true,
         });
-        if (!ok) return;
+        if (!ok) {
+          return;
+        }
         setBellLoading(true);
         await tableBellStore.delete(bell);
       } else {
@@ -367,9 +437,14 @@ export default function TimerPage() {
           confirmLabel: t("confirmRing.confirm"),
           cancelLabel: t("confirmRing.cancel"),
         });
-        if (!ok) return;
+        if (!ok) {
+          return;
+        }
         setBellLoading(true);
-        await tableBellStore.add({ table: TABLE, startTime: new Date().toISOString() });
+        await tableBellStore.add({
+          table: TABLE,
+          startTime: new Date().toISOString(),
+        });
       }
       setMenuOpen(false);
     } finally {
@@ -386,18 +461,24 @@ export default function TimerPage() {
 
     // Overlay slides in from the nearest device edge toward the center
     // Grid (clockwise): [0,1] top row, [3,2] bottom row — left col = 0|3, right col = 1|2
-    const isLeftCol = playerCount === 4 ? (idx === 0 || idx === 3) : null;
-    const overlayAnchor = playerCount === 4
-      ? (isLeftCol ? "left" : "right")
-      : (idx === 0 ? "top" : "bottom");
+    const isLeftCol = playerCount === 4 ? idx === 0 || idx === 3 : null;
+    const overlayAnchor =
+      playerCount === 4
+        ? isLeftCol
+          ? "left"
+          : "right"
+        : idx === 0
+          ? "top"
+          : "bottom";
     const overlayMax = playerCount === 4 ? cellSize.w : cellSize.h;
     const overlaySize = depleteAnims.current[idx].interpolate({
       inputRange: [0, 1],
       outputRange: [0, overlayMax],
     });
-    const overlayStyle = playerCount === 4
-      ? { top: 0, bottom: 0, [overlayAnchor]: 0, width: overlaySize }
-      : { left: 0, right: 0, [overlayAnchor]: 0, height: overlaySize };
+    const overlayStyle =
+      playerCount === 4
+        ? { top: 0, bottom: 0, [overlayAnchor]: 0, width: overlaySize }
+        : { left: 0, right: 0, [overlayAnchor]: 0, height: overlaySize };
 
     const playerColor = PLAYER_COLORS[idx % PLAYER_COLORS.length];
 
@@ -428,18 +509,29 @@ export default function TimerPage() {
           pointerEvents="none"
         />
 
-        <View style={[styles.cellContent, { transform: [{ rotate: rotation }] }]}>
-          <Text style={[type.eyebrow, { color: colors.textMuted }]}>P{idx + 1}</Text>
+        <View
+          style={[styles.cellContent, { transform: [{ rotate: rotation }] }]}
+        >
+          <Text style={[type.eyebrow, { color: colors.textMuted }]}>
+            P{idx + 1}
+          </Text>
           <Text style={[styles.timeText, { color: timeColor }]}>
             {direction === "up"
               ? formatTime(totalSeconds - timeLeft)
               : formatTime(timeLeft)}
           </Text>
           {isRunning && (
-            <View style={[styles.activePip, { backgroundColor: playerColor.active }]} />
+            <View
+              style={[
+                styles.activePip,
+                { backgroundColor: playerColor.active },
+              ]}
+            />
           )}
           {isPausedHere && (
-            <Text style={[type.eyebrow, { color: colors.textMuted, marginTop: 4 }]}>
+            <Text
+              style={[type.eyebrow, { color: colors.textMuted, marginTop: 4 }]}
+            >
               {t("paused")}
             </Text>
           )}
@@ -473,29 +565,44 @@ export default function TimerPage() {
         <Pressable
           style={[
             styles.menuTrigger,
-            { backgroundColor: colors.surfaceHigh + "ee", borderColor: colors.border },
+            {
+              backgroundColor: colors.surfaceHigh + "ee",
+              borderColor: colors.border,
+            },
             bell && !bell.acknowledgeTime && { borderColor: colors.accent },
             bell?.acknowledgeTime && { borderColor: colors.success },
           ]}
           onPress={handleOpenMenu}
         >
-          <Ionicons name="ellipsis-horizontal" size={16} color={colors.textSecondary} />
+          <Ionicons
+            name="ellipsis-horizontal"
+            size={16}
+            color={colors.textSecondary}
+          />
         </Pressable>
 
         {bell && (
-          <View style={[
-            styles.bellBadge,
-            {
-              backgroundColor: colors.surface,
-              borderColor: bell.acknowledgeTime ? colors.success : colors.accent,
-            },
-          ]}>
+          <View
+            style={[
+              styles.bellBadge,
+              {
+                backgroundColor: colors.surface,
+                borderColor: bell.acknowledgeTime
+                  ? colors.success
+                  : colors.accent,
+              },
+            ]}
+          >
             <View style={styles.bellBadgeIcons}>
               {bell.acknowledgeTime && (
                 <Ionicons name="walk-outline" size={10} color={bellColor} />
               )}
               <Ionicons
-                name={bell.acknowledgeTime ? "notifications-off-outline" : "notifications-outline"}
+                name={
+                  bell.acknowledgeTime
+                    ? "notifications-off-outline"
+                    : "notifications-outline"
+                }
                 size={12}
                 color={bellColor}
               />
@@ -516,21 +623,47 @@ export default function TimerPage() {
               { backgroundColor: colors.surface, borderColor: colors.border },
             ]}
           >
-            <Text style={[type.eyebrow, { color: colors.textMuted, marginBottom: 8, paddingHorizontal: 20, paddingTop: 8 }]}>
+            <Text
+              style={[
+                type.eyebrow,
+                {
+                  color: colors.textMuted,
+                  marginBottom: 8,
+                  paddingHorizontal: 20,
+                  paddingTop: 8,
+                },
+              ]}
+            >
               {t("paused")}
             </Text>
 
             <MenuButton
-              icon={bell ? "notifications-off-outline" : "notifications-outline"}
-              label={bell?.acknowledgeTime ? t("bellAcknowledged") : bell ? t("bellRinging") : t("ringBell")}
-              color={bell?.acknowledgeTime ? colors.success : bell ? colors.accent : colors.text}
+              icon={
+                bell ? "notifications-off-outline" : "notifications-outline"
+              }
+              label={
+                bell?.acknowledgeTime
+                  ? t("bellAcknowledged")
+                  : bell
+                    ? t("bellRinging")
+                    : t("ringBell")
+              }
+              color={
+                bell?.acknowledgeTime
+                  ? colors.success
+                  : bell
+                    ? colors.accent
+                    : colors.text
+              }
               onPress={handleToggleBell}
               disabled={bellLoading}
               loading={bellLoading}
               colors={colors}
             />
 
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View
+              style={[styles.divider, { backgroundColor: colors.border }]}
+            />
 
             <MenuButton
               icon="refresh-outline"
@@ -540,23 +673,37 @@ export default function TimerPage() {
               colors={colors}
             />
 
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View
+              style={[styles.divider, { backgroundColor: colors.border }]}
+            />
 
             <MenuButton
               icon="time-outline"
               label={t("customTimer")}
               color={colors.text}
-              onPress={() => { setMenuOpen(false); setCustomTimerOpen(true); }}
+              onPress={() => {
+                setMenuOpen(false);
+                setCustomTimerOpen(true);
+              }}
               colors={colors}
             />
 
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View
+              style={[styles.divider, { backgroundColor: colors.border }]}
+            />
 
             <MenuButton
               icon="close-outline"
               label={t("closeTimer")}
               color={colors.error}
-              onPress={() => { setMenuOpen(false); router.replace(params.gameId ? `/(pages)/(user)/game?gameId=${params.gameId}` : "/(pages)/(user)/schedule"); }}
+              onPress={() => {
+                setMenuOpen(false);
+                router.replace(
+                  params.gameId
+                    ? `/(pages)/(user)/game?gameId=${params.gameId}`
+                    : "/(pages)/(user)/schedule",
+                );
+              }}
               colors={colors}
             />
           </View>
@@ -566,7 +713,10 @@ export default function TimerPage() {
       <CustomTimerModal
         visible={customTimerOpen}
         onClose={() => setCustomTimerOpen(false)}
-        initialDuration={existingTimer?.durationMinutesTotal ?? timerSettings?.durationMinutesTotal}
+        initialDuration={
+          existingTimer?.durationMinutesTotal ??
+          timerSettings?.durationMinutesTotal
+        }
         initialDirection={existingTimer?.direction ?? timerSettings?.direction}
         onSave={handleSaveCustomTimer}
       />
@@ -584,7 +734,15 @@ type MenuButtonProps = {
   colors: ReturnType<typeof useTheme>["colors"];
 };
 
-function MenuButton({ icon, label, color, onPress, disabled, loading, colors }: MenuButtonProps) {
+function MenuButton({
+  icon,
+  label,
+  color,
+  onPress,
+  disabled,
+  loading,
+  colors,
+}: MenuButtonProps) {
   return (
     <Pressable
       style={({ pressed }) => [

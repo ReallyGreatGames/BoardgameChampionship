@@ -19,7 +19,6 @@ import {
   View,
 } from "react-native";
 
-
 export default function ActiveBellsPage() {
   const { user, loading, isAdmin } = useAuth();
   const { colors } = useTheme();
@@ -31,8 +30,12 @@ export default function ActiveBellsPage() {
   const [now, setNow] = useState(Date.now);
 
   useEffect(() => {
-    if (loading) return;
-    if (!isAdmin) router.replace("/(pages)/login");
+    if (loading) {
+      return;
+    }
+    if (!isAdmin) {
+      router.replace("/(pages)/login");
+    }
   }, [loading, isAdmin]);
 
   useEffect(() => {
@@ -44,11 +47,12 @@ export default function ActiveBellsPage() {
     return [...tableBellStore.collection].sort((a, b) => {
       const aAck = !!a.acknowledgeTime;
       const bAck = !!b.acknowledgeTime;
-      if (aAck !== bAck) return aAck ? 1 : -1;
+      if (aAck !== bAck) {
+        return aAck ? 1 : -1;
+      }
       return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
     });
   }, [tableBellStore.collection]);
-
 
   async function handleBellPress(bell: TableBell) {
     try {
@@ -60,7 +64,9 @@ export default function ActiveBellsPage() {
           cancelLabel: t("confirmDelete.cancel"),
           destructive: true,
         });
-        if (!ok) return;
+        if (!ok) {
+          return;
+        }
         setLoadingId(bell.$id);
         await tableBellStore.delete(bell);
       } else {
@@ -70,7 +76,9 @@ export default function ActiveBellsPage() {
           confirmLabel: t("confirmAcknowledge.confirm"),
           cancelLabel: t("confirmAcknowledge.cancel"),
         });
-        if (!ok) return;
+        if (!ok) {
+          return;
+        }
         setLoadingId(bell.$id);
         await tableBellStore.update({
           $id: bell.$id,
@@ -82,11 +90,16 @@ export default function ActiveBellsPage() {
     }
   }
 
-  if (loading || !user || !isAdmin) return null;
+  if (loading || !user || !isAdmin) {
+    return null;
+  }
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+      >
         {sorted.length === 0 ? (
           <Text style={styles.empty}>{t("empty")}</Text>
         ) : (
@@ -111,7 +124,11 @@ export default function ActiveBellsPage() {
                     <Ionicons name="walk-outline" size={24} color={bellColor} />
                   )}
                   <Ionicons
-                    name={isAck ? "notifications-off-outline" : "notifications-outline"}
+                    name={
+                      isAck
+                        ? "notifications-off-outline"
+                        : "notifications-outline"
+                    }
                     size={28}
                     color={bellColor}
                   />
@@ -121,7 +138,9 @@ export default function ActiveBellsPage() {
                   <Text style={[styles.tableLabel, { color: bellColor }]}>
                     {t("table")} {bell.table}
                   </Text>
-                  {isItemLoading && <ActivityIndicator size="small" color={bellColor} />}
+                  {isItemLoading && (
+                    <ActivityIndicator size="small" color={bellColor} />
+                  )}
                 </View>
 
                 <Text style={[styles.bellTimer, { color: bellColor }]}>

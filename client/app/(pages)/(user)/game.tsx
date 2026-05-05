@@ -27,14 +27,37 @@ type ActionButton = {
 };
 
 const ACTION_BUTTONS: ActionButton[] = [
-  { key: "lottery", icon: "shuffle", labelKey: "actions.lottery", onPress: (gameId) => { } },
-  { key: "rules", icon: "book-outline", labelKey: "actions.rules", onPress: (gameId) => router.push(`/rules?gameId=${gameId}`) },
-  { key: "timer", icon: "timer-outline", labelKey: "actions.timer", onPress: (gameId) => router.push(`/(pages)/(user)/timer?gameId=${gameId}`) },
-  { key: "results", icon: "trophy-outline", labelKey: "actions.results", onPress: (gameId) => router.push(`/(pages)/(user)/results?gameId=${gameId}`) },
+  {
+    key: "lottery",
+    icon: "shuffle",
+    labelKey: "actions.lottery",
+    onPress: (gameId) => {},
+  },
+  {
+    key: "rules",
+    icon: "book-outline",
+    labelKey: "actions.rules",
+    onPress: (gameId) => router.push(`/rules?gameId=${gameId}`),
+  },
+  {
+    key: "timer",
+    icon: "timer-outline",
+    labelKey: "actions.timer",
+    onPress: (gameId) => router.push(`/(pages)/(user)/timer?gameId=${gameId}`),
+  },
+  {
+    key: "results",
+    icon: "trophy-outline",
+    labelKey: "actions.results",
+    onPress: (gameId) =>
+      router.push(`/(pages)/(user)/results?gameId=${gameId}`),
+  },
 ];
 
 function formatElapsed(seconds: number) {
-  const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+  const m = Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, "0");
   const s = (seconds % 60).toString().padStart(2, "0");
   return `${m}:${s}`;
 }
@@ -59,11 +82,15 @@ export default function GamePage() {
 
   useEffect(() => {
     tableBellStore.init();
-  }, []);
+  }, [tableBellStore]);
 
   useEffect(() => {
-    if (loading) return;
-    if (!user) router.replace("/(pages)/login");
+    if (loading) {
+      return;
+    }
+    if (!user) {
+      router.replace("/(pages)/login");
+    }
   }, [user, loading]);
 
   useEffect(() => {
@@ -72,15 +99,20 @@ export default function GamePage() {
       return;
     }
     const update = () =>
-      setElapsedSeconds(Math.floor((Date.now() - new Date(bell.startTime).getTime()) / 1000));
+      setElapsedSeconds(
+        Math.floor((Date.now() - new Date(bell.startTime).getTime()) / 1000),
+      );
     update();
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
   }, [bell]);
 
   const handleBack = () => {
-    if (gameId) router.replace('/(pages)/(user)/schedule');
-    else router.replace("/");
+    if (gameId) {
+      router.replace("/(pages)/(user)/schedule");
+    } else {
+      router.replace("/");
+    }
   };
 
   async function toggleBell() {
@@ -93,11 +125,12 @@ export default function GamePage() {
           cancelLabel: t("actions.confirmDismiss.cancel"),
           destructive: true,
         });
-        if (!ok) return;
+        if (!ok) {
+          return;
+        }
         setBellLoading(true);
 
         await tableBellStore.delete(bell);
-
       } else {
         const ok = await confirm({
           title: t("actions.confirmRing.title"),
@@ -105,9 +138,14 @@ export default function GamePage() {
           confirmLabel: t("actions.confirmRing.confirm"),
           cancelLabel: t("actions.confirmRing.cancel"),
         });
-        if (!ok) return;
+        if (!ok) {
+          return;
+        }
         setBellLoading(true);
-        await tableBellStore.add({ table, startTime: new Date().toISOString() });
+        await tableBellStore.add({
+          table,
+          startTime: new Date().toISOString(),
+        });
       }
     } finally {
       setBellLoading(false);
@@ -128,7 +166,10 @@ export default function GamePage() {
     <View style={styles.container}>
       <BackButton onPress={handleBack} />
 
-      <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+      >
         <Table gameId={gameId} />
 
         <View style={styles.actionsGrid}>
@@ -169,7 +210,9 @@ export default function GamePage() {
             <Text style={[styles.actionLabel, { color: bellColor }]}>
               {t("actions.tableBell")}
             </Text>
-            {bellLoading && <ActivityIndicator size="small" color={bellColor} />}
+            {bellLoading && (
+              <ActivityIndicator size="small" color={bellColor} />
+            )}
           </View>
 
           {bell && (
