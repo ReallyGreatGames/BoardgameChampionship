@@ -69,7 +69,7 @@ export function ActiveScheduleCard({ item }: Props) {
           style={styles.goToGameBtn}
           activeOpacity={0.85}
           onPress={() => {
-            if (player?.team && player?.playerId) {
+            if (player?.team && player?.$id) {
               router.push(`/game?gameId=${item.gameId}`);
             } else {
               router.push({ pathname: "/(pages)/(team-player)/choose-your-character", params: { gameId: item.gameId } });

@@ -295,6 +295,13 @@ const translations = {
       retry: "Erneut versuchen",
       empty: "Keine Turniere gefunden.",
     },
+    playerPicker: {
+      whoAreYou: "Wer bist du?",
+      serverError: "Server nicht erreichbar.",
+      connectionHint: "Bitte überprüfe deine Verbindung.",
+      loadPlayersError: "Spieler konnten nicht geladen werden.",
+      noPlayersFound: "Keine Spieler für dieses Team gefunden.",
+    },
   },
   info: {
     faq: [

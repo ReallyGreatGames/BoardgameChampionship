@@ -2,6 +2,7 @@ import { BackButton } from "@/lib/components/BackButton";
 import { useQuery } from "@tanstack/react-query";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Animated,
@@ -13,27 +14,32 @@ import {
 } from "react-native";
 import { Query } from "react-native-appwrite";
 import { DATABASE_ID, tablesDB } from "../appwrite";
-import { Team } from "../bootstrap/PlayerProvider";
 import { useTheme } from "../bootstrap/ThemeProvider";
+import { Player } from "../models/player";
+import { Team } from "../models/team";
 import { inset } from "../theme/spacing";
 import { type } from "../theme/typography";
-
 
 async function fetchTeams(): Promise<Team[]> {
   const res = await tablesDB.listRows({
     databaseId: DATABASE_ID,
     tableId: "teams",
-    queries: [Query.orderAsc("name")],
+    queries: [Query.orderAsc("code"), Query.limit(100)],
   });
-  return res.rows.map((row) => ({
-    name: row.name as string,
-    code: row.code as string,
-    country: row.country as string,
-  }));
+  return res.rows as unknown as Team[];
+}
+
+async function fetchPlayersByTeam(teamId: string): Promise<Player[]> {
+  const res = await tablesDB.listRows({
+    databaseId: DATABASE_ID,
+    tableId: "players",
+    queries: [Query.equal("team", teamId), Query.orderAsc("playerNumber")],
+  });
+  return res.rows as unknown as Player[];
 }
 
 type Props = {
-  onConfirm: (team: Team, playerId: string) => void;
+  onConfirm: (player: Player) => void;
   onBack?: () => void;
 };
 
@@ -82,10 +88,10 @@ function AnimatedTeamCard({
 
 // Animated player card — dramatic spring-back "claim" moment
 function AnimatedPlayerCard({
-  id,
+  player,
   onConfirm,
 }: {
-  id: string;
+  player: Player;
   onConfirm: () => void;
 }) {
   const { colors } = useTheme();
@@ -123,8 +129,8 @@ function AnimatedPlayerCard({
       style={styles.playerCardPressable}
     >
       <Animated.View style={[styles.playerCard, { transform: [{ scale }] }]}>
-        <Text style={styles.playerNumber}>{id}</Text>
-        <Text style={styles.playerLabel}>Player {id}</Text>
+        <Text style={styles.playerNumber}>{player.playerNumber}</Text>
+        <Text style={styles.playerLabel}>{player.name}</Text>
       </Animated.View>
     </Pressable>
   );
@@ -136,6 +142,7 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t } = useTranslation(["components"]);
 
   useFocusEffect(
     useCallback(() => {
@@ -148,11 +155,21 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
 
   const {
     data: teams,
-    isLoading,
-    isError,
+    isLoading: teamsLoading,
+    isError: teamsError,
   } = useQuery<Team[]>({
     queryKey: ["teams"],
     queryFn: fetchTeams,
+  });
+
+  const {
+    data: players,
+    isLoading: playersLoading,
+    isError: playersError,
+  } = useQuery<Player[]>({
+    queryKey: ["players", selectedTeam?.$id],
+    queryFn: () => fetchPlayersByTeam(selectedTeam!.$id),
+    enabled: step === "player" && !!selectedTeam,
   });
 
   function handleTeamSelect(team: Team) {
@@ -171,7 +188,7 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
     }
   }, [step, fadeAnim]);
 
-  if (isLoading) {
+  if (teamsLoading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -179,18 +196,57 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
     );
   }
 
-  if (isError) {
+  if (teamsError) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>Couldn&apos;t reach the server.</Text>
-        <Text style={styles.errorHint}>
-          Check your connection and try again.
-        </Text>
+        <Text style={styles.errorText}>{t("components:playerPicker.serverError")}</Text>
+        <Text style={styles.errorHint}>{t("components:playerPicker.connectionHint")}</Text>
       </View>
     );
   }
 
   if (step === "player" && selectedTeam) {
+    const playerContent = () => {
+      if (playersLoading) {
+        return (
+          <View style={styles.centered}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        );
+      }
+      if (playersError || !players) {
+        return (
+          <View style={styles.centered}>
+            <Text style={styles.errorText}>{t("components:playerPicker.loadPlayersError")}</Text>
+            <Text style={styles.errorHint}>{t("components:playerPicker.connectionHint")}</Text>
+          </View>
+        );
+      }
+      if (players.length === 0) {
+        return (
+          <View style={styles.centered}>
+            <Text style={styles.errorText}>{t("components:playerPicker.noPlayersFound")}</Text>
+          </View>
+        );
+      }
+
+      return (
+        <View style={styles.playerGrid}>
+          {players.map((player) => (
+            <AnimatedPlayerCard
+              key={player.$id}
+              player={player}
+              onConfirm={() => {
+                onConfirm({ ...player, team: selectedTeam });
+                setSelectedTeam(null);
+                setStep("team");
+              }}
+            />
+          ))}
+        </View>
+      );
+    };
+
     return (
       <View style={styles.container}>
         <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
@@ -198,22 +254,10 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
 
           <View style={styles.playerHeaderZone}>
             <Text style={styles.title}>{selectedTeam.name}</Text>
-            <Text style={styles.subtitle}>Who are you?</Text>
+            <Text style={styles.subtitle}>{t("components:playerPicker.whoAreYou")}</Text>
           </View>
 
-          <View style={styles.playerGrid}>
-            {["1", "2", "3", "4"].map((id) => (
-              <AnimatedPlayerCard
-                key={id}
-                id={id}
-                onConfirm={() => {
-                  onConfirm(selectedTeam, id);
-                  setSelectedTeam(null);
-                  setStep("team");
-                }}
-              />
-            ))}
-          </View>
+          {playerContent()}
         </Animated.View>
       </View>
     );
@@ -343,6 +387,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     playerLabel: {
       ...type.bodySmall,
       color: colors.textSecondary,
+      textAlign: "center"
     },
   });
 }
