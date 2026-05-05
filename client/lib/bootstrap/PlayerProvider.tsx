@@ -7,16 +7,12 @@ import {
   useState,
 } from "react";
 import * as SecureStorage from "../secureStorage";
+import { Player } from "../models/player";
 
 export type Team = {
   name: string;
   code: string;
   country: string;
-};
-
-export type Player = {
-  team: Team;
-  playerId: string;
 };
 
 export type PlayerContext = {
@@ -45,7 +41,13 @@ export const PlayerProvider: FC<PropsWithChildren> = ({ children }) => {
       if (!raw) {
         setPlayer(null);
       } else {
-        setPlayer(JSON.parse(raw));
+        const parsed = JSON.parse(raw);
+        if (typeof parsed.$id !== "string") {
+          await SecureStorage.deleteItemAsync(PLAYER_INFO_KEY);
+          setPlayer(null);
+        } else {
+          setPlayer(parsed as Player);
+        }
       }
       setPlayerLoading(false);
     })();

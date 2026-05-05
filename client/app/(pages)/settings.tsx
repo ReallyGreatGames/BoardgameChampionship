@@ -215,7 +215,7 @@ export default function SettingsScreen() {
                       {t("settings:currentPlayer")}
                     </Text>
                   </View>
-                  <Text style={styles.rowValue}>{player.playerId}</Text>
+                  <Text style={styles.rowValue}>{player.name}</Text>
                 </View>
               </>
             )}

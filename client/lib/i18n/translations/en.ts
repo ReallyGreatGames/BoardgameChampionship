@@ -293,6 +293,13 @@ const translations = {
       retry: "Retry",
       empty: "No tournament rows found.",
     },
+    playerPicker: {
+      whoAreYou: "Who are you?",
+      serverError: "Couldn't reach the server.",
+      connectionHint: "Check your connection and try again.",
+      loadPlayersError: "Couldn't load players.",
+      noPlayersFound: "No players found for this team.",
+    },
   },
   info: {
     faq: [

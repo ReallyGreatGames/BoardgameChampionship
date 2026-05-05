@@ -265,7 +265,7 @@ export function ScheduleItem({
                 <TouchableOpacity
                   style={styles.goToGameButton}
                   onPress={() => {
-                    if (player?.team && player?.playerId) {
+                    if (player?.team && player?.$id) {
                       router.push(`/game?gameId=${schedule.gameId}`);
                     } else {
                       router.push({
