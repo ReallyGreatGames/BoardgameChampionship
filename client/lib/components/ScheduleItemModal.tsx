@@ -44,7 +44,9 @@ type Props = {
 };
 
 function isValidTime(v: string): boolean {
-  if (!/^\d{2}:\d{2}$/.test(v)) return false;
+  if (!/^\d{2}:\d{2}$/.test(v)) {
+    return false;
+  }
   const [h, m] = v.split(":").map(Number);
   return h < 24 && m < 60;
 }
@@ -146,7 +148,9 @@ export function ScheduleItemModal({
   const [durBlurred, setDurBlurred] = useState(false);
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) {
+      return;
+    }
     if (item) {
       setTitle(item.title);
       setIcon(item.icon ?? "");
@@ -175,7 +179,9 @@ export function ScheduleItemModal({
     title.trim().length > 0 && icon !== "" && timeValid && durValid;
 
   async function handleSave() {
-    if (!isValid || saving) return;
+    if (!isValid || saving) {
+      return;
+    }
     setSaving(true);
     try {
       await onSave({
@@ -330,7 +336,9 @@ export function ScheduleItemModal({
           value={startTime}
           onChangeText={(v) => {
             setStartTime(v);
-            if (timeBlurred && isValidTime(v)) setTimeBlurred(false);
+            if (timeBlurred && isValidTime(v)) {
+              setTimeBlurred(false);
+            }
           }}
           onBlur={() => setTimeBlurred(true)}
           placeholder={t("schedule.form.startTimePlaceholder")}
@@ -360,7 +368,9 @@ export function ScheduleItemModal({
           value={duration}
           onChangeText={(v) => {
             setDuration(v);
-            if (durBlurred && isValidDuration(v)) setDurBlurred(false);
+            if (durBlurred && isValidDuration(v)) {
+              setDurBlurred(false);
+            }
           }}
           onBlur={() => setDurBlurred(true)}
           placeholder={t("schedule.form.durationPlaceholder")}

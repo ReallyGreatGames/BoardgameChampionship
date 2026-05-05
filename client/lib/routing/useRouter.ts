@@ -22,7 +22,9 @@ export const useRouter = () => {
       return;
     }
 
-    if (playerLoading) return;
+    if (playerLoading) {
+      return;
+    }
 
     if (!player) {
       navigate("/choose-your-character");

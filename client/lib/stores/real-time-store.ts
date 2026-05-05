@@ -1,10 +1,20 @@
 import { Alert } from "react-native";
-import { ID, Models, Query, RealtimeResponseEvent } from "react-native-appwrite";
+import {
+  ID,
+  Models,
+  Query,
+  RealtimeResponseEvent,
+} from "react-native-appwrite";
 import { client, DATABASE_ID, tablesDB } from "../appwrite";
 
 export type Key = string;
-export type Set<T extends Models.Document, S extends RealtimeCollectionStore<T> = RealtimeCollectionStore<T>> =
-  (partialState: Partial<S> | ((state: S) => Partial<S> | S), ...args: any[]) => void;
+export type Set<
+  T extends Models.Document,
+  S extends RealtimeCollectionStore<T> = RealtimeCollectionStore<T>,
+> = (
+  partialState: Partial<S> | ((state: S) => Partial<S> | S),
+  ...args: any[]
+) => void;
 
 export interface RealtimeCollectionStore<T extends Models.Document> {
   collection: T[];
@@ -30,7 +40,9 @@ export function updateRealtimeCollection<T extends Models.Document>(
       events.some((e) => e.endsWith(`.${type}`)),
     ) ?? "unknown";
 
-  if (!isNewUpdate(key, payload, eventType)) return collection;
+  if (!isNewUpdate(key, payload, eventType)) {
+    return collection;
+  }
 
   const handling: Record<string, (collection: T[], payload: T) => T[]> = {
     create: updateRealtimeCollectionCreate,
@@ -46,7 +58,6 @@ export async function addToCollection<T>(
   key: Key,
   data: Omit<T, keyof Models.Document>,
 ): Promise<T | null> {
-
   console.debug("add to collection", key, data);
 
   try {
@@ -69,7 +80,9 @@ export async function updateInCollection<T>(
   silent = false,
 ): Promise<boolean> {
   const dataToUpdate = Object.fromEntries(
-    Object.entries(data).filter(([k, v]) => !k.startsWith("$") && v !== undefined)
+    Object.entries(data).filter(
+      ([k, v]) => !k.startsWith("$") && v !== undefined,
+    ),
   );
 
   console.debug("udpate collection", key, data);
@@ -83,7 +96,9 @@ export async function updateInCollection<T>(
     });
     return true;
   } catch (e: any) {
-    if (!silent) Alert.alert("Error", e?.message ?? "Failed to update item.");
+    if (!silent) {
+      Alert.alert("Error", e?.message ?? "Failed to update item.");
+    }
     return false;
   }
 }
@@ -107,7 +122,10 @@ export async function removeFromCollection<T>(
   }
 }
 
-export async function initCollection<T extends Models.Document, S extends RealtimeCollectionStore<T> = RealtimeCollectionStore<T>>(
+export async function initCollection<
+  T extends Models.Document,
+  S extends RealtimeCollectionStore<T> = RealtimeCollectionStore<T>,
+>(
   key: Key,
   set: Set<T, S>,
   previousUnsubscribe: (() => void) | null = null,
@@ -128,10 +146,14 @@ export async function initCollection<T extends Models.Document, S extends Realti
   // If there's already a subscription for this key, reuse it
   if (subscriptions.has(key)) {
     const existing = subscriptions.get(key)!;
-    console.debug(`[realtime] subscription for ${key} already exists sid=${existing.sid}`);
+    console.debug(
+      `[realtime] subscription for ${key} already exists sid=${existing.sid}`,
+    );
 
     if (previousUnsubscribe && previousUnsubscribe !== existing.unsubscribe) {
-      console.debug(`[realtime] calling previousUnsubscribe (extra) for ${key}`);
+      console.debug(
+        `[realtime] calling previousUnsubscribe (extra) for ${key}`,
+      );
       previousUnsubscribe();
     }
 
@@ -152,14 +174,17 @@ export async function initCollection<T extends Models.Document, S extends Realti
     (response) => {
       console.debug(`[realtime] ${key} sid=${sid}`);
       try {
-        set((state: S) => ({
-          ...state,
-          collection: updateRealtimeCollection(
-            key,
-            [...state.collection],
-            response,
-          ),
-        } as S));
+        set(
+          (state: S) =>
+            ({
+              ...state,
+              collection: updateRealtimeCollection(
+                key,
+                [...state.collection],
+                response,
+              ),
+            }) as S,
+        );
       } catch (e) {
         console.error(`[realtime] ${key} callback error`, e);
       }
@@ -179,7 +204,7 @@ export async function initCollection<T extends Models.Document, S extends Realti
 
 function updateRealtimeCollectionCreate<T extends Models.Document>(
   collection: T[],
-  payload: T
+  payload: T,
 ) {
   // already present — ignore duplicate create
   if (collection.some((c) => c.$id === payload.$id)) {
@@ -195,7 +220,7 @@ function updateRealtimeCollectionCreate<T extends Models.Document>(
 
 function updateRealtimeCollectionUpdate<T extends Models.Document>(
   collection: T[],
-  payload: T
+  payload: T,
 ) {
   // no existing entry — insert to be safe
   const id = collection.findIndex((item) => item.$id === payload.$id);
@@ -206,8 +231,12 @@ function updateRealtimeCollectionUpdate<T extends Models.Document>(
   }
 
   const existing: any = collection[id] as any;
-  const existingUpdated = existing.$updatedAt ? new Date(existing.$updatedAt).getTime() : 0;
-  const payloadUpdated = payload.$updatedAt ? new Date((payload as any).$updatedAt).getTime() : 0;
+  const existingUpdated = existing.$updatedAt
+    ? new Date(existing.$updatedAt).getTime()
+    : 0;
+  const payloadUpdated = payload.$updatedAt
+    ? new Date((payload as any).$updatedAt).getTime()
+    : 0;
 
   // older or same update — ignore
   if (payloadUpdated && existingUpdated && payloadUpdated <= existingUpdated) {
@@ -223,7 +252,12 @@ function updateRealtimeCollectionUpdate<T extends Models.Document>(
   for (const key of Object.keys(existing)) {
     const pv = (payload as any)[key];
     const ev = existing[key];
-    if (ev != null && (pv === null || pv === undefined || (Array.isArray(pv) && pv.length === 0))) {
+    if (
+      ev != null &&
+      (pv === null ||
+        pv === undefined ||
+        (Array.isArray(pv) && pv.length === 0))
+    ) {
       merged[key] = ev;
     }
   }
@@ -237,7 +271,7 @@ function updateRealtimeCollectionUpdate<T extends Models.Document>(
 
 function updateRealtimeCollectionDelete<T extends Models.Document>(
   collection: T[],
-  payload: T
+  payload: T,
 ) {
   // nothing to delete
   if (!collection.some((c) => c.$id === payload.$id)) {
@@ -253,7 +287,9 @@ function updateRealtimeCollectionDelete<T extends Models.Document>(
 
 export function clearAllSubscriptions(): void {
   subscriptions.forEach(({ unsubscribe }) => {
-    try { unsubscribe?.(); } catch {}
+    try {
+      unsubscribe?.();
+    } catch {}
   });
   subscriptions.clear();
 }

@@ -1,8 +1,8 @@
 import * as Haptics from "expo-haptics";
 import * as Notifications from "expo-notifications";
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Platform } from "react-native";
-import { TableBell } from "../models/table-bell";
 import { useTableBellStore } from "../stores/appwrite/table-bell-store";
 
 // Show notifications even while the app is foregrounded (native only)
@@ -31,7 +31,9 @@ async function requestNotificationPermissions() {
 function playWebBellSound() {
   try {
     const Ctx = window.AudioContext ?? (window as any).webkitAudioContext;
-    if (!Ctx) return;
+    if (!Ctx) {
+      return;
+    }
     const ctx = new Ctx();
     const now = ctx.currentTime;
 
@@ -55,7 +57,7 @@ function playWebBellSound() {
   }
 }
 
-async function triggerNotifications(bell: TableBell) {
+async function triggerNotifications(title: string, body: string) {
   if (Platform.OS === "web") {
     playWebBellSound();
 
@@ -64,10 +66,7 @@ async function triggerNotifications(bell: TableBell) {
     }
 
     if ("Notification" in window && Notification.permission === "granted") {
-      new Notification("Table Bell!", {
-        body: `Table ${bell.table} needs attention!`,
-        icon: "/favicon.png",
-      });
+      new Notification(title, { body, icon: "/favicon.png" });
     }
     return;
   }
@@ -76,11 +75,7 @@ async function triggerNotifications(bell: TableBell) {
   await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 
   await Notifications.scheduleNotificationAsync({
-    content: {
-      title: "Table Bell!",
-      body: `Table ${bell.table} needs attention!`,
-      sound: true,
-    },
+    content: { title, body, sound: true },
     trigger: null,
   });
 }
@@ -89,9 +84,12 @@ export function useTableBellNotifications(isAdmin: boolean) {
   const collection = useTableBellStore((s) => s.collection);
   const mountedAtRef = useRef<number | null>(null);
   const permissionsRequestedRef = useRef(false);
+  const { t } = useTranslation(["activeBells"]);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isAdmin) {
+      return;
+    }
     if (mountedAtRef.current === null) {
       mountedAtRef.current = Date.now();
     }
@@ -102,7 +100,9 @@ export function useTableBellNotifications(isAdmin: boolean) {
   }, [isAdmin]);
 
   useEffect(() => {
-    if (!isAdmin || mountedAtRef.current === null) return;
+    if (!isAdmin || mountedAtRef.current === null) {
+      return;
+    }
 
     const cutoff = mountedAtRef.current;
     const newBells = collection.filter((bell) => {
@@ -110,6 +110,15 @@ export function useTableBellNotifications(isAdmin: boolean) {
       return createdAt > cutoff && !bell.acknowledgeTime;
     });
 
-    newBells.forEach(triggerNotifications);
-  }, [collection, isAdmin]);
+    newBells.forEach((bell) => {
+      const title = t("notificationTitle");
+      const body = bell.reason
+        ? t("notificationBodyWithReason", {
+            table: bell.table,
+            reason: bell.reason,
+          })
+        : t("notificationBody", { table: bell.table });
+      triggerNotifications(title, body);
+    });
+  }, [collection, isAdmin, t]);
 }

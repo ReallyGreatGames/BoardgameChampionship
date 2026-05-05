@@ -28,7 +28,10 @@ type TypeConfig = {
 const TYPE_CONFIGS: Record<RuleType, TypeConfig> = {
   change: { icon: "swap-horizontal-outline", labelKey: "types.change" },
   addition: { icon: "add-circle-outline", labelKey: "types.addition" },
-  clarification: { icon: "information-circle-outline", labelKey: "types.clarification" },
+  clarification: {
+    icon: "information-circle-outline",
+    labelKey: "types.clarification",
+  },
 };
 
 type Props = {
@@ -53,7 +56,9 @@ export function RuleList({ gameId, isAdmin }: Props) {
     return collection.filter(
       (r) =>
         r.gameId === gameId &&
-        (!q || r.title.toLowerCase().includes(q) || r.text.toLowerCase().includes(q)),
+        (!q ||
+          r.title.toLowerCase().includes(q) ||
+          r.text.toLowerCase().includes(q)),
     );
   }, [collection, gameId, search]);
 
@@ -72,10 +77,14 @@ export function RuleList({ gameId, isAdmin }: Props) {
   async function handleSave(data: RuleFormData) {
     if (editingRule) {
       const ok = await update({ ...editingRule, ...data });
-      if (!ok) throw new Error();
+      if (!ok) {
+        throw new Error();
+      }
     } else {
       const result = await add(data);
-      if (!result) throw new Error();
+      if (!result) {
+        throw new Error();
+      }
     }
   }
 
@@ -87,7 +96,9 @@ export function RuleList({ gameId, isAdmin }: Props) {
       cancelLabel: t("confirmDelete.cancel"),
       destructive: true,
     });
-    if (!ok) return;
+    if (!ok) {
+      return;
+    }
     setLoadingId(rule.$id);
     try {
       await deleteRule(rule);
@@ -131,12 +142,18 @@ export function RuleList({ gameId, isAdmin }: Props) {
       >
         {isEmpty ? (
           <Text style={styles.empty}>
-            {search.trim() ? t("noResults") : hasAny ? t("noResults") : t("empty")}
+            {search.trim()
+              ? t("noResults")
+              : hasAny
+                ? t("noResults")
+                : t("empty")}
           </Text>
         ) : (
           RULE_TYPES.map((ruleType) => {
             const rules = grouped[ruleType];
-            if (rules.length === 0) return null;
+            if (rules.length === 0) {
+              return null;
+            }
             const cfg = TYPE_CONFIGS[ruleType];
             const color = typeColor(ruleType, colors);
 
@@ -144,7 +161,9 @@ export function RuleList({ gameId, isAdmin }: Props) {
               <View key={ruleType} style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Ionicons name={cfg.icon} size={14} color={color} />
-                  <Text style={[styles.sectionTitle, { color }]}>{t(cfg.labelKey)}</Text>
+                  <Text style={[styles.sectionTitle, { color }]}>
+                    {t(cfg.labelKey)}
+                  </Text>
                 </View>
 
                 {rules.map((rule) => {
@@ -162,25 +181,35 @@ export function RuleList({ gameId, isAdmin }: Props) {
                       {isAdmin && (
                         <View style={styles.adminBar}>
                           <View style={styles.adminBarSpacer} />
-                          {isLoading
-                            ? <ActivityIndicator size="small" color={colors.textMuted} />
-                            : (
-                              <>
-                                <TouchableOpacity
-                                  style={styles.adminBtn}
-                                  onPress={() => handleEdit(rule)}
-                                >
-                                  <Ionicons name="create-outline" size={16} color={colors.text} />
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                  style={styles.adminBtn}
-                                  onPress={() => handleDelete(rule)}
-                                >
-                                  <Ionicons name="trash-outline" size={16} color={colors.error} />
-                                </TouchableOpacity>
-                              </>
-                            )
-                          }
+                          {isLoading ? (
+                            <ActivityIndicator
+                              size="small"
+                              color={colors.textMuted}
+                            />
+                          ) : (
+                            <>
+                              <TouchableOpacity
+                                style={styles.adminBtn}
+                                onPress={() => handleEdit(rule)}
+                              >
+                                <Ionicons
+                                  name="create-outline"
+                                  size={16}
+                                  color={colors.text}
+                                />
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={styles.adminBtn}
+                                onPress={() => handleDelete(rule)}
+                              >
+                                <Ionicons
+                                  name="trash-outline"
+                                  size={16}
+                                  color={colors.error}
+                                />
+                              </TouchableOpacity>
+                            </>
+                          )}
                         </View>
                       )}
                     </View>
@@ -193,7 +222,11 @@ export function RuleList({ gameId, isAdmin }: Props) {
       </ScrollView>
 
       {isAdmin && (
-        <TouchableOpacity style={styles.fab} onPress={handleAdd} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={handleAdd}
+          activeOpacity={0.85}
+        >
           <Ionicons name="add" size={28} color="#fff" />
         </TouchableOpacity>
       )}

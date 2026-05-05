@@ -1,8 +1,8 @@
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BackButton } from "@/lib/components/BackButton";
-import { useDialog } from "@/lib/components/Dialog";
 import { Table } from "@/lib/components/Table";
+import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
@@ -69,8 +69,7 @@ export default function GamePage() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useTranslation(["game"]);
   const tableBellStore = useTableBellStore();
-  const { confirm } = useDialog();
-  const [bellLoading, setBellLoading] = useState(false);
+  const bellActions = useTableBellActions();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   // ! TODO: Get Table To Game
@@ -116,39 +115,21 @@ export default function GamePage() {
   };
 
   async function toggleBell() {
-    try {
-      if (bell) {
-        const ok = await confirm({
-          title: t("actions.confirmDismiss.title"),
-          message: t("actions.confirmDismiss.message"),
-          confirmLabel: t("actions.confirmDismiss.confirm"),
-          cancelLabel: t("actions.confirmDismiss.cancel"),
-          destructive: true,
-        });
-        if (!ok) {
-          return;
-        }
-        setBellLoading(true);
-
-        await tableBellStore.delete(bell);
-      } else {
-        const ok = await confirm({
-          title: t("actions.confirmRing.title"),
-          message: t("actions.confirmRing.message"),
-          confirmLabel: t("actions.confirmRing.confirm"),
-          cancelLabel: t("actions.confirmRing.cancel"),
-        });
-        if (!ok) {
-          return;
-        }
-        setBellLoading(true);
-        await tableBellStore.add({
-          table,
-          startTime: new Date().toISOString(),
-        });
-      }
-    } finally {
-      setBellLoading(false);
+    if (bell) {
+      await bellActions.dismiss(bell, {
+        title: t("actions.confirmDismiss.title"),
+        message: t("actions.confirmDismiss.message"),
+        confirmLabel: t("actions.confirmDismiss.confirm"),
+        cancelLabel: t("actions.confirmDismiss.cancel"),
+        destructive: true,
+      });
+    } else {
+      await bellActions.ring(table, undefined, {
+        title: t("actions.confirmRing.title"),
+        message: t("actions.confirmRing.message"),
+        confirmLabel: t("actions.confirmRing.confirm"),
+        cancelLabel: t("actions.confirmRing.cancel"),
+      });
     }
   }
 
@@ -197,20 +178,29 @@ export default function GamePage() {
           ]}
           activeOpacity={0.7}
           onPress={toggleBell}
-          disabled={bellLoading}
+          disabled={
+            bellActions.isLoading || (!!bell && !bellActions.canDelete(bell))
+          }
         >
           <View style={styles.bellIconRow}>
             {bell?.acknowledgeTime && (
               <Ionicons name="walk-outline" size={24} color={bellColor} />
             )}
             <Ionicons name={bellIcon} size={28} color={bellColor} />
+            {!!bell && !bellActions.canDelete(bell) && (
+              <Ionicons
+                name="lock-closed-outline"
+                size={16}
+                color={bellColor}
+              />
+            )}
           </View>
 
           <View style={styles.bellLabelRow}>
             <Text style={[styles.actionLabel, { color: bellColor }]}>
               {t("actions.tableBell")}
             </Text>
-            {bellLoading && (
+            {bellActions.isLoading && (
               <ActivityIndicator size="small" color={bellColor} />
             )}
           </View>

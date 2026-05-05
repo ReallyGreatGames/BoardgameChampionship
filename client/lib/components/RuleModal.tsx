@@ -37,7 +37,10 @@ type TypeConfig = {
 const TYPE_CONFIGS: Record<RuleType, TypeConfig> = {
   change: { icon: "swap-horizontal-outline", labelKey: "types.change" },
   addition: { icon: "add-circle-outline", labelKey: "types.addition" },
-  clarification: { icon: "information-circle-outline", labelKey: "types.clarification" },
+  clarification: {
+    icon: "information-circle-outline",
+    labelKey: "types.clarification",
+  },
 };
 
 const RULE_TYPES: RuleType[] = ["change", "addition", "clarification"];
@@ -54,7 +57,9 @@ export function RuleModal({ visible, item, gameId, onClose, onSave }: Props) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) {
+      return;
+    }
     if (item) {
       setSelectedType(item.type);
       setTitle(item.title);
@@ -70,10 +75,17 @@ export function RuleModal({ visible, item, gameId, onClose, onSave }: Props) {
   const isValid = title.trim().length > 0 && text.trim().length > 0;
 
   async function handleSave() {
-    if (!isValid || saving) return;
+    if (!isValid || saving) {
+      return;
+    }
     setSaving(true);
     try {
-      await onSave({ gameId, type: selectedType, title: title.trim(), text: text.trim() });
+      await onSave({
+        gameId,
+        type: selectedType,
+        title: title.trim(),
+        text: text.trim(),
+      });
       onClose();
     } catch (e: any) {
       Alert.alert("Error", e?.message ?? "Failed to save.");
@@ -89,14 +101,18 @@ export function RuleModal({ visible, item, gameId, onClose, onSave }: Props) {
       title={item ? t("form.editTitle") : t("form.addTitle")}
       footer={
         <Pressable
-          style={[sheetStyles.saveBtn, (!isValid || saving) && sheetStyles.saveBtnDisabled]}
+          style={[
+            sheetStyles.saveBtn,
+            (!isValid || saving) && sheetStyles.saveBtnDisabled,
+          ]}
           onPress={handleSave}
           disabled={!isValid || saving}
         >
-          {saving
-            ? <ActivityIndicator size="small" color={colors.onAccent} />
-            : <Text style={sheetStyles.saveBtnText}>{t("form.save")}</Text>
-          }
+          {saving ? (
+            <ActivityIndicator size="small" color={colors.onAccent} />
+          ) : (
+            <Text style={sheetStyles.saveBtnText}>{t("form.save")}</Text>
+          )}
         </Pressable>
       }
     >
@@ -119,7 +135,13 @@ export function RuleModal({ visible, item, gameId, onClose, onSave }: Props) {
             return (
               <TouchableOpacity
                 key={ruleType}
-                style={[styles.typeChip, selected && { borderColor: color, backgroundColor: color + "18" }]}
+                style={[
+                  styles.typeChip,
+                  selected && {
+                    borderColor: color,
+                    backgroundColor: color + "18",
+                  },
+                ]}
                 onPress={() => setSelectedType(ruleType)}
                 activeOpacity={0.7}
               >
@@ -137,7 +159,11 @@ export function RuleModal({ visible, item, gameId, onClose, onSave }: Props) {
         </View>
       </FormField>
 
-      <FormField icon="document-text-outline" label={t("form.textField")} required>
+      <FormField
+        icon="document-text-outline"
+        label={t("form.textField")}
+        required
+      >
         <TextInput
           style={[sheetStyles.input, sheetStyles.inputMultiline]}
           value={text}
@@ -157,9 +183,12 @@ export function typeColor(
   colors: ReturnType<typeof useTheme>["colors"],
 ): string {
   switch (ruleType) {
-    case "change": return colors.accent;
-    case "addition": return colors.success;
-    case "clarification": return colors.primary;
+    case "change":
+      return colors.accent;
+    case "addition":
+      return colors.success;
+    case "clarification":
+      return colors.primary;
   }
 }
 
@@ -180,6 +209,10 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       backgroundColor: colors.surfaceHigh,
       minWidth: 90,
     },
-    typeChipLabel: { ...type.caption, color: colors.textMuted, textAlign: "center" },
+    typeChipLabel: {
+      ...type.caption,
+      color: colors.textMuted,
+      textAlign: "center",
+    },
   });
 }

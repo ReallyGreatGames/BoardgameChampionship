@@ -8,4 +8,5 @@ export type Timer = {
   paused?: boolean;
   durationMinutesTotal?: number;
   direction?: "up" | "down";
+  playersInOvertime?: boolean[];
 } & Models.Document;

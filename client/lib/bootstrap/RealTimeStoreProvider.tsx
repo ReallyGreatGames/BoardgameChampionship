@@ -45,9 +45,12 @@ export function RealTimeStoreProvider() {
       console.debug(`[realtime] ${reason} — reconnecting all subscriptions`);
       clearAllSubscriptions();
       globalInits.forEach((store) => store.getState().init());
-      if (isAuthenticated)
+      if (isAuthenticated) {
         userInits.forEach((store) => store.getState().init());
-      if (isAdmin) adminInits.forEach((store) => store.getState().init());
+      }
+      if (isAdmin) {
+        adminInits.forEach((store) => store.getState().init());
+      }
     },
     [isAuthenticated, isAdmin],
   );
@@ -57,12 +60,16 @@ export function RealTimeStoreProvider() {
   }, []);
 
   useEffect(() => {
-    if (loading || !isAuthenticated) return;
+    if (loading || !isAuthenticated) {
+      return;
+    }
     userInits.forEach((store) => store.getState().init());
   }, [loading, isAuthenticated]);
 
   useEffect(() => {
-    if (loading || !isAdmin) return;
+    if (loading || !isAdmin) {
+      return;
+    }
     adminInits.forEach((store) => store.getState().init());
   }, [loading, isAdmin]);
 
@@ -71,8 +78,9 @@ export function RealTimeStoreProvider() {
 
     const unsubscribe = NetInfo.addEventListener((state) => {
       const isConnected = state.isConnected ?? false;
-      if (!wasConnected.current && isConnected)
+      if (!wasConnected.current && isConnected) {
         reconnectAll("network restored");
+      }
       wasConnected.current = isConnected;
     });
 
@@ -81,7 +89,9 @@ export function RealTimeStoreProvider() {
 
   useEffect(() => {
     const handleAppStateChange = (nextState: AppStateStatus) => {
-      if (nextState !== "active") return;
+      if (nextState !== "active") {
+        return;
+      }
       reconnectAll("app foregrounded");
     };
 

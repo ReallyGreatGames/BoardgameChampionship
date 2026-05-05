@@ -3,6 +3,7 @@ import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BackButton } from "@/lib/components/BackButton";
 import { useDialog } from "@/lib/components/Dialog";
 import { useResultStore } from "@/lib/stores/appwrite/result-store";
+import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
 import { inset } from "@/lib/theme/spacing";
 import { ui } from "@/lib/theme/ui";
 import { type } from "@/lib/theme/typography";
@@ -213,6 +214,12 @@ export default function ResultsPage() {
   const { t } = useTranslation(["results"]);
   const { confirm } = useDialog();
   const resultStore = useResultStore();
+  const scheduleStore = useScheduleStore();
+
+  const isActiveGame = useMemo(
+    () => scheduleStore.collection.find((s) => s.isActive)?.gameId === gameId,
+    [scheduleStore.collection, gameId],
+  );
 
   const existingResult = useMemo(
     () =>
@@ -239,6 +246,16 @@ export default function ResultsPage() {
   const acknowledgedAtRef = useRef<string | null>(null);
   // True after our own save, until the real-time echo arrives and advances the ref.
   const ownSaveRef = useRef(false);
+
+  // Reset form when navigating to a different game.
+  useEffect(() => {
+    acknowledgedAtRef.current = null;
+    ownSaveRef.current = false;
+    setPlayers(Array(PLAYER_COUNT).fill(""));
+    setScores(Array(PLAYER_COUNT).fill(""));
+    setNote("");
+    setSignatureIds(Array(PLAYER_COUNT).fill(""));
+  }, [gameId]);
 
   useEffect(() => {
     if (!existingResult) {
@@ -290,10 +307,12 @@ export default function ResultsPage() {
     const n = parseFloat(s);
     return s.trim() !== "" && !isNaN(n) && n >= 0;
   });
-  const canSave = allPlayersSet && allScoresValid && !isSubmitted;
+  const canSave =
+    allPlayersSet && allScoresValid && !isSubmitted && isActiveGame;
 
   const canSubmit =
     !isSubmitted &&
+    isActiveGame &&
     (signatureCount === PLAYER_COUNT || (signatureCount === 3 && hasNote));
   const showNoteHint = !isSubmitted && signatureCount === 3 && !hasNote;
 
@@ -526,16 +545,18 @@ export default function ResultsPage() {
                   style={[
                     styles.sigBtn,
                     !!signatureIds[i] && styles.sigBtnSigned,
-                    !signatureIds[i] &&
-                      !anySigned &&
-                      (!allPlayersSet || !allScoresValid || isSubmitted) &&
+                    (!isActiveGame ||
+                      (!signatureIds[i] &&
+                        !anySigned &&
+                        (!allPlayersSet || !allScoresValid || isSubmitted))) &&
                       styles.sigBtnDisabled,
                   ]}
                   onPress={() => handleOpenSignature(i)}
                   disabled={
-                    !signatureIds[i] &&
-                    !anySigned &&
-                    (!allPlayersSet || !allScoresValid || isSubmitted)
+                    !isActiveGame ||
+                    (!signatureIds[i] &&
+                      !anySigned &&
+                      (!allPlayersSet || !allScoresValid || isSubmitted))
                   }
                   activeOpacity={0.7}
                 >
@@ -589,6 +610,16 @@ export default function ResultsPage() {
                 color={colors.textMuted}
               />
               <Text style={styles.hintMuted}>{t("hintSignatures")}</Text>
+            </View>
+          )}
+          {!isActiveGame && !isSubmitted && (
+            <View style={styles.hint}>
+              <Ionicons
+                name="lock-closed-outline"
+                size={13}
+                color={colors.textMuted}
+              />
+              <Text style={styles.hintMuted}>{t("notActiveGame")}</Text>
             </View>
           )}
         </View>

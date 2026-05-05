@@ -96,6 +96,9 @@ const translations = {
       confirm: "Löschen",
       cancel: "Abbrechen",
     },
+    notificationTitle: "Tischklingel!",
+    notificationBody: "Tisch {{table}} braucht Hilfe!",
+    notificationBodyWithReason: "Tisch {{table}}: {{reason}}",
   },
   rules: {
     title: "Regeln",
@@ -127,11 +130,11 @@ const translations = {
   timer: {
     paused: "PAUSIERT",
     timeOut: "ZEIT ABGELAUFEN",
-    ringBell: "Tischklingel läuten",
-    bellRinging: "Klingel läutet…",
-    bellAcknowledged: "Klingel bestätigt",
-    resetTimers: "Timer zurücksetzen",
-    closeTimer: "Timer schließen",
+    ringBell: "Klingeln",
+    bellRinging: "Klingelt…",
+    bellAcknowledged: "Auf dem Weg",
+    resetTimers: "Zurücksetzen",
+    closeTimer: "Schließen",
     confirmRing: {
       title: "Tischklingel läuten",
       message: "Die Schiedsrichter:innen auf euren Tisch aufmerksam machen?",
@@ -144,7 +147,14 @@ const translations = {
       confirm: "Entfernen",
       cancel: "Abbrechen",
     },
-    customTimer: "Benutzerdefinierter Timer",
+    timerElapsed: "Zeit Abgelaufen",
+    confirmReset: {
+      title: "Timer zurücksetzen",
+      message: "Alle Timer auf zurücksetzen?",
+      confirm: "Zurücksetzen",
+      cancel: "Abbrechen",
+    },
+    customTimer: "Benutzerdefiniert",
     customTimerModal: {
       title: "Benutzerdefinierter Timer",
       durationField: "Gesamtdauer (min)",
@@ -181,6 +191,8 @@ const translations = {
       confirm: "Überschreiben",
       cancel: "Verwerfen",
     },
+    notActiveGame:
+      "Ergebnisse können nur für das aktive Spiel bearbeitet werden.",
   },
   tableOverview: {
     noActiveSchedule: "Kein aktiver Zeitplaneintrag",
@@ -220,6 +232,13 @@ const translations = {
         title: "Aktiv setzen",
         message: "Diesen Eintrag als aktiven Zeitplan-Eintrag setzen?",
         confirm: "Aktiv setzen",
+        cancel: "Abbrechen",
+      },
+      confirmSetActiveWithSignatures: {
+        title: "Aktiv setzen",
+        message:
+          "Für dieses Spiel liegen bereits Unterschriften vor. Trotzdem den aktiven Eintrag wechseln?",
+        confirm: "Trotzdem wechseln",
         cancel: "Abbrechen",
       },
       form: {

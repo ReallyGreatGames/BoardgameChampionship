@@ -19,6 +19,7 @@ import { useAuth } from "../auth";
 import { usePlayer } from "../bootstrap/PlayerProvider";
 import { useTheme } from "../bootstrap/ThemeProvider";
 import { Schedule } from "../models/schedule";
+import { useResultStore } from "../stores/appwrite/result-store";
 import { useScheduleStore } from "../stores/appwrite/schedule-store";
 import { inset } from "../theme/spacing";
 import { type } from "../theme/typography";
@@ -60,7 +61,9 @@ function PulsingDot({
     activeRef.current = true;
 
     const pulse = () => {
-      if (!activeRef.current) return;
+      if (!activeRef.current) {
+        return;
+      }
       pingScale.setValue(1);
       pingOpacity.setValue(0.7);
       Animated.parallel([
@@ -76,7 +79,9 @@ function PulsingDot({
           useNativeDriver: true,
         }),
       ]).start(({ finished }) => {
-        if (finished) pulse();
+        if (finished) {
+          pulse();
+        }
       });
     };
 
@@ -85,7 +90,7 @@ function PulsingDot({
     return () => {
       activeRef.current = false;
     };
-  }, [isActive]);
+  }, [isActive, pingOpacity, pingScale]);
 
   const dotColor = isFinished
     ? colors.text
@@ -94,7 +99,13 @@ function PulsingDot({
       : colors.accent;
 
   return (
-    <View style={{ alignItems: "center", justifyContent: "center", marginVertical: 4 }}>
+    <View
+      style={{
+        alignItems: "center",
+        justifyContent: "center",
+        marginVertical: 4,
+      }}
+    >
       {isActive && (
         <Animated.View
           style={{
@@ -108,7 +119,14 @@ function PulsingDot({
           }}
         />
       )}
-      <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: dotColor }} />
+      <View
+        style={{
+          width: 10,
+          height: 10,
+          borderRadius: 5,
+          backgroundColor: dotColor,
+        }}
+      />
     </View>
   );
 }
@@ -137,9 +155,14 @@ export function ScheduleItem({
   const [expanded, setExpanded] = useState(schedule.isActive);
   const { t } = useTranslation(["components"]);
   const { player } = usePlayer();
-  const endTime = addMinutesToTime(schedule.startTimePlanned, schedule.durationPlanned);
+  const endTime = addMinutesToTime(
+    schedule.startTimePlanned,
+    schedule.durationPlanned,
+  );
 
-  const chevronRotation = useRef(new Animated.Value(schedule.isActive ? 1 : 0)).current;
+  const chevronRotation = useRef(
+    new Animated.Value(schedule.isActive ? 1 : 0),
+  ).current;
   const chevronStyle = {
     transform: [
       {
@@ -155,15 +178,23 @@ export function ScheduleItem({
     if (schedule.isActive && !expanded) {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setExpanded(true);
-      Animated.timing(chevronRotation, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+      Animated.timing(chevronRotation, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
     }
-  }, [schedule.isActive]);
+  }, [chevronRotation, expanded, schedule.isActive]);
 
   const handleToggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     const next = !expanded;
     setExpanded(next);
-    Animated.timing(chevronRotation, { toValue: next ? 1 : 0, duration: 200, useNativeDriver: true }).start();
+    Animated.timing(chevronRotation, {
+      toValue: next ? 1 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
   };
 
   return (
@@ -175,9 +206,33 @@ export function ScheduleItem({
       >
         <View style={styles.itemLeft}>
           {schedule.icon ? (
-            <Ionicons name={schedule.icon as any} size={20} color={schedule.isActive ? colors.success : schedule.isFinished ? colors.textMuted : colors.text} />
+            <Ionicons
+              name={schedule.icon as any}
+              size={20}
+              color={
+                schedule.isActive
+                  ? colors.success
+                  : schedule.isFinished
+                    ? colors.textMuted
+                    : colors.text
+              }
+            />
           ) : null}
-          <Text style={[styles.itemTitle, { fontWeight: schedule.isActive ? "bold" : "normal", color: schedule.isActive ? colors.text : schedule.isFinished ? colors.textMuted : colors.text }]}>{schedule.title}</Text>
+          <Text
+            style={[
+              styles.itemTitle,
+              {
+                fontWeight: schedule.isActive ? "bold" : "normal",
+                color: schedule.isActive
+                  ? colors.text
+                  : schedule.isFinished
+                    ? colors.textMuted
+                    : colors.text,
+              },
+            ]}
+          >
+            {schedule.title}
+          </Text>
         </View>
         <View style={styles.itemRight}>
           <Text style={styles.itemTime}>{schedule.startTimePlanned}</Text>
@@ -210,19 +265,26 @@ export function ScheduleItem({
                 <TouchableOpacity
                   style={styles.goToGameButton}
                   onPress={() => {
-                    if (player?.team && player?.playerId) router.push(`/game?gameId=${schedule.gameId}`);
-                    else router.push({ pathname: "/(pages)/(team-player)/choose-your-character", params: { gameId: schedule.gameId } });
+                    if (player?.team && player?.playerId) {
+                      router.push(`/game?gameId=${schedule.gameId}`);
+                    } else {
+                      router.push({
+                        pathname:
+                          "/(pages)/(team-player)/choose-your-character",
+                        params: { gameId: schedule.gameId },
+                      });
+                    }
                   }}
                 >
-                  <Text style={styles.goToGameButtonText}>{t("schedule.goToGameButton")}</Text>
+                  <Text style={styles.goToGameButtonText}>
+                    {t("schedule.goToGameButton")}
+                  </Text>
                   <Ionicons name="arrow-forward" size={16} color="#fff" />
                 </TouchableOpacity>
               ) : null}
             </View>
 
-            {schedule.gameId ? (
-              <Table gameId={schedule.gameId} />
-            ) : null}
+            {schedule.gameId ? <Table gameId={schedule.gameId} /> : null}
 
             {schedule.description ? (
               <Text style={styles.description}>{schedule.description}</Text>
@@ -233,27 +295,52 @@ export function ScheduleItem({
       {admin && (
         <View style={styles.adminBar}>
           <TouchableOpacity
-            style={[styles.adminBtn, (admin.isFirst || admin.disabled) && styles.adminBtnDisabled]}
+            style={[
+              styles.adminBtn,
+              (admin.isFirst || admin.disabled) && styles.adminBtnDisabled,
+            ]}
             onPress={admin.onMoveUp}
             disabled={admin.isFirst || admin.disabled}
           >
-            <Ionicons name="arrow-up" size={16} color={(admin.isFirst || admin.disabled) ? colors.textMuted : colors.text} />
+            <Ionicons
+              name="arrow-up"
+              size={16}
+              color={
+                admin.isFirst || admin.disabled ? colors.textMuted : colors.text
+              }
+            />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.adminBtn, (admin.isLast || admin.disabled) && styles.adminBtnDisabled]}
+            style={[
+              styles.adminBtn,
+              (admin.isLast || admin.disabled) && styles.adminBtnDisabled,
+            ]}
             onPress={admin.onMoveDown}
             disabled={admin.isLast || admin.disabled}
           >
-            <Ionicons name="arrow-down" size={16} color={(admin.isLast || admin.disabled) ? colors.textMuted : colors.text} />
+            <Ionicons
+              name="arrow-down"
+              size={16}
+              color={
+                admin.isLast || admin.disabled ? colors.textMuted : colors.text
+              }
+            />
           </TouchableOpacity>
 
           {!schedule.isActive && admin.canSetActive && (
             <TouchableOpacity
-              style={[styles.adminBtn, admin.disabled && styles.adminBtnDisabled]}
+              style={[
+                styles.adminBtn,
+                admin.disabled && styles.adminBtnDisabled,
+              ]}
               onPress={admin.onSetActive}
               disabled={admin.disabled}
             >
-              <Ionicons name="play-circle-outline" size={16} color={admin.disabled ? colors.textMuted : colors.success} />
+              <Ionicons
+                name="play-circle-outline"
+                size={16}
+                color={admin.disabled ? colors.textMuted : colors.success}
+              />
             </TouchableOpacity>
           )}
 
@@ -266,14 +353,22 @@ export function ScheduleItem({
             onPress={admin.onEdit}
             disabled={admin.disabled}
           >
-            <Ionicons name="create-outline" size={16} color={admin.disabled ? colors.textMuted : colors.text} />
+            <Ionicons
+              name="create-outline"
+              size={16}
+              color={admin.disabled ? colors.textMuted : colors.text}
+            />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.adminBtn, admin.disabled && styles.adminBtnDisabled]}
             onPress={admin.onDelete}
             disabled={admin.disabled}
           >
-            <Ionicons name="trash-outline" size={16} color={admin.disabled ? colors.textMuted : colors.error} />
+            <Ionicons
+              name="trash-outline"
+              size={16}
+              color={admin.disabled ? colors.textMuted : colors.error}
+            />
           </TouchableOpacity>
         </View>
       )}
@@ -288,9 +383,12 @@ export function ScheduleList() {
   const { isAdmin } = useAuth();
   const { confirm } = useDialog();
   const { collection, add, update, delete: deleteItem } = useScheduleStore();
+  const resultCollection = useResultStore((s) => s.collection);
   const [isLoading, setIsLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [editingItem, setEditingItem] = useState<Schedule | undefined>(undefined);
+  const [editingItem, setEditingItem] = useState<Schedule | undefined>(
+    undefined,
+  );
   const [timerModalVisible, setTimerModalVisible] = useState(false);
   const [timerGameId, setTimerGameId] = useState<string | null>(null);
   const sortedScheduleItems = useMemo(
@@ -300,9 +398,10 @@ export function ScheduleList() {
   // If update buttons are clicked within 2 seconds of each other, the dedupe logic in the store causes only one update to be processed, which results in the sortIndex getting out of sync with the actual order. To mitigate this, we disable all buttons for 2 seconds after any update.
   const debounceTimeOut = 2000;
   const nextSortIndex = useMemo(
-    () => sortedScheduleItems.length === 0
-      ? 0
-      : Math.max(...sortedScheduleItems.map((s) => s.sortIndex ?? 0)) + 1,
+    () =>
+      sortedScheduleItems.length === 0
+        ? 0
+        : Math.max(...sortedScheduleItems.map((s) => s.sortIndex ?? 0)) + 1,
     [sortedScheduleItems],
   );
 
@@ -311,7 +410,7 @@ export function ScheduleList() {
     const item = items[index];
     const prev = items[index - 1];
     const itemOrder = item.sortIndex ?? index;
-    const prevOrder = prev.sortIndex ?? (index - 1);
+    const prevOrder = prev.sortIndex ?? index - 1;
     setIsLoading(true);
     try {
       await Promise.all([
@@ -328,7 +427,7 @@ export function ScheduleList() {
     const item = items[index];
     const next = items[index + 1];
     const itemOrder = item.sortIndex ?? index;
-    const nextOrder = next.sortIndex ?? (index + 1);
+    const nextOrder = next.sortIndex ?? index + 1;
     setIsLoading(true);
     try {
       await Promise.all([
@@ -341,13 +440,41 @@ export function ScheduleList() {
   }
 
   async function handleSetActive(storeIndex: number) {
+    const currentActive = sortedScheduleItems.find((s) => s.isActive);
+    // ! TODO: When tables are imported: only show confirm, if not all tables have completed submitted
+    const hasSigned =
+      !!currentActive?.gameId &&
+      resultCollection.some(
+        (r) =>
+          r.gameId === currentActive.gameId && r.signatureIds?.some(Boolean),
+      );
+
+    const confirmKey = "confirmSetActive";
     const ok = await confirm({
-      title: t("schedule.confirmSetActive.title"),
-      message: t("schedule.confirmSetActive.message"),
-      confirmLabel: t("schedule.confirmSetActive.confirm"),
-      cancelLabel: t("schedule.confirmSetActive.cancel"),
+      title: t(`schedule.${confirmKey}.title`),
+      message: t(`schedule.${confirmKey}.message`),
+      confirmLabel: t(`schedule.${confirmKey}.confirm`),
+      cancelLabel: t(`schedule.${confirmKey}.cancel`),
+      destructive: hasSigned,
     });
-    if (!ok) return;
+    if (!ok) {
+      return;
+    }
+
+    if (hasSigned) {
+      const confirmKey = "confirmSetActiveWithSignatures";
+
+      const ok = await confirm({
+        title: t(`schedule.${confirmKey}.title`),
+        message: t(`schedule.${confirmKey}.message`),
+        confirmLabel: t(`schedule.${confirmKey}.confirm`),
+        cancelLabel: t(`schedule.${confirmKey}.cancel`),
+        destructive: hasSigned,
+      });
+      if (!ok) {
+        return;
+      }
+    }
 
     setIsLoading(true);
     try {
@@ -360,8 +487,12 @@ export function ScheduleList() {
       await Promise.all(
         items.map((s, i) => {
           const shouldBeActive = i === storeIndex;
-          return update({ ...s, isActive: shouldBeActive, isFinished: shouldBeActive ? false : s.isFinished });
-        })
+          return update({
+            ...s,
+            isActive: shouldBeActive,
+            isFinished: shouldBeActive ? false : s.isFinished,
+          });
+        }),
       );
     } finally {
       setTimeout(() => setIsLoading(false), debounceTimeOut);
@@ -376,7 +507,9 @@ export function ScheduleList() {
       cancelLabel: t("schedule.confirmDelete.cancel"),
       destructive: true,
     });
-    if (!ok) return;
+    if (!ok) {
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -399,10 +532,14 @@ export function ScheduleList() {
   async function handleModalSave(data: ScheduleFormData) {
     if (editingItem) {
       const ok = await update({ ...editingItem, ...data });
-      if (!ok) throw new Error();
+      if (!ok) {
+        throw new Error();
+      }
     } else {
       const result = await add(data);
-      if (!result) throw new Error();
+      if (!result) {
+        throw new Error();
+      }
     }
   }
 
@@ -432,7 +569,9 @@ export function ScheduleList() {
         gameId={timerGameId}
         onClose={() => setTimerModalVisible(false)}
         onCreated={async (newId) => {
-          if (editingItem) await update({ ...editingItem, gameId: newId });
+          if (editingItem) {
+            await update({ ...editingItem, gameId: newId });
+          }
         }}
       />
       <ScrollView
@@ -445,29 +584,56 @@ export function ScheduleList() {
           return (
             <View key={schedule.$id} style={styles.timelineRow}>
               <View style={styles.timelineTrack}>
-                <View style={[styles.timelineLine, isFirst && styles.timelineLineHidden]} />
+                <View
+                  style={[
+                    styles.timelineLine,
+                    isFirst && styles.timelineLineHidden,
+                  ]}
+                />
                 <PulsingDot
                   isActive={schedule.isActive ?? false}
                   isFinished={schedule.isFinished ?? false}
                   colors={colors}
                 />
-                <View style={isLast && isAdmin ? styles.timelineLineDashed : [styles.timelineLine, isLast && styles.timelineLineHidden]} />
+                <View
+                  style={
+                    isLast && isAdmin
+                      ? styles.timelineLineDashed
+                      : [
+                          styles.timelineLine,
+                          isLast && styles.timelineLineHidden,
+                        ]
+                  }
+                />
               </View>
-              <View style={[styles.timelineCard, (!isLast || isAdmin) && styles.timelineCardGap]}>
+              <View
+                style={[
+                  styles.timelineCard,
+                  (!isLast || isAdmin) && styles.timelineCardGap,
+                ]}
+              >
                 <ScheduleItem
                   key={`${schedule.$id}-${schedule.$updatedAt ?? ""}`}
                   schedule={schedule}
-                  admin={isAdmin ? {
-                    isFirst,
-                    isLast,
-                    disabled: isLoading,
-                    canSetActive: activeIndex === -1 ? index === 0 : (index === activeIndex + 1 || index === activeIndex - 1),
-                    onMoveUp: () => handleMoveUp(index),
-                    onMoveDown: () => handleMoveDown(index),
-                    onSetActive: () => handleSetActive(index),
-                    onEdit: () => handleEdit(index),
-                    onDelete: () => handleDelete(index),
-                  } : undefined}
+                  admin={
+                    isAdmin
+                      ? {
+                          isFirst,
+                          isLast,
+                          disabled: isLoading,
+                          canSetActive:
+                            activeIndex === -1
+                              ? index === 0
+                              : index === activeIndex + 1 ||
+                                index === activeIndex - 1,
+                          onMoveUp: () => handleMoveUp(index),
+                          onMoveDown: () => handleMoveDown(index),
+                          onSetActive: () => handleSetActive(index),
+                          onEdit: () => handleEdit(index),
+                          onDelete: () => handleDelete(index),
+                        }
+                      : undefined
+                  }
                 />
               </View>
             </View>
@@ -477,16 +643,25 @@ export function ScheduleList() {
           <View style={styles.timelineRow}>
             <View style={styles.timelineTrack}>
               <View style={styles.timelineLineDashed} />
-              <View style={[styles.timelineDot, { backgroundColor: colors.border }]} />
+              <View
+                style={[styles.timelineDot, { backgroundColor: colors.border }]}
+              />
               <View style={[styles.timelineLine, styles.timelineLineHidden]} />
             </View>
             <View style={styles.timelineCard}>
               <TouchableOpacity
-                style={[styles.addItemCard, isLoading && styles.addItemCardDisabled]}
+                style={[
+                  styles.addItemCard,
+                  isLoading && styles.addItemCardDisabled,
+                ]}
                 onPress={addSchedule}
                 disabled={isLoading}
               >
-                <Ionicons name="add-circle-outline" size={18} color={colors.textMuted} />
+                <Ionicons
+                  name="add-circle-outline"
+                  size={18}
+                  color={colors.textMuted}
+                />
                 <Text style={styles.addItemText}>{t("schedule.addItem")}</Text>
               </TouchableOpacity>
             </View>
