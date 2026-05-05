@@ -234,7 +234,8 @@ const translations = {
       },
       confirmSetActiveWithSignatures: {
         title: "Set Active",
-        message: "This game already has signed result entries. Are you sure you want to change the active item?",
+        message:
+          "This game already has signed result entries. Are you sure you want to change the active item?",
         confirm: "Change Anyway",
         cancel: "Cancel",
       },

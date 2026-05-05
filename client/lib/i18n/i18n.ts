@@ -16,7 +16,9 @@ i18n.use(initReactI18next).init({
 });
 
 getItemAsync(LANGUAGE_STORE_KEY).then((lang) => {
-  if (lang) i18n.changeLanguage(lang);
+  if (lang) {
+    i18n.changeLanguage(lang);
+  }
 });
 
 export default i18n;

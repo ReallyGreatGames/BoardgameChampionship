@@ -29,7 +29,9 @@ const PLAYER_OPTIONS = ["1", "2", "3", "4"] as const;
 
 function padArray<T>(arr: T[], length: number, fill: T): T[] {
   const copy = [...arr];
-  while (copy.length < length) copy.push(fill);
+  while (copy.length < length) {
+    copy.push(fill);
+  }
   return copy.slice(0, length);
 }
 
@@ -42,7 +44,14 @@ type PlayerPickerProps = {
   t: (key: string) => string;
 };
 
-function PlayerPicker({ value, onChange, takenValues, disabled, colors, t }: PlayerPickerProps) {
+function PlayerPicker({
+  value,
+  onChange,
+  takenValues,
+  disabled,
+  colors,
+  t,
+}: PlayerPickerProps) {
   const [open, setOpen] = useState(false);
   const styles = useMemo(() => makePickerStyles(colors), [colors]);
 
@@ -59,14 +68,22 @@ function PlayerPicker({ value, onChange, takenValues, disabled, colors, t }: Pla
         activeOpacity={0.7}
       >
         <Text style={value ? styles.btnValue : styles.btnPlaceholder}>
-          {value ? t("playerValue").replace("{n}", value) : t("playerPlaceholder")}
+          {value
+            ? t("playerValue").replace("{n}", value)
+            : t("playerPlaceholder")}
         </Text>
         {!disabled && (
           <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
         )}
       </TouchableOpacity>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)} supportedOrientations={["portrait"]}>
+      <Modal
+        visible={open}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOpen(false)}
+        supportedOrientations={["portrait"]}
+      >
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
           <View style={styles.sheet}>
             {PLAYER_OPTIONS.map((opt) => {
@@ -93,10 +110,18 @@ function PlayerPicker({ value, onChange, takenValues, disabled, colors, t }: Pla
                     {t("playerValue").replace("{n}", opt)}
                   </Text>
                   {selected && (
-                    <Ionicons name="checkmark" size={16} color={colors.accent} />
+                    <Ionicons
+                      name="checkmark"
+                      size={16}
+                      color={colors.accent}
+                    />
                   )}
                   {taken && !selected && (
-                    <Ionicons name="swap-horizontal-outline" size={14} color={colors.textMuted} />
+                    <Ionicons
+                      name="swap-horizontal-outline"
+                      size={14}
+                      color={colors.textMuted}
+                    />
                   )}
                 </TouchableOpacity>
               );
@@ -197,14 +222,23 @@ export default function ResultsPage() {
   );
 
   const existingResult = useMemo(
-    () => resultStore.collection.find((r) => r.gameId === gameId && r.table === TABLE),
+    () =>
+      resultStore.collection.find(
+        (r) => r.gameId === gameId && r.table === TABLE,
+      ),
     [resultStore.collection, gameId],
   );
 
-  const [players, setPlayers] = useState<string[]>(() => Array(PLAYER_COUNT).fill(""));
-  const [scores, setScores] = useState<string[]>(() => Array(PLAYER_COUNT).fill(""));
+  const [players, setPlayers] = useState<string[]>(() =>
+    Array(PLAYER_COUNT).fill(""),
+  );
+  const [scores, setScores] = useState<string[]>(() =>
+    Array(PLAYER_COUNT).fill(""),
+  );
   const [note, setNote] = useState("");
-  const [signatureIds, setSignatureIds] = useState<string[]>(() => Array(PLAYER_COUNT).fill(""));
+  const [signatureIds, setSignatureIds] = useState<string[]>(() =>
+    Array(PLAYER_COUNT).fill(""),
+  );
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -224,13 +258,19 @@ export default function ResultsPage() {
   }, [gameId]);
 
   useEffect(() => {
-    if (!existingResult) return;
+    if (!existingResult) {
+      return;
+    }
     if (acknowledgedAtRef.current === null) {
       acknowledgedAtRef.current = existingResult.$updatedAt;
       setPlayers(padArray(existingResult.placements ?? [], PLAYER_COUNT, ""));
-      setScores(padArray((existingResult.scores ?? []).map(String), PLAYER_COUNT, ""));
+      setScores(
+        padArray((existingResult.scores ?? []).map(String), PLAYER_COUNT, ""),
+      );
       setNote(existingResult.note ?? "");
-      setSignatureIds(padArray(existingResult.signatureIds ?? [], PLAYER_COUNT, ""));
+      setSignatureIds(
+        padArray(existingResult.signatureIds ?? [], PLAYER_COUNT, ""),
+      );
     } else if (ownSaveRef.current) {
       ownSaveRef.current = false;
       acknowledgedAtRef.current = existingResult.$updatedAt;
@@ -238,15 +278,22 @@ export default function ResultsPage() {
   }, [existingResult]);
 
   // Refresh signature IDs each time we return from the signature page.
-  useFocusEffect(useCallback(() => {
-    if (existingResult && acknowledgedAtRef.current !== null) {
-      setSignatureIds(padArray(existingResult.signatureIds ?? [], PLAYER_COUNT, ""));
-    }
-  }, [existingResult]));
+  useFocusEffect(
+    useCallback(() => {
+      if (existingResult && acknowledgedAtRef.current !== null) {
+        setSignatureIds(
+          padArray(existingResult.signatureIds ?? [], PLAYER_COUNT, ""),
+        );
+      }
+    }, [existingResult]),
+  );
 
   const handleBack = useCallback(() => {
-    if (gameId) router.replace(`/game?gameId=${gameId}`);
-    else router.replace("/");
+    if (gameId) {
+      router.replace(`/game?gameId=${gameId}`);
+    } else {
+      router.replace("/");
+    }
   }, [gameId]);
 
   const isSubmitted = existingResult?.submitted ?? false;
@@ -260,9 +307,13 @@ export default function ResultsPage() {
     const n = parseFloat(s);
     return s.trim() !== "" && !isNaN(n) && n >= 0;
   });
-  const canSave = allPlayersSet && allScoresValid && !isSubmitted && isActiveGame;
+  const canSave =
+    allPlayersSet && allScoresValid && !isSubmitted && isActiveGame;
 
-  const canSubmit = !isSubmitted && isActiveGame && (signatureCount === PLAYER_COUNT || (signatureCount === 3 && hasNote));
+  const canSubmit =
+    !isSubmitted &&
+    isActiveGame &&
+    (signatureCount === PLAYER_COUNT || (signatureCount === 3 && hasNote));
   const showNoteHint = !isSubmitted && signatureCount === 3 && !hasNote;
 
   const buildPayload = useCallback(
@@ -279,16 +330,29 @@ export default function ResultsPage() {
   );
 
   const handleSave = useCallback(async (): Promise<boolean> => {
-    if (!canSave || saving) return false;
+    if (!canSave || saving) {
+      return false;
+    }
 
     if (existingResult) {
-      const timestampDrifted = existingResult.$updatedAt !== acknowledgedAtRef.current;
-      const dbPlayers = padArray(existingResult.placements ?? [], PLAYER_COUNT, "");
-      const dbScores = padArray((existingResult.scores ?? []).map(String), PLAYER_COUNT, "");
+      const timestampDrifted =
+        existingResult.$updatedAt !== acknowledgedAtRef.current;
+      const dbPlayers = padArray(
+        existingResult.placements ?? [],
+        PLAYER_COUNT,
+        "",
+      );
+      const dbScores = padArray(
+        (existingResult.scores ?? []).map(String),
+        PLAYER_COUNT,
+        "",
+      );
       const dbNote = existingResult.note ?? "";
       const valuesDiffer =
         players.some((p, i) => p !== dbPlayers[i]) ||
-        scores.some((s, i) => parseFloat(s) !== parseFloat(dbScores[i] || "0")) ||
+        scores.some(
+          (s, i) => parseFloat(s) !== parseFloat(dbScores[i] || "0"),
+        ) ||
         note.trim() !== dbNote.trim();
 
       if (timestampDrifted && valuesDiffer) {
@@ -323,17 +387,32 @@ export default function ResultsPage() {
     } finally {
       setSaving(false);
     }
-  }, [canSave, saving, existingResult, players, scores, note, confirm, t, buildPayload, resultStore]);
+  }, [
+    canSave,
+    saving,
+    existingResult,
+    players,
+    scores,
+    note,
+    confirm,
+    t,
+    buildPayload,
+    resultStore,
+  ]);
 
   const handleSubmit = useCallback(async () => {
-    if (!canSubmit || submitting) return;
+    if (!canSubmit || submitting) {
+      return;
+    }
     const ok = await confirm({
       title: t("confirmSubmit.title"),
       message: t("confirmSubmit.message"),
       confirmLabel: t("confirmSubmit.confirm"),
       cancelLabel: t("confirmSubmit.cancel"),
     });
-    if (!ok) return;
+    if (!ok) {
+      return;
+    }
     setSubmitting(true);
     try {
       const data = buildPayload(true);
@@ -345,38 +424,62 @@ export default function ResultsPage() {
     } finally {
       setSubmitting(false);
     }
-  }, [canSubmit, submitting, confirm, t, buildPayload, existingResult, resultStore]);
+  }, [
+    canSubmit,
+    submitting,
+    confirm,
+    t,
+    buildPayload,
+    existingResult,
+    resultStore,
+  ]);
 
-  const setPlayer = useCallback((i: number, v: string) => {
-    const conflictIdx = players.findIndex((p, j) => j !== i && p === v);
-    setPlayers((prev) => {
+  const setPlayer = useCallback(
+    (i: number, v: string) => {
+      const conflictIdx = players.findIndex((p, j) => j !== i && p === v);
+      setPlayers((prev) => {
+        const next = [...prev];
+        if (conflictIdx !== -1) {
+          next[conflictIdx] = prev[i];
+        }
+        next[i] = v;
+        return next;
+      });
+      if (conflictIdx !== -1) {
+        setSignatureIds((prev) => {
+          const next = [...prev];
+          [next[i], next[conflictIdx]] = [next[conflictIdx], next[i]];
+          return next;
+        });
+      }
+    },
+    [players],
+  );
+
+  const setScore = useCallback((i: number, v: string) => {
+    setScores((prev) => {
       const next = [...prev];
-      if (conflictIdx !== -1) next[conflictIdx] = prev[i];
       next[i] = v;
       return next;
     });
-    if (conflictIdx !== -1) {
-      setSignatureIds((prev) => {
-        const next = [...prev];
-        [next[i], next[conflictIdx]] = [next[conflictIdx], next[i]];
-        return next;
-      });
-    }
-  }, [players]);
-
-  const setScore = useCallback((i: number, v: string) => {
-    setScores((prev) => { const next = [...prev]; next[i] = v; return next; });
   }, []);
 
-  const handleOpenSignature = useCallback(async (place: number) => {
-    if (canSave) {
-      const saved = await handleSave();
-      if (!saved) return;
-    }
-    router.push(`/(pages)/(user)/signature?gameId=${gameId}&place=${place}`);
-  }, [canSave, handleSave, gameId]);
+  const handleOpenSignature = useCallback(
+    async (place: number) => {
+      if (canSave) {
+        const saved = await handleSave();
+        if (!saved) {
+          return;
+        }
+      }
+      router.push(`/(pages)/(user)/signature?gameId=${gameId}&place=${place}`);
+    },
+    [canSave, handleSave, gameId],
+  );
 
-  if (loading || !user) return null;
+  if (loading || !user) {
+    return null;
+  }
 
   return (
     <View style={styles.container}>
@@ -390,7 +493,11 @@ export default function ResultsPage() {
         <View style={styles.header}>
           {isSubmitted && (
             <View style={styles.submittedBadge}>
-              <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+              <Ionicons
+                name="checkmark-circle"
+                size={14}
+                color={colors.success}
+              />
               <Text style={styles.submittedBadgeText}>{t("submitted")}</Text>
             </View>
           )}
@@ -418,7 +525,10 @@ export default function ResultsPage() {
                 />
 
                 <View
-                  style={[styles.scoreInputWrapper, (isSubmitted || twoSigned) && styles.inputDisabled]}
+                  style={[
+                    styles.scoreInputWrapper,
+                    (isSubmitted || twoSigned) && styles.inputDisabled,
+                  ]}
                   pointerEvents={isSubmitted || twoSigned ? "none" : "auto"}
                 >
                   <TextInput
@@ -435,14 +545,25 @@ export default function ResultsPage() {
                   style={[
                     styles.sigBtn,
                     !!signatureIds[i] && styles.sigBtnSigned,
-                    (!isActiveGame || (!signatureIds[i] && !anySigned && (!allPlayersSet || !allScoresValid || isSubmitted))) && styles.sigBtnDisabled,
+                    (!isActiveGame ||
+                      (!signatureIds[i] &&
+                        !anySigned &&
+                        (!allPlayersSet || !allScoresValid || isSubmitted))) &&
+                      styles.sigBtnDisabled,
                   ]}
                   onPress={() => handleOpenSignature(i)}
-                  disabled={!isActiveGame || (!signatureIds[i] && !anySigned && (!allPlayersSet || !allScoresValid || isSubmitted))}
+                  disabled={
+                    !isActiveGame ||
+                    (!signatureIds[i] &&
+                      !anySigned &&
+                      (!allPlayersSet || !allScoresValid || isSubmitted))
+                  }
                   activeOpacity={0.7}
                 >
                   <Ionicons
-                    name={signatureIds[i] ? "checkmark-circle" : "pencil-outline"}
+                    name={
+                      signatureIds[i] ? "checkmark-circle" : "pencil-outline"
+                    }
                     size={18}
                     color={
                       signatureIds[i]
@@ -461,7 +582,11 @@ export default function ResultsPage() {
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>{t("note")}</Text>
           <TextInput
-            style={[styles.input, styles.noteInput, showNoteHint && styles.inputError]}
+            style={[
+              styles.input,
+              styles.noteInput,
+              showNoteHint && styles.inputError,
+            ]}
             value={note}
             onChangeText={setNote}
             placeholder={t("notePlaceholder")}
@@ -479,13 +604,21 @@ export default function ResultsPage() {
           )}
           {signatureCount < 3 && !isSubmitted && (
             <View style={styles.hint}>
-              <Ionicons name="create-outline" size={13} color={colors.textMuted} />
+              <Ionicons
+                name="create-outline"
+                size={13}
+                color={colors.textMuted}
+              />
               <Text style={styles.hintMuted}>{t("hintSignatures")}</Text>
             </View>
           )}
           {!isActiveGame && !isSubmitted && (
             <View style={styles.hint}>
-              <Ionicons name="lock-closed-outline" size={13} color={colors.textMuted} />
+              <Ionicons
+                name="lock-closed-outline"
+                size={13}
+                color={colors.textMuted}
+              />
               <Text style={styles.hintMuted}>{t("notActiveGame")}</Text>
             </View>
           )}
@@ -523,7 +656,12 @@ export default function ResultsPage() {
                   size={18}
                   color={canSubmit ? "#fff" : colors.textMuted}
                 />
-                <Text style={[styles.submitBtnText, !canSubmit && styles.submitBtnTextMuted]}>
+                <Text
+                  style={[
+                    styles.submitBtnText,
+                    !canSubmit && styles.submitBtnTextMuted,
+                  ]}
+                >
                   {t("submit")}
                 </Text>
               </>

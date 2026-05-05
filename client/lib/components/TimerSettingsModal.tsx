@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Alert, Pressable, Text, TextInput } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  Text,
+  TextInput,
+} from "react-native";
 import { useTheme } from "../bootstrap/ThemeProvider";
 import { useTimerSettingsStore } from "../stores/appwrite/timer-settings-store";
 import { BottomSheet, makeSheetStyles } from "./BottomSheet";
@@ -15,7 +21,12 @@ type Props = {
   onCreated?: (newGameId: string) => void;
 };
 
-export function TimerSettingsModal({ visible, gameId, onClose, onCreated }: Props) {
+export function TimerSettingsModal({
+  visible,
+  gameId,
+  onClose,
+  onCreated,
+}: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeSheetStyles(colors), [colors]);
   const { t } = useTranslation(["components"]);
@@ -32,7 +43,9 @@ export function TimerSettingsModal({ visible, gameId, onClose, onCreated }: Prop
   const [durBlurred, setDurBlurred] = useState(false);
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) {
+      return;
+    }
     if (existing) {
       setDuration(String(existing.durationMinutesTotal));
       setDirection(existing.direction);
@@ -48,16 +61,22 @@ export function TimerSettingsModal({ visible, gameId, onClose, onCreated }: Prop
   const durValid = !isNaN(durNum) && durNum > 0;
 
   async function handleSave() {
-    if (!durValid || saving) return;
+    if (!durValid || saving) {
+      return;
+    }
     setSaving(true);
     try {
       const data = { durationMinutesTotal: durNum, direction };
       if (existing) {
         const ok = await update({ $id: existing.$id, ...data });
-        if (!ok) throw new Error();
+        if (!ok) {
+          throw new Error();
+        }
       } else {
         const doc = await add(data);
-        if (!doc) throw new Error();
+        if (!doc) {
+          throw new Error();
+        }
         onCreated?.(doc.$id);
       }
       onClose();
@@ -72,21 +91,34 @@ export function TimerSettingsModal({ visible, gameId, onClose, onCreated }: Prop
     <BottomSheet
       visible={visible}
       onClose={onClose}
-      title={existing ? t("timerSettingsModal.editTitle") : t("timerSettingsModal.addTitle")}
+      title={
+        existing
+          ? t("timerSettingsModal.editTitle")
+          : t("timerSettingsModal.addTitle")
+      }
       footer={
         <Pressable
-          style={[styles.saveBtn, (!durValid || saving) && styles.saveBtnDisabled]}
+          style={[
+            styles.saveBtn,
+            (!durValid || saving) && styles.saveBtnDisabled,
+          ]}
           onPress={handleSave}
           disabled={!durValid || saving}
         >
-          {saving
-            ? <ActivityIndicator size="small" color={colors.onAccent} />
-            : <Text style={styles.saveBtnText}>{t("timerSettingsModal.save")}</Text>
-          }
+          {saving ? (
+            <ActivityIndicator size="small" color={colors.onAccent} />
+          ) : (
+            <Text style={styles.saveBtnText}>
+              {t("timerSettingsModal.save")}
+            </Text>
+          )}
         </Pressable>
       }
     >
-      <FormField icon="hourglass-outline" label={t("timerSettingsModal.durationField")}>
+      <FormField
+        icon="hourglass-outline"
+        label={t("timerSettingsModal.durationField")}
+      >
         <TextInput
           style={[
             styles.input,
@@ -97,7 +129,9 @@ export function TimerSettingsModal({ visible, gameId, onClose, onCreated }: Prop
             setDuration(v);
             if (durBlurred) {
               const n = parseInt(v, 10);
-              if (!isNaN(n) && n > 0) setDurBlurred(false);
+              if (!isNaN(n) && n > 0) {
+                setDurBlurred(false);
+              }
             }
           }}
           onBlur={() => setDurBlurred(true)}
@@ -107,7 +141,10 @@ export function TimerSettingsModal({ visible, gameId, onClose, onCreated }: Prop
         />
       </FormField>
 
-      <FormField icon="swap-vertical-outline" label={t("timerSettingsModal.directionField")}>
+      <FormField
+        icon="swap-vertical-outline"
+        label={t("timerSettingsModal.directionField")}
+      >
         <DirectionPicker
           value={direction}
           onChange={setDirection}

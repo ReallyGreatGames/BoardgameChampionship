@@ -6,8 +6,12 @@ export function useRequireAuth() {
   const auth = useAuth();
 
   useEffect(() => {
-    if (auth.loading) return;
-    if (!auth.user) router.replace("/(pages)/login");
+    if (auth.loading) {
+      return;
+    }
+    if (!auth.user) {
+      router.replace("/(pages)/login");
+    }
   }, [auth.user, auth.loading]);
 
   return auth;

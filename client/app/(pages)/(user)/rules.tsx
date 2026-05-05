@@ -15,11 +15,16 @@ export default function RulesPage() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const handleBack = () => {
-    if (gameId) router.replace(`/game?gameId=${gameId}`);
-    else router.replace("/");
+    if (gameId) {
+      router.replace(`/game?gameId=${gameId}`);
+    } else {
+      router.replace("/");
+    }
   };
 
-  if (loading || !user) return null;
+  if (loading || !user) {
+    return null;
+  }
 
   return (
     <View style={styles.container}>

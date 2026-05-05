@@ -10,7 +10,9 @@ export default function AdminLayout() {
   const { forceOrientation, unlockOrientation } = useScreenOrientation();
 
   useEffect(() => {
-    if (loading) return;
+    if (loading) {
+      return;
+    }
     if (!user || !isAdmin) {
       router.replace("/login");
     }
@@ -22,7 +24,7 @@ export default function AdminLayout() {
       return () => {
         unlockOrientation().catch(console.error);
       };
-    }, [forceOrientation, unlockOrientation])
+    }, [forceOrientation, unlockOrientation]),
   );
 
   if (loading) {
@@ -40,7 +42,9 @@ export default function AdminLayout() {
     );
   }
 
-  if (!user || !isAdmin) return null;
+  if (!user || !isAdmin) {
+    return null;
+  }
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }

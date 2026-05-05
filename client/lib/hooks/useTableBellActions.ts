@@ -21,17 +21,30 @@ export function useTableBellActions() {
   ): Promise<boolean> {
     if (confirmOpts) {
       const ok = await confirm(confirmOpts);
-      if (!ok) return false;
+      if (!ok) {
+        return false;
+      }
     }
-    await tableBellStore.add({ table, startTime: new Date().toISOString(), ...opts });
+    await tableBellStore.add({
+      table,
+      startTime: new Date().toISOString(),
+      ...opts,
+    });
     return true;
   }
 
-  async function dismiss(bell: TableBell, confirmOpts?: DialogOptions): Promise<boolean> {
-    if (!canDelete(bell)) return false;
+  async function dismiss(
+    bell: TableBell,
+    confirmOpts?: DialogOptions,
+  ): Promise<boolean> {
+    if (!canDelete(bell)) {
+      return false;
+    }
     if (confirmOpts) {
       const ok = await confirm(confirmOpts);
-      if (!ok) return false;
+      if (!ok) {
+        return false;
+      }
     }
     setLoadingId(bell.$id);
     try {
@@ -42,14 +55,22 @@ export function useTableBellActions() {
     }
   }
 
-  async function acknowledge(bell: TableBell, confirmOpts?: DialogOptions): Promise<boolean> {
+  async function acknowledge(
+    bell: TableBell,
+    confirmOpts?: DialogOptions,
+  ): Promise<boolean> {
     if (confirmOpts) {
       const ok = await confirm(confirmOpts);
-      if (!ok) return false;
+      if (!ok) {
+        return false;
+      }
     }
     setLoadingId(bell.$id);
     try {
-      await tableBellStore.update({ $id: bell.$id, acknowledgeTime: new Date().toISOString() });
+      await tableBellStore.update({
+        $id: bell.$id,
+        acknowledgeTime: new Date().toISOString(),
+      });
       return true;
     } finally {
       setLoadingId(null);

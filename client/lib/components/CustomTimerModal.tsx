@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Pressable, Text } from "react-native";
+import { ActivityIndicator, Pressable, Text, TextInput } from "react-native";
 import { useTheme } from "../bootstrap/ThemeProvider";
 import { BottomSheet, makeSheetStyles } from "./BottomSheet";
 import { DirectionPicker } from "./DirectionPicker";
 import { FormField } from "./FormField";
-import { TextInput } from "react-native";
 
 type Props = {
   visible: boolean;
@@ -15,7 +14,13 @@ type Props = {
   onSave: (duration: number, direction: "up" | "down") => Promise<void>;
 };
 
-export function CustomTimerModal({ visible, onClose, initialDuration, initialDirection, onSave }: Props) {
+export function CustomTimerModal({
+  visible,
+  onClose,
+  initialDuration,
+  initialDirection,
+  onSave,
+}: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeSheetStyles(colors), [colors]);
   const { t } = useTranslation(["timer"]);
@@ -26,7 +31,9 @@ export function CustomTimerModal({ visible, onClose, initialDuration, initialDir
   const [durBlurred, setDurBlurred] = useState(false);
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) {
+      return;
+    }
     setDuration(initialDuration != null ? String(initialDuration) : "");
     setDirection(initialDirection ?? "down");
     setSaving(false);
@@ -37,7 +44,9 @@ export function CustomTimerModal({ visible, onClose, initialDuration, initialDir
   const durValid = !isNaN(durNum) && durNum > 0;
 
   async function handleSave() {
-    if (!durValid || saving) return;
+    if (!durValid || saving) {
+      return;
+    }
     setSaving(true);
     try {
       await onSave(durNum, direction);
@@ -54,18 +63,25 @@ export function CustomTimerModal({ visible, onClose, initialDuration, initialDir
       title={t("customTimerModal.title")}
       footer={
         <Pressable
-          style={[styles.saveBtn, (!durValid || saving) && styles.saveBtnDisabled]}
+          style={[
+            styles.saveBtn,
+            (!durValid || saving) && styles.saveBtnDisabled,
+          ]}
           onPress={handleSave}
           disabled={!durValid || saving}
         >
-          {saving
-            ? <ActivityIndicator size="small" color={colors.onAccent} />
-            : <Text style={styles.saveBtnText}>{t("customTimerModal.save")}</Text>
-          }
+          {saving ? (
+            <ActivityIndicator size="small" color={colors.onAccent} />
+          ) : (
+            <Text style={styles.saveBtnText}>{t("customTimerModal.save")}</Text>
+          )}
         </Pressable>
       }
     >
-      <FormField icon="hourglass-outline" label={t("customTimerModal.durationField")}>
+      <FormField
+        icon="hourglass-outline"
+        label={t("customTimerModal.durationField")}
+      >
         <TextInput
           style={[
             styles.input,
@@ -76,7 +92,9 @@ export function CustomTimerModal({ visible, onClose, initialDuration, initialDir
             setDuration(v);
             if (durBlurred) {
               const n = parseInt(v, 10);
-              if (!isNaN(n) && n > 0) setDurBlurred(false);
+              if (!isNaN(n) && n > 0) {
+                setDurBlurred(false);
+              }
             }
           }}
           onBlur={() => setDurBlurred(true)}
@@ -86,7 +104,10 @@ export function CustomTimerModal({ visible, onClose, initialDuration, initialDir
         />
       </FormField>
 
-      <FormField icon="swap-vertical-outline" label={t("customTimerModal.directionField")}>
+      <FormField
+        icon="swap-vertical-outline"
+        label={t("customTimerModal.directionField")}
+      >
         <DirectionPicker
           value={direction}
           onChange={setDirection}

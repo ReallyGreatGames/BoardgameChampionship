@@ -19,7 +19,6 @@ import {
   View,
 } from "react-native";
 
-
 export default function ActiveBellsPage() {
   const { user, loading, isAdmin } = useAuth();
   const { colors } = useTheme();
@@ -30,8 +29,12 @@ export default function ActiveBellsPage() {
   const [now, setNow] = useState(Date.now);
 
   useEffect(() => {
-    if (loading) return;
-    if (!isAdmin) router.replace("/(pages)/login");
+    if (loading) {
+      return;
+    }
+    if (!isAdmin) {
+      router.replace("/(pages)/login");
+    }
   }, [loading, isAdmin]);
 
   useEffect(() => {
@@ -43,11 +46,12 @@ export default function ActiveBellsPage() {
     return [...tableBellStore.collection].sort((a, b) => {
       const aAck = !!a.acknowledgeTime;
       const bAck = !!b.acknowledgeTime;
-      if (aAck !== bAck) return aAck ? 1 : -1;
+      if (aAck !== bAck) {
+        return aAck ? 1 : -1;
+      }
       return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
     });
   }, [tableBellStore.collection]);
-
 
   async function handleBellPress(bell: TableBell) {
     if (bell.acknowledgeTime) {
@@ -68,11 +72,16 @@ export default function ActiveBellsPage() {
     }
   }
 
-  if (loading || !user || !isAdmin) return null;
+  if (loading || !user || !isAdmin) {
+    return null;
+  }
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+      >
         {sorted.length === 0 ? (
           <Text style={styles.empty}>{t("empty")}</Text>
         ) : (
@@ -91,19 +100,30 @@ export default function ActiveBellsPage() {
                 ]}
                 activeOpacity={0.7}
                 onPress={() => handleBellPress(bell)}
-                disabled={isItemLoading || (!!bell.acknowledgeTime && !bellActions.canDelete(bell))}
+                disabled={
+                  isItemLoading ||
+                  (!!bell.acknowledgeTime && !bellActions.canDelete(bell))
+                }
               >
                 <View style={styles.bellIconRow}>
                   {isAck && (
                     <Ionicons name="walk-outline" size={24} color={bellColor} />
                   )}
                   <Ionicons
-                    name={isAck ? "notifications-off-outline" : "notifications-outline"}
+                    name={
+                      isAck
+                        ? "notifications-off-outline"
+                        : "notifications-outline"
+                    }
                     size={28}
                     color={bellColor}
                   />
                   {isLocked && (
-                    <Ionicons name="lock-closed-outline" size={16} color={bellColor} />
+                    <Ionicons
+                      name="lock-closed-outline"
+                      size={16}
+                      color={bellColor}
+                    />
                   )}
                 </View>
 
@@ -111,10 +131,14 @@ export default function ActiveBellsPage() {
                   <Text style={[styles.tableLabel, { color: bellColor }]}>
                     {t("table")} {bell.table}
                   </Text>
-                  {isItemLoading && <ActivityIndicator size="small" color={bellColor} />}
+                  {isItemLoading && (
+                    <ActivityIndicator size="small" color={bellColor} />
+                  )}
                 </View>
                 {bell.reason ? (
-                  <Text style={[styles.bellReason, { color: bellColor }]}>{bell.reason}</Text>
+                  <Text style={[styles.bellReason, { color: bellColor }]}>
+                    {bell.reason}
+                  </Text>
                 ) : null}
 
                 <Text style={[styles.bellTimer, { color: bellColor }]}>

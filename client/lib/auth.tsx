@@ -30,9 +30,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-async function getOrCreateAnonymousSession(): Promise<
-  Models.User<Models.Preferences> | null
-> {
+async function getOrCreateAnonymousSession(): Promise<Models.User<Models.Preferences> | null> {
   return account.get().catch(async () => {
     await account.createAnonymousSession();
     return account.get().catch(() => null);
@@ -66,7 +64,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         const raw = await SecureStore.getItemAsync(PIN_STORE_KEY);
-        if (!raw) return;
+        if (!raw) {
+          return;
+        }
 
         const stored: StoredPin = JSON.parse(raw);
         const now = Date.now();
@@ -156,6 +156,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  if (!ctx) {
+    throw new Error("useAuth must be used within AuthProvider");
+  }
   return ctx;
 }

@@ -23,20 +23,23 @@ function AppNavigator() {
   const { type } = useTournament();
   const { colors } = useTheme();
 
-  const screenOptions = useMemo(() => ({
-    headerStyle: { backgroundColor: colors.background },
-    headerTintColor: colors.primary,
-    headerTitleStyle: {
-      fontFamily: "BarlowCondensed_700Bold",
-      fontSize: 20,
-      color: colors.text,
-    },
-    headerShadowVisible: false,
-    headerShown: true,
-    drawerStyle: { backgroundColor: colors.background },
-    drawerActiveTintColor: colors.primary,
-    drawerInactiveTintColor: colors.textMuted,
-  }), [colors]);
+  const screenOptions = useMemo(
+    () => ({
+      headerStyle: { backgroundColor: colors.background },
+      headerTintColor: colors.primary,
+      headerTitleStyle: {
+        fontFamily: "BarlowCondensed_700Bold",
+        fontSize: 20,
+        color: colors.text,
+      },
+      headerShadowVisible: false,
+      headerShown: true,
+      drawerStyle: { backgroundColor: colors.background },
+      drawerActiveTintColor: colors.primary,
+      drawerInactiveTintColor: colors.textMuted,
+    }),
+    [colors],
+  );
 
   return (
     <Drawer
@@ -73,11 +76,14 @@ function AppNavigator() {
       />
       <Drawer.Screen
         name="(pages)/(user)/game"
-        options={{ drawerLabel: t("entries.game"), title: t("entries.game"), }}
+        options={{ drawerLabel: t("entries.game"), title: t("entries.game") }}
       />
       <Drawer.Screen
         name="(pages)/(user)/schedule"
-        options={{ drawerLabel: t("entries.schedule"), title: t("entries.schedule") }}
+        options={{
+          drawerLabel: t("entries.schedule"),
+          title: t("entries.schedule"),
+        }}
       />
       <Drawer.Screen
         name="(pages)/(team-player)/choose-your-character"
@@ -87,27 +93,48 @@ function AppNavigator() {
       />
       <Drawer.Screen
         name="(pages)/(admin)/active-bells"
-        options={{ drawerLabel: t("entries.activeBells"), title: t("entries.activeBells"), }}
+        options={{
+          drawerLabel: t("entries.activeBells"),
+          title: t("entries.activeBells"),
+        }}
       />
       <Drawer.Screen
         name="(pages)/(user)/rules"
-        options={{ drawerLabel: t("entries.rules"), title: t("entries.rules"), }}
+        options={{ drawerLabel: t("entries.rules"), title: t("entries.rules") }}
       />
       <Drawer.Screen
         name="(pages)/(user)/timer"
-        options={{ title: t("entries.timer"), drawerItemStyle: { display: "none" }, headerShown: false, swipeEnabled: false }}
+        options={{
+          title: t("entries.timer"),
+          drawerItemStyle: { display: "none" },
+          headerShown: false,
+          swipeEnabled: false,
+        }}
       />
       <Drawer.Screen
         name="(pages)/(user)/results"
-        options={{ title: t("entries.results"), drawerItemStyle: { display: "none" }, headerShown: true, swipeEnabled: false }}
+        options={{
+          title: t("entries.results"),
+          drawerItemStyle: { display: "none" },
+          headerShown: true,
+          swipeEnabled: false,
+        }}
       />
       <Drawer.Screen
         name="(pages)/(user)/signature"
-        options={{ title: t("entries.signature"), drawerItemStyle: { display: "none" }, headerShown: true, swipeEnabled: false }}
+        options={{
+          title: t("entries.signature"),
+          drawerItemStyle: { display: "none" },
+          headerShown: true,
+          swipeEnabled: false,
+        }}
       />
       <Drawer.Screen
         name="(pages)/legal"
-        options={{ title: t("entries.legal"), drawerItemStyle: { display: "none" } }}
+        options={{
+          title: t("entries.legal"),
+          drawerItemStyle: { display: "none" },
+        }}
       />
     </Drawer>
   );
@@ -129,7 +156,9 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <BootstrapProvider>

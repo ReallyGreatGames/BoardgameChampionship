@@ -27,12 +27,18 @@ type Point = { x: number; y: number };
 type Stroke = Point[];
 
 function strokeToD(stroke: Stroke): string {
-  if (stroke.length === 0) return "";
+  if (stroke.length === 0) {
+    return "";
+  }
   const [first, ...rest] = stroke;
   return `M ${first.x},${first.y} ${rest.map((p) => `L ${p.x},${p.y}`).join(" ")}`;
 }
 
-function buildSvgContent(strokes: Stroke[], width: number, height: number): string {
+function buildSvgContent(
+  strokes: Stroke[],
+  width: number,
+  height: number,
+): string {
   const paths = strokes
     .filter((s) => s.length > 0)
     .map(
@@ -44,7 +50,10 @@ function buildSvgContent(strokes: Stroke[], width: number, height: number): stri
 }
 
 export default function SignaturePage() {
-  const { gameId, place } = useLocalSearchParams<{ gameId: string; place: string }>();
+  const { gameId, place } = useLocalSearchParams<{
+    gameId: string;
+    place: string;
+  }>();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useTranslation(["signature"]);
@@ -53,7 +62,10 @@ export default function SignaturePage() {
   const placeIdx = parseInt(place ?? "0", 10);
 
   const existingResult = useMemo(
-    () => resultStore.collection.find((r) => r.gameId === gameId && r.table === TABLE),
+    () =>
+      resultStore.collection.find(
+        (r) => r.gameId === gameId && r.table === TABLE,
+      ),
     [resultStore.collection, gameId],
   );
   const existingFileId = existingResult?.signatureIds?.[placeIdx] ?? "";
@@ -125,12 +137,17 @@ export default function SignaturePage() {
   }, []);
 
   const handleBack = useCallback(() => {
-    if (gameId) router.replace(`/(pages)/(user)/results?gameId=${gameId}`);
-    else router.back();
+    if (gameId) {
+      router.replace(`/(pages)/(user)/results?gameId=${gameId}`);
+    } else {
+      router.back();
+    }
   }, [gameId]);
 
   const handleSave = useCallback(async () => {
-    if (isEmpty || saving) return;
+    if (isEmpty || saving) {
+      return;
+    }
     setSaving(true);
     try {
       const { width, height } = canvasDims;
@@ -139,11 +156,18 @@ export default function SignaturePage() {
       let fileArg: any;
       if (Platform.OS === "web") {
         const blob = new Blob([svgContent], { type: "image/svg+xml" });
-        fileArg = new globalThis.File([blob], `signature_${gameId}_${placeIdx}.svg`, {
-          type: "image/svg+xml",
-        });
+        fileArg = new globalThis.File(
+          [blob],
+          `signature_${gameId}_${placeIdx}.svg`,
+          {
+            type: "image/svg+xml",
+          },
+        );
       } else {
-        const fsFile = new FSFile(Paths.cache, `sig_${gameId}_${placeIdx}_${Date.now()}.svg`);
+        const fsFile = new FSFile(
+          Paths.cache,
+          `sig_${gameId}_${placeIdx}_${Date.now()}.svg`,
+        );
         fsFile.write(svgContent);
         fileArg = {
           name: `signature_${gameId}_${placeIdx}.svg`,
@@ -163,11 +187,16 @@ export default function SignaturePage() {
         (r) => r.gameId === gameId && r.table === TABLE,
       );
       const sigIds = [...(existingResult?.signatureIds ?? [])];
-      while (sigIds.length <= placeIdx) sigIds.push("");
+      while (sigIds.length <= placeIdx) {
+        sigIds.push("");
+      }
       sigIds[placeIdx] = uploaded.$id;
 
       if (existingResult) {
-        await resultStore.update({ $id: existingResult.$id, signatureIds: sigIds });
+        await resultStore.update({
+          $id: existingResult.$id,
+          signatureIds: sigIds,
+        });
       } else {
         await resultStore.add({
           gameId: gameId ?? "",
@@ -183,7 +212,10 @@ export default function SignaturePage() {
     }
   }, [isEmpty, saving, strokes, canvasDims, placeIdx, gameId, resultStore]);
 
-  const allStrokes = [...strokes, ...(currentStroke.length > 0 ? [currentStroke] : [])];
+  const allStrokes = [
+    ...strokes,
+    ...(currentStroke.length > 0 ? [currentStroke] : []),
+  ];
 
   return (
     <View style={styles.container}>
@@ -244,19 +276,30 @@ export default function SignaturePage() {
 
       <View style={styles.actions}>
         <TouchableOpacity
-          style={[styles.clearBtn, (isEmpty || hasExisting) && styles.btnDisabled]}
+          style={[
+            styles.clearBtn,
+            (isEmpty || hasExisting) && styles.btnDisabled,
+          ]}
           onPress={handleClear}
           disabled={isEmpty || hasExisting}
           activeOpacity={0.7}
         >
           <Ionicons name="trash-outline" size={18} color={colors.error} />
-          <Text style={[styles.clearBtnText, (isEmpty || hasExisting) && { color: colors.textMuted }]}>
+          <Text
+            style={[
+              styles.clearBtnText,
+              (isEmpty || hasExisting) && { color: colors.textMuted },
+            ]}
+          >
             {t("clear")}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.saveBtn, (isEmpty || saving || hasExisting) && styles.btnDisabled]}
+          style={[
+            styles.saveBtn,
+            (isEmpty || saving || hasExisting) && styles.btnDisabled,
+          ]}
           onPress={handleSave}
           disabled={isEmpty || saving || hasExisting}
           activeOpacity={0.7}

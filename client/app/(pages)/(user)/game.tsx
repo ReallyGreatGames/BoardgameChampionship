@@ -27,14 +27,37 @@ type ActionButton = {
 };
 
 const ACTION_BUTTONS: ActionButton[] = [
-  { key: "lottery", icon: "shuffle", labelKey: "actions.lottery", onPress: (gameId) => { } },
-  { key: "rules", icon: "book-outline", labelKey: "actions.rules", onPress: (gameId) => router.push(`/rules?gameId=${gameId}`) },
-  { key: "timer", icon: "timer-outline", labelKey: "actions.timer", onPress: (gameId) => router.push(`/(pages)/(user)/timer?gameId=${gameId}`) },
-  { key: "results", icon: "trophy-outline", labelKey: "actions.results", onPress: (gameId) => router.push(`/(pages)/(user)/results?gameId=${gameId}`) },
+  {
+    key: "lottery",
+    icon: "shuffle",
+    labelKey: "actions.lottery",
+    onPress: (gameId) => {},
+  },
+  {
+    key: "rules",
+    icon: "book-outline",
+    labelKey: "actions.rules",
+    onPress: (gameId) => router.push(`/rules?gameId=${gameId}`),
+  },
+  {
+    key: "timer",
+    icon: "timer-outline",
+    labelKey: "actions.timer",
+    onPress: (gameId) => router.push(`/(pages)/(user)/timer?gameId=${gameId}`),
+  },
+  {
+    key: "results",
+    icon: "trophy-outline",
+    labelKey: "actions.results",
+    onPress: (gameId) =>
+      router.push(`/(pages)/(user)/results?gameId=${gameId}`),
+  },
 ];
 
 function formatElapsed(seconds: number) {
-  const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+  const m = Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, "0");
   const s = (seconds % 60).toString().padStart(2, "0");
   return `${m}:${s}`;
 }
@@ -58,11 +81,15 @@ export default function GamePage() {
 
   useEffect(() => {
     tableBellStore.init();
-  }, []);
+  }, [tableBellStore]);
 
   useEffect(() => {
-    if (loading) return;
-    if (!user) router.replace("/(pages)/login");
+    if (loading) {
+      return;
+    }
+    if (!user) {
+      router.replace("/(pages)/login");
+    }
   }, [user, loading]);
 
   useEffect(() => {
@@ -71,15 +98,20 @@ export default function GamePage() {
       return;
     }
     const update = () =>
-      setElapsedSeconds(Math.floor((Date.now() - new Date(bell.startTime).getTime()) / 1000));
+      setElapsedSeconds(
+        Math.floor((Date.now() - new Date(bell.startTime).getTime()) / 1000),
+      );
     update();
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
   }, [bell]);
 
   const handleBack = () => {
-    if (gameId) router.replace('/(pages)/(user)/schedule');
-    else router.replace("/");
+    if (gameId) {
+      router.replace("/(pages)/(user)/schedule");
+    } else {
+      router.replace("/");
+    }
   };
 
   async function toggleBell() {
@@ -115,7 +147,10 @@ export default function GamePage() {
     <View style={styles.container}>
       <BackButton onPress={handleBack} />
 
-      <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+      >
         <Table gameId={gameId} />
 
         <View style={styles.actionsGrid}>
@@ -143,7 +178,9 @@ export default function GamePage() {
           ]}
           activeOpacity={0.7}
           onPress={toggleBell}
-          disabled={bellActions.isLoading || (!!bell && !bellActions.canDelete(bell))}
+          disabled={
+            bellActions.isLoading || (!!bell && !bellActions.canDelete(bell))
+          }
         >
           <View style={styles.bellIconRow}>
             {bell?.acknowledgeTime && (
@@ -151,7 +188,11 @@ export default function GamePage() {
             )}
             <Ionicons name={bellIcon} size={28} color={bellColor} />
             {!!bell && !bellActions.canDelete(bell) && (
-              <Ionicons name="lock-closed-outline" size={16} color={bellColor} />
+              <Ionicons
+                name="lock-closed-outline"
+                size={16}
+                color={bellColor}
+              />
             )}
           </View>
 
@@ -159,7 +200,9 @@ export default function GamePage() {
             <Text style={[styles.actionLabel, { color: bellColor }]}>
               {t("actions.tableBell")}
             </Text>
-            {bellActions.isLoading && <ActivityIndicator size="small" color={bellColor} />}
+            {bellActions.isLoading && (
+              <ActivityIndicator size="small" color={bellColor} />
+            )}
           </View>
 
           {bell && (

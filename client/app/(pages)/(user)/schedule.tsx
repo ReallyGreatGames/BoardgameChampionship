@@ -12,7 +12,9 @@ export default function ScheduleScreen() {
   const { user, loading, isAdmin, isPinVerified } = useAuth();
 
   useEffect(() => {
-    if (loading) return;
+    if (loading) {
+      return;
+    }
     if (!isPinVerified && !isAdmin) {
       router.replace("/(pages)/login");
     }

@@ -19,7 +19,7 @@ import { useAuth } from "../../lib/auth";
 import { useTheme } from "../../lib/bootstrap/ThemeProvider";
 import { type } from "../../lib/theme/typography";
 import { inset } from "../../lib/theme/spacing";
-import { useRouter } from "@/lib/routing/useRouter"
+import { useRouter } from "@/lib/routing/useRouter";
 
 const SECRET_TAPS = 7;
 
@@ -45,9 +45,9 @@ export default function LoginScreen() {
 
   useFocusEffect(() => {
     if (user) {
-      navigate("/")
+      navigate("/");
     }
-  })
+  });
 
   // Admin badge spring-in when mode activates
   useEffect(() => {
@@ -66,7 +66,9 @@ export default function LoginScreen() {
 
   function handleTitleTap() {
     tapCount.current += 1;
-    if (tapTimer.current) clearTimeout(tapTimer.current);
+    if (tapTimer.current) {
+      clearTimeout(tapTimer.current);
+    }
     tapTimer.current = setTimeout(() => {
       tapCount.current = 0;
     }, 2000);
@@ -113,7 +115,9 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <TouchableWithoutFeedback onPress={Platform.OS !== "web" ? Keyboard.dismiss : undefined}>
+      <TouchableWithoutFeedback
+        onPress={Platform.OS !== "web" ? Keyboard.dismiss : undefined}
+      >
         <View style={styles.inner}>
           {/* Zone 1 — Title */}
           <View style={styles.headerZone}>

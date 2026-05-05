@@ -28,7 +28,11 @@ function DrawerHeader() {
         }}
         hitSlop={12}
       >
-        <Ionicons name="information-circle-outline" size={22} color={colors.primary} />
+        <Ionicons
+          name="information-circle-outline"
+          size={22}
+          color={colors.primary}
+        />
       </Pressable>
     </View>
   );
@@ -69,7 +73,6 @@ function DrawerFooter() {
     </View>
   );
 }
-
 
 export function AppDrawer(props: DrawerContentComponentProps) {
   const pathname = usePathname();
@@ -123,31 +126,41 @@ export function AppDrawer(props: DrawerContentComponentProps) {
 
       {entries
         .filter((entry) => {
-          if (entry.scope === "public") return true;
-          if (entry.scope === "private" && (isPinVerified || isAdmin))
+          if (entry.scope === "public") {
             return true;
-          if (entry.scope === "admin" && isAdmin) return true;
+          }
+          if (entry.scope === "private" && (isPinVerified || isAdmin)) {
+            return true;
+          }
+          if (entry.scope === "admin" && isAdmin) {
+            return true;
+          }
           return false;
         })
         .map((entry, i) => (
           <DrawerItem
             key={i}
-            label={entry.badgeCount !== undefined
-              ? () => (
-                <View style={styles.labelRow}>
-                  <Text style={[styles.labelText, { color: colors.text }]}>
-                    {t(entry.translationId)}
-                  </Text>
-                  {entry.badgeCount! > 0 && (
-                    <View style={styles.badge}>
-                      <Text style={styles.badgeText}>{entry.badgeCount}</Text>
+            label={
+              entry.badgeCount !== undefined
+                ? () => (
+                    <View style={styles.labelRow}>
+                      <Text style={[styles.labelText, { color: colors.text }]}>
+                        {t(entry.translationId)}
+                      </Text>
+                      {entry.badgeCount! > 0 && (
+                        <View style={styles.badge}>
+                          <Text style={styles.badgeText}>
+                            {entry.badgeCount}
+                          </Text>
+                        </View>
+                      )}
                     </View>
-                  )}
-                </View>
-              )
-              : () => (<Text style={[styles.labelText, { color: colors.text }]}>
-                {t(entry.translationId)}
-              </Text>)
+                  )
+                : () => (
+                    <Text style={[styles.labelText, { color: colors.text }]}>
+                      {t(entry.translationId)}
+                    </Text>
+                  )
             }
             focused={pathname === entry.route}
             onPress={() => router.push(entry.route as any)}

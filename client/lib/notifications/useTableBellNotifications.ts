@@ -31,7 +31,9 @@ async function requestNotificationPermissions() {
 function playWebBellSound() {
   try {
     const Ctx = window.AudioContext ?? (window as any).webkitAudioContext;
-    if (!Ctx) return;
+    if (!Ctx) {
+      return;
+    }
     const ctx = new Ctx();
     const now = ctx.currentTime;
 
@@ -85,7 +87,9 @@ export function useTableBellNotifications(isAdmin: boolean) {
   const { t } = useTranslation(["activeBells"]);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isAdmin) {
+      return;
+    }
     if (mountedAtRef.current === null) {
       mountedAtRef.current = Date.now();
     }
@@ -96,7 +100,9 @@ export function useTableBellNotifications(isAdmin: boolean) {
   }, [isAdmin]);
 
   useEffect(() => {
-    if (!isAdmin || mountedAtRef.current === null) return;
+    if (!isAdmin || mountedAtRef.current === null) {
+      return;
+    }
 
     const cutoff = mountedAtRef.current;
     const newBells = collection.filter((bell) => {
@@ -107,7 +113,10 @@ export function useTableBellNotifications(isAdmin: boolean) {
     newBells.forEach((bell) => {
       const title = t("notificationTitle");
       const body = bell.reason
-        ? t("notificationBodyWithReason", { table: bell.table, reason: bell.reason })
+        ? t("notificationBodyWithReason", {
+            table: bell.table,
+            reason: bell.reason,
+          })
         : t("notificationBody", { table: bell.table });
       triggerNotifications(title, body);
     });
