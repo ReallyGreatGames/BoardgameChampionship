@@ -12,24 +12,29 @@ import {
 } from "react-native";
 import { useTheme } from "../bootstrap/ThemeProvider";
 import {
-  importTeam,
+  fetchAndValidate,
+  FetchAndValidateResult,
+  importTables,
   ImportRowStatus,
-  prefetchExisting,
-} from "../import/player-import-service";
-import { parseTsv, ParsedRow } from "../import/tsv-parser";
+  ValidatedGroup,
+} from "../import/table-import-service";
+import { parseTableFile } from "../import/table-parser";
 import { inset, space } from "../theme/spacing";
 import { type } from "../theme/typography";
 
 type Phase = "pick" | "preview" | "importing" | "done";
 
-export function ImportPlayers() {
+export function ImportTables() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [phase, setPhase] = useState<Phase>("pick");
-  const [rows, setRows] = useState<ParsedRow[]>([]);
-  const [statuses, setStatuses] = useState<ImportRowStatus[]>([]);
+  const [loading, setLoading] = useState(false);
   const [pickError, setPickError] = useState<string | null>(null);
+  const [validation, setValidation] = useState<FetchAndValidateResult | null>(
+    null,
+  );
+  const [statuses, setStatuses] = useState<ImportRowStatus[][]>([]);
 
   const mountedRef = useRef(true);
   useEffect(
@@ -39,13 +44,18 @@ export function ImportPlayers() {
     [],
   );
 
-  const hasErrors = rows.some((r) => r.errors.length > 0);
+  const totalEntries =
+    validation?.groups.reduce((sum, g) => sum + g.entries.length, 0) ?? 0;
+  const successCount = statuses
+    .flat()
+    .filter((s) => s.state === "success").length;
+  const errorCount = statuses.flat().filter((s) => s.state === "error").length;
 
   async function handlePickFile() {
     setPickError(null);
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ["text/tab-separated-values", "text/plain", "*/*"],
+        type: ["text/plain", "*/*"],
         copyToCacheDirectory: true,
       });
 
@@ -66,37 +76,44 @@ export function ImportPlayers() {
         text = await new File(asset.uri).text();
       }
 
-      const parsed = parseTsv(text);
-      setRows(parsed);
-      setStatuses(parsed.map(() => ({ state: "pending" })));
+      const parsed = parseTableFile(text);
+      setLoading(true);
+      const validationResult = await fetchAndValidate(parsed.groups);
+      if (!mountedRef.current) {
+        return;
+      }
+      setValidation(validationResult);
+      setStatuses(
+        validationResult.groups.map((g) => g.entries.map(() => ({ state: "pending" }))),
+      );
+      setLoading(false);
       setPhase("preview");
     } catch (e: unknown) {
+      setLoading(false);
       setPickError(e instanceof Error ? e.message : "Failed to read file");
     }
   }
 
   async function handleImport() {
+    if (!validation) {
+      return;
+    }
     setPhase("importing");
 
-    const { teamsByCode, playersByTeamAndNumber } = await prefetchExisting();
-
-    for (let i = 0; i < rows.length; i++) {
-      if (!mountedRef.current) {
-        return;
-      }
-      await importTeam(
-        rows[i].team,
-        teamsByCode,
-        playersByTeamAndNumber,
-        (status) => {
-          setStatuses((prev) => {
-            const next = [...prev];
-            next[i] = status;
-            return next;
-          });
-        },
-      );
-    }
+    await importTables(
+      validation.groups,
+      validation.playersByCode,
+      (g, e, status) => {
+        if (!mountedRef.current) {
+          return;
+        }
+        setStatuses((prev) => {
+          const next = prev.map((row) => [...row]);
+          next[g][e] = status;
+          return next;
+        });
+      },
+    );
 
     if (mountedRef.current) {
       setPhase("done");
@@ -105,37 +122,48 @@ export function ImportPlayers() {
 
   function handleReset() {
     setPhase("pick");
-    setRows([]);
-    setStatuses([]);
+    setLoading(false);
     setPickError(null);
+    setValidation(null);
+    setStatuses([]);
   }
 
   if (phase === "pick") {
     return (
       <View style={styles.centered}>
-        <Text style={styles.pickTitle}>Import teams & players</Text>
+        <Text style={styles.pickTitle}>Import table seating</Text>
         <Text style={styles.pickSubtitle}>
-          Select a TSV file with 8 columns: team name, country, player 1–4, team
-          code, country code
+          Select a text file where each line has the format:{"\n"}
+          {"  1 |  1  AT2-4 BE2-1 GB2-1 FI3-3"}
         </Text>
-        <Pressable style={styles.pickButton} onPress={handlePickFile}>
-          <Text style={styles.pickButtonText}>Pick TSV file</Text>
+        <Pressable
+          style={[styles.pickButton, loading && styles.pickButtonDisabled]}
+          onPress={handlePickFile}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color={colors.onAccent} />
+          ) : (
+            <Text style={styles.pickButtonText}>Pick file</Text>
+          )}
         </Pressable>
         {pickError && <Text style={styles.pickError}>{pickError}</Text>}
       </View>
     );
   }
 
-  const successCount = statuses.filter((s) => s.state === "success").length;
-  const errorCount = statuses.filter((s) => s.state === "error").length;
+  const groups = validation?.groups ?? [];
+  const globalErrors = validation?.globalErrors ?? [];
+  const hasErrors = validation?.hasErrors ?? false;
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>
-          {phase === "preview" && `Preview — ${rows.length} teams`}
+          {phase === "preview" &&
+            `Preview — ${groups.length} games, ${totalEntries} tables`}
           {phase === "importing" &&
-            `Importing… ${successCount + errorCount}/${rows.length}`}
+            `Importing… ${successCount + errorCount}/${totalEntries}`}
           {phase === "done" &&
             `Done — ${successCount} succeeded, ${errorCount} failed`}
         </Text>
@@ -157,7 +185,7 @@ export function ImportPlayers() {
                 <Text style={styles.importButtonText}>
                   {hasErrors
                     ? "Fix errors first"
-                    : `Import ${rows.length} teams`}
+                    : `Import ${totalEntries} tables`}
                 </Text>
               </Pressable>
             </>
@@ -172,89 +200,105 @@ export function ImportPlayers() {
         </View>
       </View>
 
+      {globalErrors.length > 0 && (
+        <View style={styles.globalErrorBox}>
+          {globalErrors.map((err, i) => (
+            <Text key={i} style={styles.globalErrorText}>
+              • {err}
+            </Text>
+          ))}
+        </View>
+      )}
+
       <ScrollView
         style={styles.tableScroll}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.tableHeader}>
-          <Text style={[styles.colStatus, styles.colHeaderText]}></Text>
-          <Text style={[styles.colCode, styles.colHeaderText]}>Code</Text>
-          <Text style={[styles.colName, styles.colHeaderText]}>Team</Text>
-          <Text style={[styles.colCountry, styles.colHeaderText]}>CC</Text>
-          <Text style={[styles.colPlayers, styles.colHeaderText]}>Players</Text>
-        </View>
-
-        {rows.map((row, i) => {
-          const status = statuses[i];
-          const hasRowErrors = row.errors.length > 0;
-
-          return (
-            <View key={String(row.line)}>
-              <View
-                style={[
-                  styles.tableRow,
-                  hasRowErrors && styles.tableRowError,
-                  status?.state === "success" && styles.tableRowSuccess,
-                  status?.state === "error" && styles.tableRowError,
-                ]}
-              >
-                <View style={styles.colStatus}>
-                  <StatusIcon
-                    status={status}
-                    styles={styles}
-                    primaryColor={colors.primary}
-                  />
-                </View>
-                <Text
-                  style={[styles.colCode, styles.cellText]}
-                  numberOfLines={1}
-                >
-                  {row.team.code}
-                </Text>
-                <Text
-                  style={[styles.colName, styles.cellText]}
-                  numberOfLines={1}
-                >
-                  {row.team.name}
-                </Text>
-                <Text
-                  style={[styles.colCountry, styles.cellText]}
-                  numberOfLines={1}
-                >
-                  {row.team.country}
-                </Text>
-                <View style={styles.colPlayers}>
-                  {row.team.players.map((p) => (
-                    <Text
-                      key={p.playerNumber}
-                      style={styles.playerText}
-                      numberOfLines={1}
-                    >
-                      {p.playerNumber}. {p.name}
-                    </Text>
-                  ))}
-                </View>
-              </View>
-
-              {hasRowErrors && (
-                <View style={styles.errorRow}>
-                  {row.errors.map((err, j) => (
-                    <Text key={j} style={styles.errorText}>
-                      • {err}
-                    </Text>
-                  ))}
-                </View>
-              )}
-
-              {status?.state === "error" && (
-                <View style={styles.errorRow}>
-                  <Text style={styles.errorText}>• {status.message}</Text>
-                </View>
-              )}
-            </View>
-          );
-        })}
+        {groups.map((group, g) => (
+          <GameGroup
+            key={g}
+            group={group}
+            statuses={statuses[g] ?? []}
+            styles={styles}
+            primaryColor={colors.primary}
+          />
+        ))}
       </ScrollView>
+    </View>
+  );
+}
+
+function GameGroup({
+  group,
+  statuses,
+  styles,
+  primaryColor,
+}: {
+  group: ValidatedGroup;
+  statuses: ImportRowStatus[];
+  styles: ReturnType<typeof makeStyles>;
+  primaryColor: string;
+}) {
+  return (
+    <View style={styles.gameGroup}>
+      <Text style={styles.gameGroupTitle}>{group.gameTitle}</Text>
+
+      <View style={styles.tableHeader}>
+        <Text style={[styles.colStatus, styles.colHeaderText]}></Text>
+        <Text style={[styles.colTable, styles.colHeaderText]}>Table</Text>
+        <Text style={[styles.colPlayers, styles.colHeaderText]}>Players</Text>
+      </View>
+
+      {group.entries.map((entry, e) => {
+        const status = statuses[e];
+        const hasRowErrors = entry.errors.length > 0;
+
+        return (
+          <View key={entry.line}>
+            <View
+              style={[
+                styles.tableRow,
+                hasRowErrors && styles.tableRowError,
+                status?.state === "success" && styles.tableRowSuccess,
+                status?.state === "error" && styles.tableRowError,
+              ]}
+            >
+              <View style={styles.colStatus}>
+                <StatusIcon
+                  status={status}
+                  styles={styles}
+                  primaryColor={primaryColor}
+                />
+              </View>
+              <Text style={[styles.colTable, styles.cellText]}>
+                {entry.tableNumber}
+              </Text>
+              <Text
+                style={[styles.colPlayers, styles.cellText]}
+                numberOfLines={1}
+              >
+                {entry.playerCodes.join("  ")}
+              </Text>
+            </View>
+
+            {hasRowErrors && (
+              <View style={styles.errorRow}>
+                {entry.errors.map((err, j) => (
+                  <Text key={j} style={styles.errorText}>
+                    • {err}
+                  </Text>
+                ))}
+              </View>
+            )}
+
+            {status?.state === "error" && (
+              <View style={styles.errorRow}>
+                <Text style={styles.errorText}>• {status.message}</Text>
+              </View>
+            )}
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -306,6 +350,11 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       borderRadius: 8,
       paddingVertical: space[3],
       paddingHorizontal: space[6],
+      minWidth: 120,
+      alignItems: "center",
+    },
+    pickButtonDisabled: {
+      opacity: 0.6,
     },
     pickButtonText: {
       ...type.button,
@@ -357,8 +406,28 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       ...type.bodySmall,
       color: colors.onAccent,
     },
+    globalErrorBox: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.error,
+      borderRadius: 8,
+      padding: inset.card,
+      marginBottom: space[3],
+    },
+    globalErrorText: {
+      ...type.bodySmall,
+      color: colors.error,
+    },
     tableScroll: {
       flex: 1,
+    },
+    gameGroup: {
+      marginBottom: space[5],
+    },
+    gameGroupTitle: {
+      ...type.h3,
+      color: colors.text,
+      marginBottom: space[2],
     },
     tableHeader: {
       flexDirection: "row",
@@ -374,7 +443,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     tableRow: {
       flexDirection: "row",
-      alignItems: "flex-start",
+      alignItems: "center",
       paddingVertical: space[2],
       paddingHorizontal: inset.card,
       backgroundColor: colors.surface,
@@ -392,10 +461,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     cellText: {
       ...type.bodySmall,
       color: colors.text,
-    },
-    playerText: {
-      ...type.caption,
-      color: colors.textSecondary,
     },
     errorRow: {
       paddingHorizontal: inset.card,
@@ -417,22 +482,13 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       width: 24,
       alignItems: "center",
       justifyContent: "center",
-      paddingTop: 2,
     },
-    colCode: {
-      width: 60,
-      marginRight: space[2],
-    },
-    colName: {
-      flex: 2,
-      marginRight: space[2],
-    },
-    colCountry: {
-      width: 36,
+    colTable: {
+      width: 52,
       marginRight: space[2],
     },
     colPlayers: {
-      flex: 3,
+      flex: 1,
     },
     statusPlaceholder: {
       width: 16,

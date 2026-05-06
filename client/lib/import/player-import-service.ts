@@ -1,6 +1,6 @@
 import { ID, Query } from "react-native-appwrite";
 import { DATABASE_ID, tablesDB } from "../appwrite";
-import { withRetry } from "../utils";
+import { sleep, withRetry } from "../utils";
 import { ParsedTeam } from "./tsv-parser";
 
 const TEAMS_TABLE = "teams";
@@ -110,6 +110,7 @@ export async function importTeam(
       );
       teamId = doc.$id;
     }
+    await sleep(300);
 
     const existingPlayerNumbers =
       playersByTeamAndNumber.get(teamId) ?? new Map<number, string>();
@@ -141,6 +142,7 @@ export async function importTeam(
           }),
         );
       }
+      await sleep(300);
     }
 
     onStatus({ state: "success" });

@@ -1,5 +1,5 @@
 import { FeatureFlags } from "@/lib/components/FeatureFlags";
-import { ImportPlayers } from "@/lib/components/ImportPlayers";
+import { ImportTab } from "@/lib/components/ImportTab";
 import { ScheduleList } from "@/lib/components/Schedule";
 import { TableOverview } from "@/lib/components/TableOverview";
 import { useMemo, useState } from "react";
@@ -8,7 +8,12 @@ import { useTheme } from "../../../../lib/bootstrap/ThemeProvider";
 import { TournamentSettings } from "../../../../lib/components/TournamentSettings";
 import { inset, space } from "../../../../lib/theme/spacing";
 
-type Tab = "tableOverview" | "schedule" | "tournamentSettings" | "featureFlags" | "import";
+type Tab =
+  | "tableOverview"
+  | "schedule"
+  | "tournamentSettings"
+  | "featureFlags"
+  | "import";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "tableOverview", label: "Table Overview" },
@@ -32,7 +37,12 @@ export default function AdminDashboard() {
             style={[styles.tab, activeTab === tab.key && styles.tabActive]}
             onPress={() => setActiveTab(tab.key)}
           >
-            <Text style={[styles.tabLabel, activeTab === tab.key && styles.tabLabelActive]}>
+            <Text
+              style={[
+                styles.tabLabel,
+                activeTab === tab.key && styles.tabLabelActive,
+              ]}
+            >
               {tab.label}
             </Text>
           </Pressable>
@@ -44,7 +54,7 @@ export default function AdminDashboard() {
         {activeTab === "schedule" && <ScheduleList />}
         {activeTab === "tournamentSettings" && <TournamentSettings />}
         {activeTab === "featureFlags" && <FeatureFlags />}
-        {activeTab === "import" && <ImportPlayers />}
+        {activeTab === "import" && <ImportTab />}
       </View>
     </View>
   );
