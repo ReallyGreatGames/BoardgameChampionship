@@ -2,6 +2,7 @@ import { useScreenOrientation } from "@/lib/bootstrap/ScreenOrientationProvider"
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { CustomTimerModal } from "@/lib/components/CustomTimerModal";
 import { useDialog } from "@/lib/components/Dialog";
+import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-store";
@@ -29,7 +30,6 @@ import {
 
 const DEFAULT_SECONDS = 10 * 60;
 const OVERTIME_SECONDS = 30;
-const TABLE = 1; // TODO: pass via route params when table selection is implemented
 
 function resolveGameId(ref: unknown): string | null {
   if (!ref) {
@@ -116,6 +116,8 @@ export default function TimerPage() {
   const timerStore = useTimerStore();
   const { confirm } = useDialog();
 
+  const tableNumber = usePlayerTable(params.gameId);
+
   useFocusEffect(
     useCallback(() => {
       forceOrientation(OrientationLock.LANDSCAPE_RIGHT);
@@ -135,12 +137,14 @@ export default function TimerPage() {
   // Find the canonical timer document for this table+game in the real-time collection
   const existingTimer = useMemo(
     () =>
-      timerStore.collection.find(
-        (t) =>
-          t.table === TABLE &&
-          resolveGameId(t.games) === (params.gameId ?? null),
-      ),
-    [timerStore.collection, params.gameId],
+      tableNumber !== null
+        ? timerStore.collection.find(
+            (t) =>
+              t.table === tableNumber &&
+              resolveGameId(t.games) === (params.gameId ?? null),
+          )
+        : undefined,
+    [timerStore.collection, params.gameId, tableNumber],
   );
 
   const playerCount = 4;
@@ -221,11 +225,14 @@ export default function TimerPage() {
 
       if (!ok) {
         timerDocIdRef.current = null;
-        const inCollection = timerStore.collection.find(
-          (t) =>
-            t.table === TABLE &&
-            resolveGameId(t.games) === (params.gameId ?? null),
-        );
+        const inCollection =
+          tableNumber !== null
+            ? timerStore.collection.find(
+                (t) =>
+                  t.table === tableNumber &&
+                  resolveGameId(t.games) === (params.gameId ?? null),
+              )
+            : undefined;
 
         if (inCollection) {
           timerDocIdRef.current = inCollection.$id;
@@ -240,9 +247,9 @@ export default function TimerPage() {
             },
             true,
           );
-        } else {
+        } else if (tableNumber !== null) {
           const doc = await timerStore.add({
-            table: TABLE,
+            table: tableNumber,
             playerTimes: currentTimes,
             games: params.gameId ?? null,
             activePlayerTimer: activePlayer,
@@ -256,7 +263,7 @@ export default function TimerPage() {
         }
       }
     },
-    [timerStore, params.gameId],
+    [timerStore, params.gameId, tableNumber],
   );
 
   // Reset to default when game settings change, unless the timer is already in use
@@ -275,8 +282,8 @@ export default function TimerPage() {
   const [customTimerOpen, setCustomTimerOpen] = useState(false);
 
   const bell = useMemo(
-    () => tableBellStore.collection.find((x) => x.table === TABLE),
-    [tableBellStore.collection],
+    () => tableBellStore.collection.find((x) => x.table === tableNumber),
+    [tableBellStore.collection, tableNumber],
   );
 
   const bellColor = bell?.acknowledgeTime ? colors.success : colors.accent;
@@ -351,9 +358,9 @@ export default function TimerPage() {
       return;
     }
     bellFiredRef.current.add(activeIdx);
-    if (!bell) {
+    if (!bell && tableNumber !== null) {
       tableBellStore.add({
-        table: TABLE,
+        table: tableNumber,
         startTime: new Date().toISOString(),
         locked: true,
         reason: t("timerElapsed"),
@@ -433,18 +440,21 @@ export default function TimerPage() {
           saveState(nextTimes, idx, false, playersInOvertime);
         } else {
           // Guard: check store collection before creating to avoid duplicates
-          const inCollection = timerStore.collection.find(
-            (t) =>
-              t.table === TABLE &&
-              resolveGameId(t.games) === (params.gameId ?? null),
-          );
+          const inCollection =
+            tableNumber !== null
+              ? timerStore.collection.find(
+                  (t) =>
+                    t.table === tableNumber &&
+                    resolveGameId(t.games) === (params.gameId ?? null),
+                )
+              : undefined;
           if (inCollection) {
             timerDocIdRef.current = inCollection.$id;
             saveState(nextTimes, idx, false, playersInOvertime);
-          } else {
+          } else if (tableNumber !== null) {
             timerStore
               .add({
-                table: TABLE,
+                table: tableNumber,
                 playerTimes: nextTimes,
                 games: params.gameId ?? null,
                 activePlayerTimer: idx,
@@ -524,9 +534,9 @@ export default function TimerPage() {
           },
           true,
         );
-      } else {
+      } else if (tableNumber !== null) {
         const doc = await timerStore.add({
-          table: TABLE,
+          table: tableNumber,
           games: params.gameId ?? null,
           durationMinutesTotal: durationMinutes,
           direction: dir,
@@ -552,12 +562,14 @@ export default function TimerPage() {
           cancelLabel: t("confirmDismiss.cancel"),
           destructive: true,
         })
-      : await bellActions.ring(TABLE, undefined, {
-          title: t("confirmRing.title"),
-          message: t("confirmRing.message"),
-          confirmLabel: t("confirmRing.confirm"),
-          cancelLabel: t("confirmRing.cancel"),
-        });
+      : tableNumber !== null
+        ? await bellActions.ring(tableNumber, undefined, {
+            title: t("confirmRing.title"),
+            message: t("confirmRing.message"),
+            confirmLabel: t("confirmRing.confirm"),
+            cancelLabel: t("confirmRing.cancel"),
+          })
+        : false;
     if (done) {
       setMenuOpen(false);
     }

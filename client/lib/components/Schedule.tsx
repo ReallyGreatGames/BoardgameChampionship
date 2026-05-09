@@ -21,6 +21,7 @@ import { useTheme } from "../bootstrap/ThemeProvider";
 import { Schedule } from "../models/schedule";
 import { useResultStore } from "../stores/appwrite/result-store";
 import { useScheduleStore } from "../stores/appwrite/schedule-store";
+import { useTableStore } from "../stores/appwrite/table-store";
 import { inset } from "../theme/spacing";
 import { type } from "../theme/typography";
 import { addMinutesToTime, deepClone } from "../utils";
@@ -384,6 +385,7 @@ export function ScheduleList() {
   const { confirm } = useDialog();
   const { collection, add, update, delete: deleteItem } = useScheduleStore();
   const resultCollection = useResultStore((s) => s.collection);
+  const tableCollection = useTableStore((s) => s.collection);
   const [isLoading, setIsLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<Schedule | undefined>(
@@ -441,13 +443,24 @@ export function ScheduleList() {
 
   async function handleSetActive(storeIndex: number) {
     const currentActive = sortedScheduleItems.find((s) => s.isActive);
-    // ! TODO: When tables are imported: only show confirm, if not all tables have completed submitted
+    const gameTables = tableCollection.filter((t) => {
+      const tGameId = typeof t.game === "string" ? t.game : t.game.$id;
+      return !!currentActive?.gameId && tGameId === currentActive.gameId;
+    });
     const hasSigned =
       !!currentActive?.gameId &&
-      resultCollection.some(
-        (r) =>
-          r.gameId === currentActive.gameId && r.signatureIds?.some(Boolean),
-      );
+      (gameTables.length === 0
+        ? resultCollection.some(
+            (r) => r.gameId === currentActive.gameId && r.signatureIds?.some(Boolean),
+          )
+        : !gameTables.every((table) =>
+            resultCollection.some(
+              (r) =>
+                r.gameId === currentActive.gameId &&
+                r.table === table.tableNumber &&
+                r.submitted,
+            ),
+          ));
 
     const confirmKey = "confirmSetActive";
     const ok = await confirm({

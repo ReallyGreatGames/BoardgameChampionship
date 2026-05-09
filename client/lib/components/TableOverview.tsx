@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,10 +11,17 @@ import {
   View,
 } from "react-native";
 import { useTheme } from "../bootstrap/ThemeProvider";
+import { Player } from "../models/player";
 import type { Result } from "../models/result";
 import type { TableBell } from "../models/table-bell";
 import type { Timer } from "../models/timer";
 import { useResultStore } from "../stores/appwrite/result-store";
+import { useScheduleStore } from "../stores/appwrite/schedule-store";
+import { useTableBellStore } from "../stores/appwrite/table-bell-store";
+import { useTableStore } from "../stores/appwrite/table-store";
+import { useTimerStore } from "../stores/appwrite/timer-store";
+import { inset, space } from "../theme/spacing";
+import { type } from "../theme/typography";
 import {
   formatElapsed,
   formatTime,
@@ -21,18 +29,10 @@ import {
   toNumberArray,
 } from "../utils";
 import { SearchInput } from "./SearchInput";
-import { useScheduleStore } from "../stores/appwrite/schedule-store";
-import { useTableBellStore } from "../stores/appwrite/table-bell-store";
-import { useTimerStore } from "../stores/appwrite/timer-store";
-import { inset } from "../theme/spacing";
-import { type } from "../theme/typography";
-
-type TablePlayer = { team: string; playerNumber: number };
-type StaticTable = { id: number; gameId: string; players: TablePlayer[] };
 
 type TableEntry = {
   id: number;
-  players: TablePlayer[];
+  players: Player[];
   timer: Timer | undefined;
   result: Result | undefined;
   bell: TableBell | undefined;
@@ -46,39 +46,6 @@ type TableEntry = {
 type BellFilter = "any" | "active" | "acknowledged";
 type SubmitFilter = "all" | "submitted" | "notSubmitted";
 type TimerFilter = "any" | "running" | "noTimer";
-
-const tables: StaticTable[] = [
-  {
-    id: 1,
-    gameId: "69ebc7270030df761fca",
-    players: [
-      { team: "anal", playerNumber: 1 },
-      { team: "ew4", playerNumber: 2 },
-      { team: "erl", playerNumber: 3 },
-      { team: "yin", playerNumber: 4 },
-    ],
-  },
-  {
-    id: 2,
-    gameId: "69ebc7270030df761fca",
-    players: [
-      { team: "test", playerNumber: 1 },
-      { team: "foob", playerNumber: 2 },
-      { team: "hell", playerNumber: 3 },
-      { team: "wrld", playerNumber: 4 },
-    ],
-  },
-  {
-    id: 3,
-    gameId: "69ebc7270030df761fca",
-    players: [
-      { team: "xxxx", playerNumber: 1 },
-      { team: "yyyy", playerNumber: 2 },
-      { team: "zzzz", playerNumber: 3 },
-      { team: "iiii", playerNumber: 4 },
-    ],
-  },
-];
 
 function renderSigIcon(
   i: number,
@@ -158,6 +125,7 @@ export function TableOverview() {
   const { collection: timers } = useTimerStore();
   const bells = useTableBellStore((s) => s.collection);
   const { collection: results } = useResultStore();
+  const tables = useTableStore((s) => s.collection);
 
   const [search, setSearch] = useState("");
   const [bellFilter, setBellFilter] = useState<BellFilter>("any");
@@ -170,38 +138,54 @@ export function TableOverview() {
     return () => clearInterval(id);
   }, []);
 
-  const numColumns = screenWidth >= 900 ? 3 : screenWidth >= 600 ? 2 : 1;
+  const numColumns = screenWidth >= 600 ? 2 : 1;
 
   const cardWidth = useMemo(() => {
-    if (!gridWidth) {
-      return 0;
-    }
+    if (!gridWidth) return 0;
     return (gridWidth - (numColumns - 1) * inset.list) / numColumns;
   }, [gridWidth, numColumns]);
 
-  const activeSchedule = useMemo(
-    () => schedules.find((s) => s.isActive),
+  const gameSchedules = useMemo(
+    () =>
+      [...schedules]
+        .filter((s) => !!s.gameId)
+        .sort((a, b) => a.sortIndex - b.sortIndex),
     [schedules],
   );
 
-  const tableEntries = useMemo<TableEntry[]>(() => {
-    if (!activeSchedule?.gameId) {
-      return [];
+  const defaultGameId = useMemo(() => {
+    const active = gameSchedules.find((s) => s.isActive);
+    if (active) return active.gameId!;
+    const nextUp = gameSchedules.find((s) => !s.isFinished);
+    if (nextUp) return nextUp.gameId!;
+    return gameSchedules[gameSchedules.length - 1]?.gameId ?? null;
+  }, [gameSchedules]);
+
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (selectedGameId === null && defaultGameId !== null) {
+      setSelectedGameId(defaultGameId);
     }
+  }, [defaultGameId, selectedGameId]);
+
+  const tableEntries = useMemo<TableEntry[]>(() => {
+    if (!selectedGameId) return [];
     return tables
-      .filter((t) => t.gameId === activeSchedule.gameId)
+      .filter((t) => resolveGameId(t.game) === selectedGameId)
+      .sort((a, b) => a.tableNumber - b.tableNumber)
       .map((t): TableEntry => {
         const timer = timers.find(
           (tm) =>
-            resolveGameId(tm.games) === activeSchedule.gameId &&
-            tm.table === t.id,
+            resolveGameId(tm.games) === selectedGameId &&
+            tm.table === t.tableNumber,
         );
         const result = results.find(
-          (r) => r.gameId === activeSchedule.gameId && r.table === t.id,
+          (r) => r.gameId === selectedGameId && r.table === t.tableNumber,
         );
-        const bell = bells.find((b) => b.table === t.id);
+        const bell = bells.find((b) => b.table === t.tableNumber);
         return {
-          id: t.id,
+          id: t.tableNumber,
           players: t.players,
           timer,
           result,
@@ -213,7 +197,7 @@ export function TableOverview() {
           hasNote: !!result?.note,
         };
       });
-  }, [timers, results, bells, activeSchedule]);
+  }, [tables, timers, results, bells, selectedGameId]);
 
   const filteredEntries = useMemo<TableEntry[]>(() => {
     const q = search.trim().toLowerCase();
@@ -221,7 +205,7 @@ export function TableOverview() {
       if (q) {
         const hit =
           String(entry.id).includes(q) ||
-          entry.players.some((p) => p.team.toLowerCase().includes(q));
+          entry.players.some((p) => p.team.name.toLowerCase().includes(q));
         if (!hit) {
           return false;
         }
@@ -251,15 +235,7 @@ export function TableOverview() {
     });
   }, [tableEntries, search, bellFilter, submitFilter, timerFilter]);
 
-  if (!activeSchedule) {
-    return (
-      <View style={styles.empty}>
-        <Text style={styles.emptyText}>{t("noActiveSchedule")}</Text>
-      </View>
-    );
-  }
-
-  if (!activeSchedule.gameId) {
+  if (gameSchedules.length === 0) {
     return (
       <View style={styles.empty}>
         <Text style={styles.emptyText}>{t("noGame")}</Text>
@@ -273,7 +249,28 @@ export function TableOverview() {
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.gameLabel}>{activeSchedule.title}</Text>
+      <View style={styles.gamePicker}>
+        {gameSchedules.map((s) => {
+          const isSelected = s.gameId === selectedGameId;
+          return (
+            <Pressable
+              key={s.$id}
+              style={[styles.gamePickerBtn, isSelected && styles.gamePickerBtnActive]}
+              onPress={() => setSelectedGameId(s.gameId!)}
+            >
+              {s.isActive && (
+                <View style={[styles.liveIndicator, isSelected && styles.liveIndicatorActive]} />
+              )}
+              <Text
+                style={[styles.gamePickerLabel, isSelected && styles.gamePickerLabelActive]}
+                numberOfLines={1}
+              >
+                {s.title}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
       <SearchInput
         value={search}
@@ -439,8 +436,11 @@ export function TableOverview() {
                   const isActive = entry.timer?.activePlayerTimer === i;
                   return (
                     <View key={i} style={styles.playerCell}>
-                      <Text style={styles.teamName} numberOfLines={1}>
-                        {player.team} - {player.playerNumber}
+                      <Text style={styles.playerTeam} numberOfLines={1}>
+                        {player.team.name}
+                      </Text>
+                      <Text style={styles.playerName} numberOfLines={1}>
+                        {player.name}
                       </Text>
                       <View style={styles.playerTimeRow}>
                         {entry.timer && !entry.isSubmitted ? (
@@ -494,11 +494,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       gap: inset.list,
       paddingBottom: inset.screenBottom,
     },
-    gameLabel: {
-      ...type.h2,
-      color: colors.text,
-      marginBottom: inset.tight,
-    },
+
     filtersRow: {
       flexDirection: "row",
       gap: inset.tight,
@@ -575,7 +571,12 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       alignItems: "center",
       gap: 1,
     },
-    teamName: {
+    playerTeam: {
+      ...type.eyebrow,
+      color: colors.text,
+      fontWeight: "600",
+    },
+    playerName: {
       ...type.caption,
       color: colors.textSecondary,
     },
@@ -593,6 +594,44 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       flexDirection: "row",
       alignItems: "center",
       gap: 3,
+    },
+    gamePicker: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: space[1],
+      marginBottom: space[3],
+    },
+    gamePickerBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: space[1],
+      paddingVertical: space[2],
+      paddingHorizontal: space[4],
+      borderRadius: 6,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    gamePickerBtnActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    liveIndicator: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: colors.success,
+    },
+    liveIndicatorActive: {
+      backgroundColor: colors.onAccent,
+    },
+    gamePickerLabel: {
+      ...type.bodySmall,
+      color: colors.textSecondary,
+    },
+    gamePickerLabelActive: {
+      color: colors.onAccent,
+      fontWeight: "600",
     },
   });
 }
