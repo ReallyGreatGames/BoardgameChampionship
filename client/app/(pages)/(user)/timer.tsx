@@ -824,7 +824,7 @@ export default function TimerPage() {
             />
 
             <MenuButton
-              icon="close-outline"
+              icon="exit-outline"
               label={t("closeTimer")}
               color={colors.error}
               onPress={() => {

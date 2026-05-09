@@ -134,7 +134,7 @@ const translations = {
     bellRinging: "Klingelt…",
     bellAcknowledged: "Auf dem Weg",
     resetTimers: "Zurücksetzen",
-    closeTimer: "Schließen",
+    closeTimer: "Timer verlassen",
     confirmRing: {
       title: "Tischklingel läuten",
       message: "Die Schiedsrichter:innen auf euren Tisch aufmerksam machen?",

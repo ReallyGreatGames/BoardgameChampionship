@@ -134,7 +134,7 @@ const translations = {
     bellRinging: "Bell ringing…",
     bellAcknowledged: "Bell acknowledged",
     resetTimers: "Reset Timer",
-    closeTimer: "Close Timer",
+    closeTimer: "Exit Timer",
     confirmRing: {
       title: "Ring Table Bell",
       message: "Alert the judges that your table needs assistance?",
