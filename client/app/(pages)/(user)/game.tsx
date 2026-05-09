@@ -64,7 +64,7 @@ function formatElapsed(seconds: number) {
 }
 
 export default function GamePage() {
-  const { gameId } = useLocalSearchParams<{ gameId: string }>();
+  const { gameId, from } = useLocalSearchParams<{ gameId: string; from: string }>();
   const { user, loading } = useAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -104,11 +104,7 @@ export default function GamePage() {
   }, [bell]);
 
   const handleBack = () => {
-    if (gameId) {
-      router.replace("/(pages)/(user)/schedule");
-    } else {
-      router.replace("/");
-    }
+    router.replace((from as any) ?? "/(pages)/(user)/schedule");
   };
 
   async function toggleBell() {

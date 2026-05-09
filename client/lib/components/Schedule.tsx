@@ -267,7 +267,7 @@ export function ScheduleItem({
                   style={styles.goToGameButton}
                   onPress={() => {
                     if (player?.team && player?.$id) {
-                      router.push(`/game?gameId=${schedule.gameId}`);
+                      router.push(`/game?gameId=${schedule.gameId}&from=/(pages)/(user)/schedule`);
                     } else {
                       router.push({
                         pathname:
