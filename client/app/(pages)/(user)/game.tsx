@@ -34,7 +34,7 @@ const ACTION_BUTTONS: ActionButton[] = [
     key: "lottery",
     icon: "shuffle",
     labelKey: "actions.lottery",
-    onPress: (_gameId) => {},
+    onPress: (_gameId) => { },
   },
   {
     key: "rules",

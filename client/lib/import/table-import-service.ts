@@ -1,8 +1,8 @@
 import { ID, Query } from "react-native-appwrite";
 import { DATABASE_ID, tablesDB } from "../appwrite";
+import { Table } from "../models/table";
 import { sleep, withRetry } from "../utils";
 import { ParsedTableGroup } from "./table-parser";
-import { Table } from "../models/table";
 
 const TABLES_COLLECTION = "tables";
 const PLAYERS_TABLE = "players";
@@ -171,11 +171,11 @@ export async function importTables(
               databaseId: DATABASE_ID,
               tableId: TABLES_COLLECTION,
               rowId: update.$id,
-              data: { players: []},
+              data: { players: [] },
             }),
           );
 
-          await retry(() => 
+          await retry(() =>
             tablesDB.updateRow({
               databaseId: DATABASE_ID,
               tableId: TABLES_COLLECTION,

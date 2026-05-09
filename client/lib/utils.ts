@@ -1,3 +1,5 @@
+import type { Player } from "./models/player";
+
 export const EMPTY = Symbol("empty");
 
 export function sleep(ms: number): Promise<void> {
@@ -69,6 +71,23 @@ export function toNumberArray(value: unknown): number[] {
     try { return JSON.parse(value) as number[]; } catch { return []; }
   }
   return [];
+}
+
+/** Handles Appwrite returning team as hydrated Team object OR bare string $id */
+export function teamName(player: Player): string {
+  return typeof player.team === "string" ? player.team : player.team.name;
+}
+
+/** SVGs saved by signature.tsx lack viewBox, causing SvgXml to clip.
+ *  Injects viewBox from width/height attrs so the content scales. */
+export function injectViewBox(xml: string): string {
+  if (xml.includes("viewBox")) { return xml; }
+  return xml.replace(/<svg([^>]*)>/, (_, attrs: string) => {
+    const w = attrs.match(/width="([^"]+)"/)?.[1];
+    const h = attrs.match(/height="([^"]+)"/)?.[1];
+    if (!w || !h) { return `<svg${attrs}>`; }
+    return `<svg${attrs} viewBox="0 0 ${w} ${h}">`;
+  });
 }
 
 /** Handles string, object, or array shapes Appwrite may return for relationship fields */
