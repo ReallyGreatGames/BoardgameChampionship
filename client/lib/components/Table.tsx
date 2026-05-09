@@ -1,27 +1,50 @@
 import { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { usePlayer } from "../bootstrap/PlayerProvider";
 import { useTheme } from "../bootstrap/ThemeProvider";
+import { useTableStore } from "../stores/appwrite/table-store";
 import { inset } from "../theme/spacing";
 import { type } from "../theme/typography";
 
 export function Table({ gameId }: { gameId: string }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { player: currentPlayer } = usePlayer();
+  const collection = useTableStore((s) => s.collection);
+
+  const table = collection.find((t) => {
+    const tableGameId = typeof t.game === "string" ? t.game : t.game.$id;
+    const gameMatches = tableGameId === gameId;
+    const playerMatches =
+      t.players?.some((p) => p.$id === currentPlayer?.$id) ?? false;
+    return gameMatches && playerMatches;
+  });
+
+  if (!table) {
+    return null;
+  }
 
   return (
     <View style={styles.gameSection}>
-      {/* TODO: Load Data from Games - requires data import */}
-      <Text style={styles.gameSectionHeader}>Tisch 14 // TODO</Text>
+      <Text style={styles.gameSectionHeader}>Tisch {table.tableNumber}</Text>
       <View style={styles.gameTable}>
-        {[
-          { team: "Team 1", player: "Spieler 1" },
-          { team: "Team 2", player: "Spieler 2" },
-          { team: "Team 3", player: "Spieler 3" },
-          { team: "Team 4", player: "Spieler 4" },
-        ].map((entry, i) => (
-          <View key={i} style={styles.gameRow}>
-            <Text style={styles.gameTeam}>{entry.team}</Text>
-            <Text style={styles.gamePlayer}>{entry.player}</Text>
+        {(table.players ?? []).map((player, i) => (
+          <View
+            key={player.$id}
+            style={[
+              styles.gameRow,
+              player.$id === currentPlayer?.$id && styles.gameRowActive,
+            ]}
+          >
+            <Text
+              style={[
+                styles.gameTeam,
+                player.$id === currentPlayer?.$id && styles.gameTeamActive,
+              ]}
+            >
+              {player.name}
+            </Text>
+            <Text style={styles.gamePlayer}>Spieler {i + 1}</Text>
           </View>
         ))}
       </View>
@@ -59,9 +82,15 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       borderTopWidth: 1,
       borderTopColor: colors.divider,
     },
+    gameRowActive: {
+      backgroundColor: colors.surfaceHigh,
+    },
     gameTeam: {
       ...type.bodySmall,
       color: colors.text,
+    },
+    gameTeamActive: {
+      fontWeight: "bold",
     },
     gamePlayer: {
       ...type.bodySmall,
