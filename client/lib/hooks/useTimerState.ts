@@ -1,10 +1,10 @@
 import { useDialog } from "@/lib/components/Dialog";
+import { getItemAsync } from "@/lib/secureStorage";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-store";
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
 import { buildPlayerColor, PLAYER_COLORS } from "@/lib/utils/timerColors";
 import { resolveGameId, toBooleanArray, toNumberArray } from "@/lib/utils";
-import { Table } from "@/lib/models/table";
 import { Animated, LayoutChangeEvent, useWindowDimensions } from "react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -17,12 +17,10 @@ const PLAYER_COUNT = 4;
 export function useTimerState({
   gameId,
   tableNumber,
-  currentTable,
   bell,
 }: {
   gameId: string | undefined;
   tableNumber: number | null;
-  currentTable: Table | null | undefined;
   bell: TableBell | undefined;
 }) {
   const { t } = useTranslation(["timer"]);
@@ -49,15 +47,29 @@ export function useTimerState({
     [timerStore.collection, gameId, tableNumber],
   );
 
+  const [storedColors, setStoredColors] = useState<string[] | null>(null);
+  useEffect(() => {
+    if (!gameId) {
+      return;
+    }
+    getItemAsync(`playerColors_${gameId}`).then((val) => {
+      if (!val) {
+        return;
+      }
+      try {
+        setStoredColors(JSON.parse(val));
+      } catch {}
+    });
+  }, [gameId]);
+
   const playerColors = useMemo(() => {
-    const gameColors = currentTable?.game?.colors;
     return Array.from({ length: PLAYER_COUNT }, (_, i) => {
-      const hex = gameColors?.[i];
+      const hex = storedColors?.[i];
       return hex
         ? buildPlayerColor(hex)
         : PLAYER_COLORS[i % PLAYER_COLORS.length];
     });
-  }, [currentTable]);
+  }, [storedColors]);
 
   const effectiveDuration =
     existingTimer?.durationMinutesTotal ?? timerSettings?.durationMinutesTotal;
@@ -66,6 +78,8 @@ export function useTimerState({
     : DEFAULT_SECONDS;
   const direction =
     existingTimer?.direction ?? timerSettings?.direction ?? "down";
+
+  console.log(existingTimer?.direction, timerSettings?.direction);
 
   const [times, setTimes] = useState<number[]>(() =>
     Array(PLAYER_COUNT).fill(totalSeconds),
@@ -172,6 +186,7 @@ export function useTimerState({
             activePlayerTimer: activePlayer,
             paused: isPaused,
             playersInOvertime: overtime,
+            playerPositions: [],
           });
           if (doc) {
             timerDocIdRef.current = doc.$id;
@@ -312,6 +327,7 @@ export function useTimerState({
                 activePlayerTimer: idx,
                 paused: false,
                 playersInOvertime,
+                playerPositions: [],
               })
               .then((doc) => {
                 if (doc) {
@@ -388,6 +404,7 @@ export function useTimerState({
           activePlayerTimer: 0,
           playersInOvertime: [false, false, false, false],
           paused: true,
+          playerPositions: [],
         });
         if (doc) {
           timerDocIdRef.current = doc.$id;

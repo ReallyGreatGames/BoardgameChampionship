@@ -1,5 +1,5 @@
 import { Timer } from "@/lib/models/timer";
-import { Models } from "react-native-appwrite";
+import { Models, Query } from "react-native-appwrite";
 import { create } from "zustand";
 import {
   addToCollection,
@@ -24,11 +24,17 @@ export const useTimerStore = create<TimerState>((set) => {
   return {
     collection: [],
     init: async () => {
-      unsubscribe = await initCollection<Timer, TimerState>(key, set, unsubscribe);
+      unsubscribe = await initCollection<Timer, TimerState>(
+        key,
+        set,
+        unsubscribe,
+        [Query.select(["*", "playerPositions.*"])],
+      );
     },
 
     add: async (data) => await addToCollection(key, data),
 
-    update: async (item, silent = false) => await updateInCollection(key, item, silent),
+    update: async (item, silent = false) =>
+      await updateInCollection(key, item, silent),
   };
 });

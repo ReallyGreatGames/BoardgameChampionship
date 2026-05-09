@@ -76,6 +76,18 @@ const translations = {
         cancel: "Abbrechen",
       },
     },
+    colorSetup: {
+      title: "Spielerfarben",
+      save: "Speichern & Timer öffnen",
+      duplicatePlayer: "Jeder Spieler kann nur einmal zugewiesen werden",
+      corners: {
+        topLeft: "Oben Links",
+        topRight: "Oben Rechts",
+        bottomRight: "Unten Rechts",
+        bottomLeft: "Unten Links",
+      },
+      playerFallback: "S{{number}}",
+    },
   },
   navigation: {
     back: "Zurück",

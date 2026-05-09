@@ -6,7 +6,6 @@ import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
 import { useTimerState } from "@/lib/hooks/useTimerState";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
-import { useTableStore } from "@/lib/stores/appwrite/table-store";
 import { formatElapsedSeconds } from "@/lib/utils";
 import { Ionicons } from "@expo/vector-icons";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
@@ -21,21 +20,6 @@ export default function TimerPage() {
   const params = useLocalSearchParams<{ gameId?: string }>();
 
   const tableNumber = usePlayerTable(params.gameId);
-  const tableStore = useTableStore();
-  const currentTable = useMemo(
-    () =>
-      tableNumber !== null
-        ? tableStore.collection.find(
-            (t) => t.tableNumber === tableNumber && t.game.$id === params.gameId,
-          )
-        : null,
-    [tableStore.collection, tableNumber, params.gameId],
-  );
-
-  const playerNames = useMemo(
-    () => currentTable?.players?.map((p) => p.name) ?? [],
-    [currentTable],
-  );
 
   useFocusEffect(
     useCallback(() => {
@@ -70,7 +54,12 @@ export default function TimerPage() {
     handleSaveCustomTimer,
     existingTimer,
     timerSettings,
-  } = useTimerState({ gameId: params.gameId, tableNumber, currentTable, bell });
+  } = useTimerState({ gameId: params.gameId, tableNumber, bell });
+
+  const playerNames = useMemo(
+    () => existingTimer?.playerPositions?.map((p) => p.name) ?? [],
+    [existingTimer],
+  );
 
   const bellActions = useTableBellActions();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -110,7 +99,9 @@ export default function TimerPage() {
             cancelLabel: "confirmRing.cancel",
           })
         : false;
-    if (done) { setMenuOpen(false); }
+    if (done) {
+      setMenuOpen(false);
+    }
   };
 
   return (
@@ -163,13 +154,20 @@ export default function TimerPage() {
         <Pressable
           style={[
             styles.menuTrigger,
-            { backgroundColor: colors.surfaceHigh + "ee", borderColor: colors.border },
+            {
+              backgroundColor: colors.surfaceHigh + "ee",
+              borderColor: colors.border,
+            },
             bell && !bell.acknowledgeTime && { borderColor: colors.accent },
             bell?.acknowledgeTime && { borderColor: colors.success },
           ]}
           onPress={() => setMenuOpen(true)}
         >
-          <Ionicons name="ellipsis-horizontal" size={20} color={colors.textSecondary} />
+          <Ionicons
+            name="ellipsis-horizontal"
+            size={20}
+            color={colors.textSecondary}
+          />
         </Pressable>
 
         {bell && (
@@ -178,7 +176,9 @@ export default function TimerPage() {
               styles.bellBadge,
               {
                 backgroundColor: colors.surface,
-                borderColor: bell.acknowledgeTime ? colors.success : colors.accent,
+                borderColor: bell.acknowledgeTime
+                  ? colors.success
+                  : colors.accent,
               },
             ]}
           >
@@ -187,7 +187,11 @@ export default function TimerPage() {
                 <Ionicons name="walk-outline" size={10} color={bellColor} />
               )}
               <Ionicons
-                name={bell.acknowledgeTime ? "notifications-off-outline" : "notifications-outline"}
+                name={
+                  bell.acknowledgeTime
+                    ? "notifications-off-outline"
+                    : "notifications-outline"
+                }
                 size={12}
                 color={bellColor}
               />
@@ -207,7 +211,9 @@ export default function TimerPage() {
         onToggleBell={handleToggleBell}
         onReset={async () => {
           const ok = await handleReset();
-          if (ok) { setMenuOpen(false); }
+          if (ok) {
+            setMenuOpen(false);
+          }
         }}
         onOpenCustomTimer={() => {
           setMenuOpen(false);
@@ -224,7 +230,8 @@ export default function TimerPage() {
         customTimerOpen={customTimerOpen}
         onCloseCustomTimer={() => setCustomTimerOpen(false)}
         initialDuration={
-          existingTimer?.durationMinutesTotal ?? timerSettings?.durationMinutesTotal
+          existingTimer?.durationMinutesTotal ??
+          timerSettings?.durationMinutesTotal
         }
         initialDirection={existingTimer?.direction ?? timerSettings?.direction}
         onSaveCustomTimer={handleSaveCustomTimer}

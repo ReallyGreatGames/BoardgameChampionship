@@ -1,11 +1,16 @@
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BackButton } from "@/lib/components/BackButton";
+import { PlayerColorSetupModal } from "@/lib/components/PlayerColorSetupModal";
 import { Table } from "@/lib/components/Table";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
+import { getItemAsync, setItemAsync } from "@/lib/secureStorage";
 import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
+import { useTableStore } from "@/lib/stores/appwrite/table-store";
+import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
+import { resolveGameId } from "@/lib/utils";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { Ionicons } from "@expo/vector-icons";
@@ -34,7 +39,7 @@ const ACTION_BUTTONS: ActionButton[] = [
     key: "lottery",
     icon: "shuffle",
     labelKey: "actions.lottery",
-    onPress: (_gameId) => { },
+    onPress: (_gameId) => {},
   },
   {
     key: "rules",
@@ -68,7 +73,10 @@ function formatElapsed(seconds: number) {
 }
 
 export default function GamePage() {
-  const { gameId, from } = useLocalSearchParams<{ gameId: string; from: string }>();
+  const { gameId, from } = useLocalSearchParams<{
+    gameId: string;
+    from: string;
+  }>();
   const { user, loading } = useAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -79,6 +87,20 @@ export default function GamePage() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   const tableNumber = usePlayerTable(gameId);
+  const tableStore = useTableStore();
+  const timerStore = useTimerStore();
+
+  const currentTable = useMemo(
+    () =>
+      tableNumber !== null
+        ? tableStore.collection.find(
+            (t) => t.tableNumber === tableNumber && t.game.$id === gameId,
+          )
+        : null,
+    [tableStore.collection, tableNumber, gameId],
+  );
+
+  const [colorSetupVisible, setColorSetupVisible] = useState(false);
 
   const isActiveGame = useMemo(
     () => scheduleStore.collection.find((s) => s.isActive)?.gameId === gameId,
@@ -115,6 +137,52 @@ export default function GamePage() {
 
   const handleBack = () => {
     router.replace((from as any) ?? "/(pages)/(user)/schedule");
+  };
+
+  const handleTimerPress = async () => {
+    const stored = await getItemAsync(`playerColors_${gameId}`);
+    if (!stored && currentTable) {
+      setColorSetupVisible(true);
+    } else {
+      router.push(`/(pages)/(user)/timer?gameId=${gameId}`);
+    }
+  };
+
+  const handleSaveSetup = async (
+    playerIds: (string | null)[],
+    hexColors: string[],
+  ) => {
+    await setItemAsync(`playerColors_${gameId}`, JSON.stringify(hexColors));
+
+    const validIds = playerIds.filter((id): id is string => id !== null);
+    const existing =
+      tableNumber !== null
+        ? timerStore.collection.find(
+            (t) =>
+              t.table === tableNumber &&
+              resolveGameId(t.games) === (gameId ?? null),
+          )
+        : undefined;
+
+    if (existing) {
+      await timerStore.update(
+        { $id: existing.$id, playerPositions: validIds as any },
+        true,
+      );
+    } else if (tableNumber !== null) {
+      await timerStore.add({
+        table: tableNumber,
+        games: gameId ?? null,
+        playerTimes: [],
+        activePlayerTimer: null,
+        paused: true,
+        playersInOvertime: [],
+        playerPositions: validIds as any,
+      });
+    }
+
+    setColorSetupVisible(false);
+    router.push(`/(pages)/(user)/timer?gameId=${gameId}`);
   };
 
   async function toggleBell() {
@@ -159,21 +227,39 @@ export default function GamePage() {
         <Table gameId={gameId} />
 
         <View style={styles.actionsGrid}>
-          {ACTION_BUTTONS.map(({ key, icon, labelKey, onPress, requiresActiveGame }) => {
-            const disabled = requiresActiveGame && !isActiveGame;
-            return (
-              <TouchableOpacity
-                key={key}
-                style={[styles.actionBtn, disabled ? styles.actionBtnDisabled : undefined]}
-                activeOpacity={0.7}
-                onPress={() => onPress(gameId)}
-                disabled={disabled}
-              >
-                <Ionicons name={icon} size={28} color={disabled ? colors.textSecondary : colors.primary} />
-                <Text style={[styles.actionLabel, disabled ? styles.actionLabelDisabled : undefined]}>{t(labelKey)}</Text>
-              </TouchableOpacity>
-            );
-          })}
+          {ACTION_BUTTONS.map(
+            ({ key, icon, labelKey, onPress, requiresActiveGame }) => {
+              const disabled = requiresActiveGame && !isActiveGame;
+              const press =
+                key === "timer" ? handleTimerPress : () => onPress(gameId);
+              return (
+                <TouchableOpacity
+                  key={key}
+                  style={[
+                    styles.actionBtn,
+                    disabled ? styles.actionBtnDisabled : undefined,
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={press}
+                  disabled={disabled}
+                >
+                  <Ionicons
+                    name={icon}
+                    size={28}
+                    color={disabled ? colors.textSecondary : colors.primary}
+                  />
+                  <Text
+                    style={[
+                      styles.actionLabel,
+                      disabled ? styles.actionLabelDisabled : undefined,
+                    ]}
+                  >
+                    {t(labelKey)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            },
+          )}
         </View>
 
         <TouchableOpacity
@@ -225,6 +311,14 @@ export default function GamePage() {
           )}
         </TouchableOpacity>
       </ScrollView>
+
+      <PlayerColorSetupModal
+        visible={colorSetupVisible}
+        onClose={() => setColorSetupVisible(false)}
+        players={currentTable?.players ?? []}
+        onSave={handleSaveSetup}
+        customColors={currentTable?.game.colors}
+      />
     </View>
   );
 }

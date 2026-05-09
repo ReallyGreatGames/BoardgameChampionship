@@ -76,6 +76,18 @@ const translations = {
         cancel: "Cancel",
       },
     },
+    colorSetup: {
+      title: "Player Colors",
+      save: "Save & Open Timer",
+      duplicatePlayer: "Each player can only be assigned once",
+      corners: {
+        topLeft: "Top Left",
+        topRight: "Top Right",
+        bottomRight: "Bottom Right",
+        bottomLeft: "Bottom Left",
+      },
+      playerFallback: "P{{number}}",
+    },
   },
   navigation: {
     back: "Back",
