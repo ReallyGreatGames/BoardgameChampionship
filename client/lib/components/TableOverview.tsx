@@ -244,41 +244,38 @@ export function TableOverview() {
   }
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.list}
-      showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
-    >
-      <View style={styles.gamePicker}>
-        {gameSchedules.map((s) => {
-          const isSelected = s.gameId === selectedGameId;
-          return (
-            <Pressable
-              key={s.$id}
-              style={[styles.gamePickerBtn, isSelected && styles.gamePickerBtnActive]}
-              onPress={() => setSelectedGameId(s.gameId!)}
-            >
-              {s.isActive && (
-                <View style={[styles.liveIndicator, isSelected && styles.liveIndicatorActive]} />
-              )}
-              <Text
-                style={[styles.gamePickerLabel, isSelected && styles.gamePickerLabelActive]}
-                numberOfLines={1}
+    <View style={styles.container}>
+      <View style={styles.stickyHeader}>
+        <View style={styles.gamePicker}>
+          {gameSchedules.map((s) => {
+            const isSelected = s.gameId === selectedGameId;
+            return (
+              <Pressable
+                key={s.$id}
+                style={[styles.gamePickerBtn, isSelected && styles.gamePickerBtnActive]}
+                onPress={() => setSelectedGameId(s.gameId!)}
               >
-                {s.title}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+                {s.isActive && (
+                  <View style={[styles.liveIndicator, isSelected && styles.liveIndicatorActive]} />
+                )}
+                <Text
+                  style={[styles.gamePickerLabel, isSelected && styles.gamePickerLabelActive]}
+                  numberOfLines={1}
+                >
+                  {s.title}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
 
-      <SearchInput
-        value={search}
-        onChangeText={setSearch}
-        placeholder={t("searchPlaceholder")}
-      />
+        <SearchInput
+          value={search}
+          onChangeText={setSearch}
+          placeholder={t("searchPlaceholder")}
+        />
 
-      <View style={styles.filtersRow}>
+        <View style={styles.filtersRow}>
         <ToggleFilter<BellFilter>
           options={[
             {
@@ -354,9 +351,15 @@ export function TableOverview() {
           onChange={setTimerFilter}
           styles={styles}
         />
+        </View>
       </View>
 
-      {filteredEntries.length === 0 && tableEntries.length > 0 && (
+      <ScrollView
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {filteredEntries.length === 0 && tableEntries.length > 0 && (
         <View style={styles.emptyFiltered}>
           <Text style={styles.emptyText}>{t("noFilterResults")}</Text>
         </View>
@@ -471,12 +474,23 @@ export function TableOverview() {
           );
         })}
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
   return StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    stickyHeader: {
+      backgroundColor: colors.background,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      paddingBottom: inset.list,
+      gap: inset.list,
+    },
     empty: {
       flex: 1,
       alignItems: "center",

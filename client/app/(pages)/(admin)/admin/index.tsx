@@ -1,6 +1,7 @@
 import { FeatureFlags } from "@/lib/components/FeatureFlags";
 import { ImportTab } from "@/lib/components/ImportTab";
 import { ScheduleList } from "@/lib/components/Schedule";
+import { ScoreOverview } from "@/lib/components/ScoreOverview";
 import { TableOverview } from "@/lib/components/TableOverview";
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -10,6 +11,7 @@ import { inset, space } from "../../../../lib/theme/spacing";
 
 type Tab =
   | "tableOverview"
+  | "scores"
   | "schedule"
   | "tournamentSettings"
   | "featureFlags"
@@ -17,6 +19,7 @@ type Tab =
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "tableOverview", label: "Table Overview" },
+  { key: "scores", label: "Scores" },
   { key: "schedule", label: "Schedule" },
   { key: "tournamentSettings", label: "Settings" },
   { key: "featureFlags", label: "Feature Flags" },
@@ -51,6 +54,7 @@ export default function AdminDashboard() {
 
       <View style={styles.content}>
         {activeTab === "tableOverview" && <TableOverview />}
+        {activeTab === "scores" && <ScoreOverview />}
         {activeTab === "schedule" && <ScheduleList />}
         {activeTab === "tournamentSettings" && <TournamentSettings />}
         {activeTab === "featureFlags" && <FeatureFlags />}
