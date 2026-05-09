@@ -40,10 +40,10 @@ export function BottomSheet({
     if (visible) {
       ScreenOrientation.getOrientationLockAsync().then((lock) => {
         prevOrientationLock.current = lock;
-        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
+        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.DEFAULT).catch(() => {});
       });
     } else if (prevOrientationLock.current !== null) {
-      ScreenOrientation.lockAsync(prevOrientationLock.current);
+      ScreenOrientation.lockAsync(prevOrientationLock.current).catch(() => {});
       prevOrientationLock.current = null;
     }
   }, [visible]);
