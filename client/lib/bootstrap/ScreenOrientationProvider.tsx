@@ -10,7 +10,6 @@ import {
 import {
   lockAsync,
   OrientationLock,
-  unlockAsync,
 } from "expo-screen-orientation";
 
 export type ScreenOrientationContext = {
