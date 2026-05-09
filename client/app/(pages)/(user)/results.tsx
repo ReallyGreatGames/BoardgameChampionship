@@ -225,7 +225,7 @@ export default function ResultsPage() {
   const tables = useTableStore((s) => s.collection);
 
   const playerNames = useMemo(() => {
-    if (!gameId || tableNumber === null) return [];
+    if (!gameId || tableNumber === null) {return [];}
     const entry = tables.find((t) => {
       const tGameId = typeof t.game === "string" ? t.game : t.game.$id;
       return tGameId === gameId && t.tableNumber === tableNumber;
