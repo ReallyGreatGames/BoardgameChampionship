@@ -2,6 +2,7 @@ import { ID, Query } from "react-native-appwrite";
 import { DATABASE_ID, tablesDB } from "../appwrite";
 import { sleep, withRetry } from "../utils";
 import { ParsedTableGroup } from "./table-parser";
+import { Table } from "../models/table";
 
 const TABLES_COLLECTION = "tables";
 const PLAYERS_TABLE = "players";
@@ -141,22 +142,12 @@ export async function importTables(
   ) => void,
 ): Promise<void> {
   const existing = await retry(() =>
-    tablesDB.listRows({
+    tablesDB.listRows<Table>({
       databaseId: DATABASE_ID,
       tableId: TABLES_COLLECTION,
       queries: [Query.limit(500)],
     }),
   );
-
-  for (const row of existing.rows) {
-    await retry(() =>
-      tablesDB.deleteRow({
-        databaseId: DATABASE_ID,
-        tableId: TABLES_COLLECTION,
-        rowId: (row as { $id: string }).$id,
-      }),
-    );
-  }
 
   for (let g = 0; g < groups.length; g++) {
     const group = groups[g];
@@ -167,18 +158,47 @@ export async function importTables(
         const playerIds = entry.playerCodes.map(
           (code) => playersByCode.get(code)!,
         );
-        await retry(() =>
-          tablesDB.createRow({
-            databaseId: DATABASE_ID,
-            tableId: TABLES_COLLECTION,
-            rowId: ID.unique(),
-            data: {
-              tableNumber: entry.tableNumber,
-              game: group.gameId,
-              players: playerIds,
-            },
-          }),
+
+        const update = existing.rows.find(
+          (table) =>
+            table.tableNumber === entry.tableNumber &&
+            table.game === group.gameId,
         );
+
+        if (update) {
+          await retry(() =>
+            tablesDB.updateRow({
+              databaseId: DATABASE_ID,
+              tableId: TABLES_COLLECTION,
+              rowId: update.$id,
+              data: { players: []},
+            }),
+          );
+
+          await retry(() => 
+            tablesDB.updateRow({
+              databaseId: DATABASE_ID,
+              tableId: TABLES_COLLECTION,
+              rowId: update.$id,
+              data: { players: playerIds }
+            })
+          )
+        } else {
+          await retry(() =>
+            tablesDB.createRow({
+              databaseId: DATABASE_ID,
+              tableId: TABLES_COLLECTION,
+              rowId: ID.unique(),
+              data: {
+                tableNumber: entry.tableNumber,
+                game: group.gameId,
+                players: playerIds,
+              },
+            }),
+          );
+
+        }
+
         onStatus(g, e, { state: "success" });
         await sleep(300);
       } catch (err: unknown) {

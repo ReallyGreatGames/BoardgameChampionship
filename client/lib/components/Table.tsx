@@ -30,7 +30,7 @@ export function Table({ gameId }: { gameId: string }) {
       <View style={styles.gameTable}>
         {(table.players ?? []).map((player, i) => (
           <View
-            key={player.$id}
+            key={`${player.$id}-${i}`}
             style={[
               styles.gameRow,
               player.$id === currentPlayer?.$id && styles.gameRowActive,
