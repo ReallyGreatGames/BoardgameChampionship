@@ -704,7 +704,7 @@ export default function TimerPage() {
         >
           <Ionicons
             name="ellipsis-horizontal"
-            size={16}
+            size={20}
             color={colors.textSecondary}
           />
         </Pressable>
@@ -935,9 +935,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   menuTrigger: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
