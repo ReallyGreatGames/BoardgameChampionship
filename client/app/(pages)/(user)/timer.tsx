@@ -5,6 +5,7 @@ import { useDialog } from "@/lib/components/Dialog";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
+import { useTableStore } from "@/lib/stores/appwrite/table-store";
 import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-store";
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
 import { type } from "@/lib/theme/typography";
@@ -117,6 +118,16 @@ export default function TimerPage() {
   const { confirm } = useDialog();
 
   const tableNumber = usePlayerTable(params.gameId);
+  const tableStore = useTableStore();
+  const playerNames = useMemo(() => {
+    if (tableNumber === null) {
+      return [];
+    }
+    const table = tableStore.collection.find(
+      (t) => t.tableNumber === tableNumber,
+    );
+    return table?.players?.map((p) => p.name) ?? [];
+  }, [tableStore.collection, tableNumber]);
 
   useFocusEffect(
     useCallback(() => {
@@ -640,8 +651,13 @@ export default function TimerPage() {
         <View
           style={[styles.cellContent, { transform: [{ rotate: rotation }] }]}
         >
-          <Text style={[type.eyebrow, { color: colors.textMuted }]}>
-            P{idx + 1}
+          <Text
+            style={[
+              type.eyebrow,
+              { color: colors.textMuted, fontSize: 14, lineHeight: 20 },
+            ]}
+          >
+            {playerNames[idx] ?? `P${idx + 1}`}
           </Text>
           <Text style={[styles.timeText, { color: timeColor }]}>
             {direction === "up"
@@ -649,12 +665,7 @@ export default function TimerPage() {
               : formatTime(timeLeft)}
           </Text>
           {isRunning && (
-            <View
-              style={[
-                styles.activePip,
-                { backgroundColor: playerColor.active },
-              ]}
-            />
+            <View style={[styles.activePip, { backgroundColor: "#ffffff" }]} />
           )}
           {isPausedHere && (
             <Text
