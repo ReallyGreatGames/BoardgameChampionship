@@ -8,6 +8,7 @@ import { useResultStore } from "../stores/appwrite/result-store";
 import { useRuleStore } from "../stores/appwrite/rule-store";
 import { useScheduleStore } from "../stores/appwrite/schedule-store";
 import { useTableBellStore } from "../stores/appwrite/table-bell-store";
+import { useTableStore } from "../stores/appwrite/table-store";
 import { useTimerSettingsStore } from "../stores/appwrite/timer-settings-store";
 import { useTimerStore } from "../stores/appwrite/timer-store";
 import { clearAllSubscriptions } from "../stores/real-time-store";
@@ -30,6 +31,7 @@ const userInits = [
   useTimerStore,
   useTimerSettingsStore,
   useResultStore,
+  useTableStore,
 ];
 
 const adminInits: any[] = [];

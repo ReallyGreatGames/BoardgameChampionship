@@ -1,3 +1,4 @@
+import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BackButton } from "@/lib/components/BackButton";
@@ -23,7 +24,6 @@ import {
   View,
 } from "react-native";
 
-const TABLE = 1; // TODO: pass via route params when table selection is implemented
 const PLAYER_COUNT = 4;
 const PLAYER_OPTIONS = ["1", "2", "3", "4"] as const;
 
@@ -215,6 +215,7 @@ export default function ResultsPage() {
   const { confirm } = useDialog();
   const resultStore = useResultStore();
   const scheduleStore = useScheduleStore();
+  const tableNumber = usePlayerTable(gameId);
 
   const isActiveGame = useMemo(
     () => scheduleStore.collection.find((s) => s.isActive)?.gameId === gameId,
@@ -224,9 +225,9 @@ export default function ResultsPage() {
   const existingResult = useMemo(
     () =>
       resultStore.collection.find(
-        (r) => r.gameId === gameId && r.table === TABLE,
+        (r) => r.gameId === gameId && r.table === tableNumber,
       ),
-    [resultStore.collection, gameId],
+    [resultStore.collection, gameId, tableNumber],
   );
 
   const [players, setPlayers] = useState<string[]>(() =>
@@ -319,14 +320,14 @@ export default function ResultsPage() {
   const buildPayload = useCallback(
     (submitted: boolean) => ({
       gameId: gameId ?? "",
-      table: TABLE,
+      table: tableNumber ?? 0,
       placements: players,
       scores: scores.map((s) => parseFloat(s) || 0),
       note: note.trim(),
       signatureIds,
       submitted,
     }),
-    [gameId, players, scores, note, signatureIds],
+    [gameId, tableNumber, players, scores, note, signatureIds],
   );
 
   const handleSave = useCallback(async (): Promise<boolean> => {

@@ -288,7 +288,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       flex: 1,
       backgroundColor: colors.background,
       paddingHorizontal: inset.screen,
-      paddingTop: inset.screenTop,
     },
     centered: {
       flex: 1,
@@ -361,14 +360,16 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       color: colors.textSecondary,
     },
     playerGrid: {
+      flex: 1,
       flexDirection: "row",
       flexWrap: "wrap",
       gap: inset.card,
+      alignContent: "stretch",
+      paddingBottom: inset.screenBottom,
     },
     playerCardPressable: {
       flex: 1,
       minWidth: "40%",
-      aspectRatio: 1,
     },
     playerCard: {
       flex: 1,

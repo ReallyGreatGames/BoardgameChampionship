@@ -2,6 +2,7 @@ import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BackButton } from "@/lib/components/BackButton";
 import { Table } from "@/lib/components/Table";
+import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { inset } from "@/lib/theme/spacing";
@@ -31,7 +32,7 @@ const ACTION_BUTTONS: ActionButton[] = [
     key: "lottery",
     icon: "shuffle",
     labelKey: "actions.lottery",
-    onPress: (gameId) => {},
+    onPress: (_gameId) => {},
   },
   {
     key: "rules",
@@ -72,16 +73,12 @@ export default function GamePage() {
   const bellActions = useTableBellActions();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-  // ! TODO: Get Table To Game
-  const table = 1;
-  const bell = useMemo(
-    () => tableBellStore.collection.find((x) => x.table === table),
-    [tableBellStore.collection],
-  );
+  const tableNumber = usePlayerTable(gameId);
 
-  useEffect(() => {
-    tableBellStore.init();
-  }, [tableBellStore]);
+  const bell = useMemo(
+    () => tableBellStore.collection.find((x) => x.table === tableNumber),
+    [tableBellStore.collection, tableNumber],
+  );
 
   useEffect(() => {
     if (loading) {
@@ -123,8 +120,8 @@ export default function GamePage() {
         cancelLabel: t("actions.confirmDismiss.cancel"),
         destructive: true,
       });
-    } else {
-      await bellActions.ring(table, undefined, {
+    } else if (tableNumber !== null) {
+      await bellActions.ring(tableNumber, undefined, {
         title: t("actions.confirmRing.title"),
         message: t("actions.confirmRing.message"),
         confirmLabel: t("actions.confirmRing.confirm"),
