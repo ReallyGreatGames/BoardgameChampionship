@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo } from "react";
+import * as ScreenOrientation from "expo-screen-orientation";
+import { useEffect, useMemo, useRef } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -33,6 +34,19 @@ export function BottomSheet({
 }: BottomSheetProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeSheetStyles(colors), [colors]);
+  const prevOrientationLock = useRef<ScreenOrientation.OrientationLock | null>(null);
+
+  useEffect(() => {
+    if (visible) {
+      ScreenOrientation.getOrientationLockAsync().then((lock) => {
+        prevOrientationLock.current = lock;
+        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
+      });
+    } else if (prevOrientationLock.current !== null) {
+      ScreenOrientation.lockAsync(prevOrientationLock.current);
+      prevOrientationLock.current = null;
+    }
+  }, [visible]);
   
   return (
     <Modal
