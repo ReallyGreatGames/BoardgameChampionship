@@ -3,6 +3,6 @@ import { Player } from "./player";
 
 export type Table = {
   tableNumber: number;
-  game: string;
+  game: string | { $id: string };
   players: Player[];
 } & Models.Document;

@@ -17,9 +17,11 @@ export const BootstrapProvider: FC<PropsWithChildren> = ({ children }) => {
         <QueryClientProvider client={queryClient}>
           <TournamentProvider>
             <AuthProvider>
-              <RealTimeStoreProvider />
               <ScreenOrientationProvider>
-                <PlayerProvider>{children}</PlayerProvider>
+                <PlayerProvider>
+                  <RealTimeStoreProvider />
+                  {children}
+                </PlayerProvider>
               </ScreenOrientationProvider>
             </AuthProvider>
           </TournamentProvider>
