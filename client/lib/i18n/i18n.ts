@@ -17,6 +17,7 @@ i18n.use(initReactI18next).init({
 
 getItemAsync(LANGUAGE_STORE_KEY).then((lang) => {
   if (lang) {
+    // eslint-disable-next-line import/no-named-as-default-member
     i18n.changeLanguage(lang);
   }
 });

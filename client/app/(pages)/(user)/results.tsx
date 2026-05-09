@@ -1,13 +1,14 @@
-import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
-import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BackButton } from "@/lib/components/BackButton";
 import { useDialog } from "@/lib/components/Dialog";
+import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
+import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { useResultStore } from "@/lib/stores/appwrite/result-store";
 import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
+import { useTableStore } from "@/lib/stores/appwrite/table-store";
 import { inset } from "@/lib/theme/spacing";
-import { ui } from "@/lib/theme/ui";
 import { type } from "@/lib/theme/typography";
+import { ui } from "@/lib/theme/ui";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -42,6 +43,7 @@ type PlayerPickerProps = {
   disabled?: boolean;
   colors: ReturnType<typeof useTheme>["colors"];
   t: (key: string) => string;
+  playerNames?: string[];
 };
 
 function PlayerPicker({
@@ -51,6 +53,7 @@ function PlayerPicker({
   disabled,
   colors,
   t,
+  playerNames = [],
 }: PlayerPickerProps) {
   const [open, setOpen] = useState(false);
   const styles = useMemo(() => makePickerStyles(colors), [colors]);
@@ -58,6 +61,11 @@ function PlayerPicker({
   const handleSelect = (opt: string) => {
     onChange(opt);
     setOpen(false);
+  };
+
+  const labelFor = (opt: string) => {
+    const name = playerNames[parseInt(opt, 10) - 1];
+    return name ?? t("playerValue").replace("{n}", opt);
   };
 
   return (
@@ -68,9 +76,7 @@ function PlayerPicker({
         activeOpacity={0.7}
       >
         <Text style={value ? styles.btnValue : styles.btnPlaceholder}>
-          {value
-            ? t("playerValue").replace("{n}", value)
-            : t("playerPlaceholder")}
+          {value ? labelFor(value) : t("playerPlaceholder")}
         </Text>
         {!disabled && (
           <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
@@ -107,7 +113,7 @@ function PlayerPicker({
                       taken && !selected && styles.optionTextTaken,
                     ]}
                   >
-                    {t("playerValue").replace("{n}", opt)}
+                    {labelFor(opt)}
                   </Text>
                   {selected && (
                     <Ionicons
@@ -216,6 +222,16 @@ export default function ResultsPage() {
   const resultStore = useResultStore();
   const scheduleStore = useScheduleStore();
   const tableNumber = usePlayerTable(gameId);
+  const tables = useTableStore((s) => s.collection);
+
+  const playerNames = useMemo(() => {
+    if (!gameId || tableNumber === null) {return [];}
+    const entry = tables.find((t) => {
+      const tGameId = typeof t.game === "string" ? t.game : t.game.$id;
+      return tGameId === gameId && t.tableNumber === tableNumber;
+    });
+    return entry?.players?.map((p) => p.name) ?? [];
+  }, [tables, gameId, tableNumber]);
 
   const isActiveGame = useMemo(
     () => scheduleStore.collection.find((s) => s.isActive)?.gameId === gameId,
@@ -523,6 +539,7 @@ export default function ResultsPage() {
                   disabled={isSubmitted || twoSigned}
                   colors={colors}
                   t={t}
+                  playerNames={playerNames}
                 />
 
                 <View
@@ -550,7 +567,7 @@ export default function ResultsPage() {
                       (!signatureIds[i] &&
                         !anySigned &&
                         (!allPlayersSet || !allScoresValid || isSubmitted))) &&
-                      styles.sigBtnDisabled,
+                    styles.sigBtnDisabled,
                   ]}
                   onPress={() => handleOpenSignature(i)}
                   disabled={

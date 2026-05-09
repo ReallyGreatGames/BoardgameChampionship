@@ -1,6 +1,7 @@
 import { ID, SIGNATURES_BUCKET_ID, storage } from "@/lib/appwrite";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BackButton } from "@/lib/components/BackButton";
+import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useResultStore } from "@/lib/stores/appwrite/result-store";
 import { inset } from "@/lib/theme/spacing";
 import { ui } from "@/lib/theme/ui";
@@ -20,8 +21,6 @@ import {
   View,
 } from "react-native";
 import Svg, { Path, SvgXml } from "react-native-svg";
-
-const TABLE = 1;
 
 type Point = { x: number; y: number };
 type Stroke = Point[];
@@ -60,13 +59,16 @@ export default function SignaturePage() {
   const resultStore = useResultStore();
 
   const placeIdx = parseInt(place ?? "0", 10);
+  const tableNumber = usePlayerTable(gameId);
 
   const existingResult = useMemo(
     () =>
-      resultStore.collection.find(
-        (r) => r.gameId === gameId && r.table === TABLE,
-      ),
-    [resultStore.collection, gameId],
+      tableNumber === null
+        ? undefined
+        : resultStore.collection.find(
+            (r) => r.gameId === gameId && r.table === tableNumber,
+          ),
+    [resultStore.collection, gameId, tableNumber],
   );
   const existingFileId = existingResult?.signatureIds?.[placeIdx] ?? "";
 
@@ -145,7 +147,7 @@ export default function SignaturePage() {
   }, [gameId]);
 
   const handleSave = useCallback(async () => {
-    if (isEmpty || saving) {
+    if (isEmpty || saving || tableNumber === null) {
       return;
     }
     setSaving(true);
@@ -184,7 +186,7 @@ export default function SignaturePage() {
       });
 
       const existingResult = resultStore.collection.find(
-        (r) => r.gameId === gameId && r.table === TABLE,
+        (r) => r.gameId === gameId && r.table === tableNumber,
       );
       const sigIds = [...(existingResult?.signatureIds ?? [])];
       while (sigIds.length <= placeIdx) {
@@ -200,7 +202,7 @@ export default function SignaturePage() {
       } else {
         await resultStore.add({
           gameId: gameId ?? "",
-          table: TABLE,
+          table: tableNumber,
           signatureIds: sigIds,
           submitted: false,
         });
@@ -210,7 +212,7 @@ export default function SignaturePage() {
     } finally {
       setSaving(false);
     }
-  }, [isEmpty, saving, strokes, canvasDims, placeIdx, gameId, resultStore]);
+  }, [isEmpty, saving, tableNumber, strokes, canvasDims, placeIdx, gameId, resultStore]);
 
   const allStrokes = [
     ...strokes,

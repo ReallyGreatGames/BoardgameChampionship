@@ -377,7 +377,7 @@ export default function TimerPage() {
         reason: t("timerElapsed"),
       });
     }
-  }, [times, activeIdx]);
+  }, [times, activeIdx, bell, t, tableBellStore, tableNumber]);
 
   // Measured actual cell size for overlay interpolation
   const [cellSize, setCellSize] = useState({ w: width / 2, h: height / 2 });
@@ -561,7 +561,7 @@ export default function TimerPage() {
         }
       }
     },
-    [timerStore, params.gameId, playerCount],
+    [timerStore, params.gameId, playerCount, tableNumber],
   );
 
   const handleToggleBell = async () => {
