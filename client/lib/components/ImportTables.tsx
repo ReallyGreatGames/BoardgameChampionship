@@ -1,5 +1,5 @@
 import * as DocumentPicker from "expo-document-picker";
-import { File } from "expo-file-system/next";
+import { File } from "expo-file-system";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
