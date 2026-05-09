@@ -373,6 +373,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     playerCard: {
       flex: 1,
+      aspectRatio: 1,
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,

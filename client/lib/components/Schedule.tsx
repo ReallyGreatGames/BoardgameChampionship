@@ -175,8 +175,11 @@ export function ScheduleItem({
     ],
   };
 
+  const prevIsActiveRef = useRef(schedule.isActive);
   useEffect(() => {
-    if (schedule.isActive && !expanded) {
+    const wasActive = prevIsActiveRef.current;
+    prevIsActiveRef.current = schedule.isActive;
+    if (schedule.isActive && !wasActive) {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setExpanded(true);
       Animated.timing(chevronRotation, {
@@ -185,7 +188,7 @@ export function ScheduleItem({
         useNativeDriver: true,
       }).start();
     }
-  }, [chevronRotation, expanded, schedule.isActive]);
+  }, [chevronRotation, schedule.isActive]);
 
   const handleToggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -267,7 +270,7 @@ export function ScheduleItem({
                   style={styles.goToGameButton}
                   onPress={() => {
                     if (player?.team && player?.$id) {
-                      router.push(`/game?gameId=${schedule.gameId}`);
+                      router.push(`/game?gameId=${schedule.gameId}&from=/(pages)/(user)/schedule`);
                     } else {
                       router.push({
                         pathname:

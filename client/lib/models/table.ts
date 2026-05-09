@@ -5,4 +5,5 @@ export type Table = {
   tableNumber: number;
   game: string | { $id: string };
   players: Player[];
-} & Models.Document;
+} & Models.Row & Models.Document;
+

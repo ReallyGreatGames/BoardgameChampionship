@@ -276,81 +276,81 @@ export function TableOverview() {
         />
 
         <View style={styles.filtersRow}>
-        <ToggleFilter<BellFilter>
-          options={[
-            {
-              value: "any",
-              icon: "notifications-outline",
-              color: colors.textMuted,
-              label: t("filterBellAny"),
-            },
-            {
-              value: "active",
-              icon: "notifications-outline",
-              color: colors.accent,
-              label: t("filterBellActive"),
-            },
-            {
-              value: "acknowledged",
-              icon: "notifications-off-outline",
-              color: colors.success,
-              label: t("filterBellAck"),
-            },
-          ]}
-          value={bellFilter}
-          onChange={setBellFilter}
-          styles={styles}
-        />
-        <ToggleFilter<SubmitFilter>
-          options={[
-            {
-              value: "all",
-              icon: "document-outline",
-              color: colors.textMuted,
-              label: t("filterSubmitAll"),
-            },
-            {
-              value: "submitted",
-              icon: "checkmark-circle-outline",
-              color: colors.success,
-              label: t("filterSubmitYes"),
-            },
-            {
-              value: "notSubmitted",
-              icon: "hourglass-outline",
-              color: colors.accent,
-              label: t("filterSubmitNo"),
-            },
-          ]}
-          value={submitFilter}
-          onChange={setSubmitFilter}
-          styles={styles}
-        />
-        <ToggleFilter<TimerFilter>
-          options={[
-            {
-              value: "any",
-              icon: "timer-outline",
-              color: colors.textMuted,
-              label: t("filterTimerAny"),
-            },
-            {
-              value: "running",
-              icon: "play-circle-outline",
-              color: colors.primary,
-              label: t("filterTimerRunning"),
-            },
-            {
-              value: "noTimer",
-              icon: "ban-outline",
-              color: colors.textSecondary,
-              label: t("filterTimerNone"),
-            },
-          ]}
-          value={timerFilter}
-          onChange={setTimerFilter}
-          styles={styles}
-        />
+          <ToggleFilter<BellFilter>
+            options={[
+              {
+                value: "any",
+                icon: "notifications-outline",
+                color: colors.textMuted,
+                label: t("filterBellAny"),
+              },
+              {
+                value: "active",
+                icon: "notifications-outline",
+                color: colors.accent,
+                label: t("filterBellActive"),
+              },
+              {
+                value: "acknowledged",
+                icon: "notifications-off-outline",
+                color: colors.success,
+                label: t("filterBellAck"),
+              },
+            ]}
+            value={bellFilter}
+            onChange={setBellFilter}
+            styles={styles}
+          />
+          <ToggleFilter<SubmitFilter>
+            options={[
+              {
+                value: "all",
+                icon: "document-outline",
+                color: colors.textMuted,
+                label: t("filterSubmitAll"),
+              },
+              {
+                value: "submitted",
+                icon: "checkmark-circle-outline",
+                color: colors.success,
+                label: t("filterSubmitYes"),
+              },
+              {
+                value: "notSubmitted",
+                icon: "hourglass-outline",
+                color: colors.accent,
+                label: t("filterSubmitNo"),
+              },
+            ]}
+            value={submitFilter}
+            onChange={setSubmitFilter}
+            styles={styles}
+          />
+          <ToggleFilter<TimerFilter>
+            options={[
+              {
+                value: "any",
+                icon: "timer-outline",
+                color: colors.textMuted,
+                label: t("filterTimerAny"),
+              },
+              {
+                value: "running",
+                icon: "play-circle-outline",
+                color: colors.primary,
+                label: t("filterTimerRunning"),
+              },
+              {
+                value: "noTimer",
+                icon: "ban-outline",
+                color: colors.textSecondary,
+                label: t("filterTimerNone"),
+              },
+            ]}
+            value={timerFilter}
+            onChange={setTimerFilter}
+            styles={styles}
+          />
         </View>
       </View>
 
@@ -360,120 +360,120 @@ export function TableOverview() {
         keyboardShouldPersistTaps="handled"
       >
         {filteredEntries.length === 0 && tableEntries.length > 0 && (
-        <View style={styles.emptyFiltered}>
-          <Text style={styles.emptyText}>{t("noFilterResults")}</Text>
-        </View>
-      )}
+          <View style={styles.emptyFiltered}>
+            <Text style={styles.emptyText}>{t("noFilterResults")}</Text>
+          </View>
+        )}
 
-      <View
-        style={styles.cardsGrid}
-        onLayout={(e) => setGridWidth(e.nativeEvent.layout.width)}
-      >
-        {filteredEntries.map((entry) => {
-          const bell = entry.bell;
-          const bellColor = bell?.acknowledgeTime
-            ? colors.success
-            : colors.accent;
-          const sigIds: string[] = entry.result?.signatureIds ?? [];
-          const playerTimes = toNumberArray(entry.timer?.playerTimes);
+        <View
+          style={styles.cardsGrid}
+          onLayout={(e) => setGridWidth(e.nativeEvent.layout.width)}
+        >
+          {filteredEntries.map((entry) => {
+            const bell = entry.bell;
+            const bellColor = bell?.acknowledgeTime
+              ? colors.success
+              : colors.accent;
+            const sigIds: string[] = entry.result?.signatureIds ?? [];
+            const playerTimes = toNumberArray(entry.timer?.playerTimes);
 
-          return (
-            <View
-              key={entry.id}
-              style={[
-                styles.card,
-                cardWidth > 0 ? { width: cardWidth } : { width: "100%" },
-                entry.hasBell && styles.cardBellActive,
-                entry.bellAcknowledged && styles.cardBellAcknowledged,
-              ]}
-            >
-              <View style={styles.cardHeader}>
-                <Text style={styles.tableLabel}>
-                  {t("tableLabel").replace("{n}", String(entry.id))}
-                </Text>
-                <View style={styles.headerRight}>
-                  {entry.result && (
-                    <Ionicons
-                      name="create-outline"
-                      size={12}
-                      color={
-                        entry.isSubmitted ? colors.success : colors.primary
-                      }
-                    />
-                  )}
-                  {entry.hasNote && (
-                    <Ionicons
-                      name="document-text-outline"
-                      size={12}
-                      color={colors.textSecondary}
-                    />
-                  )}
-                  {bell && (
-                    <View style={styles.bellStatus}>
-                      {bell.acknowledgeTime && (
-                        <Ionicons
-                          name="walk-outline"
-                          size={12}
-                          color={bellColor}
-                        />
-                      )}
+            return (
+              <View
+                key={entry.id}
+                style={[
+                  styles.card,
+                  cardWidth > 0 ? { width: cardWidth } : { width: "100%" },
+                  entry.hasBell && styles.cardBellActive,
+                  entry.bellAcknowledged && styles.cardBellAcknowledged,
+                ]}
+              >
+                <View style={styles.cardHeader}>
+                  <Text style={styles.tableLabel}>
+                    {t("tableLabel").replace("{n}", String(entry.id))}
+                  </Text>
+                  <View style={styles.headerRight}>
+                    {entry.result && (
                       <Ionicons
-                        name={
-                          bell.acknowledgeTime
-                            ? "notifications-off-outline"
-                            : "notifications-outline"
+                        name="create-outline"
+                        size={12}
+                        color={
+                          entry.isSubmitted ? colors.success : colors.primary
                         }
-                        size={14}
-                        color={bellColor}
                       />
-                      <Text style={[styles.bellTime, { color: bellColor }]}>
-                        {formatElapsed(bell.startTime, now)}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-
-              <View style={styles.playersRow}>
-                {entry.players.map((player, i) => {
-                  const isActive = entry.timer?.activePlayerTimer === i;
-                  return (
-                    <View key={i} style={styles.playerCell}>
-                      <Text style={styles.playerTeam} numberOfLines={1}>
-                        {player.team.name}
-                      </Text>
-                      <Text style={styles.playerName} numberOfLines={1}>
-                        {player.name}
-                      </Text>
-                      <View style={styles.playerTimeRow}>
-                        {entry.timer && !entry.isSubmitted ? (
-                          <Text
-                            style={[
-                              styles.playerTime,
-                              isActive && styles.playerTimeActive,
-                            ]}
-                          >
-                            {formatTime(playerTimes[i] ?? 0)}
-                          </Text>
-                        ) : null}
-                        {isActive && entry.timer?.paused && (
+                    )}
+                    {entry.hasNote && (
+                      <Ionicons
+                        name="document-text-outline"
+                        size={12}
+                        color={colors.textSecondary}
+                      />
+                    )}
+                    {bell && (
+                      <View style={styles.bellStatus}>
+                        {bell.acknowledgeTime && (
                           <Ionicons
-                            name="pause"
-                            size={9}
-                            color={colors.textMuted}
+                            name="walk-outline"
+                            size={12}
+                            color={bellColor}
                           />
                         )}
-                        {entry.result &&
-                          renderSigIcon(i, sigIds, entry.isSubmitted, colors)}
+                        <Ionicons
+                          name={
+                            bell.acknowledgeTime
+                              ? "notifications-off-outline"
+                              : "notifications-outline"
+                          }
+                          size={14}
+                          color={bellColor}
+                        />
+                        <Text style={[styles.bellTime, { color: bellColor }]}>
+                          {formatElapsed(bell.startTime, now)}
+                        </Text>
                       </View>
-                    </View>
-                  );
-                })}
+                    )}
+                  </View>
+                </View>
+
+                <View style={styles.playersRow}>
+                  {entry.players.map((player, i) => {
+                    const isActive = entry.timer?.activePlayerTimer === i;
+                    return (
+                      <View key={i} style={styles.playerCell}>
+                        <Text style={styles.playerTeam} numberOfLines={1}>
+                          {player.team.name}
+                        </Text>
+                        <Text style={styles.playerName} numberOfLines={1}>
+                          {player.name}
+                        </Text>
+                        <View style={styles.playerTimeRow}>
+                          {entry.timer && !entry.isSubmitted ? (
+                            <Text
+                              style={[
+                                styles.playerTime,
+                                isActive && styles.playerTimeActive,
+                              ]}
+                            >
+                              {formatTime(playerTimes[i] ?? 0)}
+                            </Text>
+                          ) : null}
+                          {isActive && entry.timer?.paused && (
+                            <Ionicons
+                              name="pause"
+                              size={9}
+                              color={colors.textMuted}
+                            />
+                          )}
+                          {entry.result &&
+                            renderSigIcon(i, sigIds, entry.isSubmitted, colors)}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
               </View>
-            </View>
-          );
-        })}
-      </View>
+            );
+          })}
+        </View>
       </ScrollView>
     </View>
   );

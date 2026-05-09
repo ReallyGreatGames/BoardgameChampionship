@@ -4,6 +4,7 @@ import { BackButton } from "@/lib/components/BackButton";
 import { Table } from "@/lib/components/Table";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
+import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
@@ -25,6 +26,7 @@ type ActionButton = {
   icon: React.ComponentProps<typeof Ionicons>["name"];
   labelKey: string;
   onPress: (gameId: string) => void;
+  requiresActiveGame?: boolean;
 };
 
 const ACTION_BUTTONS: ActionButton[] = [
@@ -32,7 +34,7 @@ const ACTION_BUTTONS: ActionButton[] = [
     key: "lottery",
     icon: "shuffle",
     labelKey: "actions.lottery",
-    onPress: (_gameId) => {},
+    onPress: (_gameId) => { },
   },
   {
     key: "rules",
@@ -44,12 +46,14 @@ const ACTION_BUTTONS: ActionButton[] = [
     key: "timer",
     icon: "timer-outline",
     labelKey: "actions.timer",
+    requiresActiveGame: true,
     onPress: (gameId) => router.push(`/(pages)/(user)/timer?gameId=${gameId}`),
   },
   {
     key: "results",
     icon: "trophy-outline",
     labelKey: "actions.results",
+    requiresActiveGame: true,
     onPress: (gameId) =>
       router.push(`/(pages)/(user)/results?gameId=${gameId}`),
   },
@@ -64,16 +68,22 @@ function formatElapsed(seconds: number) {
 }
 
 export default function GamePage() {
-  const { gameId } = useLocalSearchParams<{ gameId: string }>();
+  const { gameId, from } = useLocalSearchParams<{ gameId: string; from: string }>();
   const { user, loading } = useAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useTranslation(["game"]);
+  const scheduleStore = useScheduleStore();
   const tableBellStore = useTableBellStore();
   const bellActions = useTableBellActions();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   const tableNumber = usePlayerTable(gameId);
+
+  const isActiveGame = useMemo(
+    () => scheduleStore.collection.find((s) => s.isActive)?.gameId === gameId,
+    [scheduleStore.collection, gameId],
+  );
 
   const bell = useMemo(
     () => tableBellStore.collection.find((x) => x.table === tableNumber),
@@ -104,11 +114,7 @@ export default function GamePage() {
   }, [bell]);
 
   const handleBack = () => {
-    if (gameId) {
-      router.replace("/(pages)/(user)/schedule");
-    } else {
-      router.replace("/");
-    }
+    router.replace((from as any) ?? "/(pages)/(user)/schedule");
   };
 
   async function toggleBell() {
@@ -130,11 +136,13 @@ export default function GamePage() {
     }
   }
 
-  const bellColor = bell?.acknowledgeTime
-    ? colors.success
-    : bell
-      ? colors.accent
-      : colors.primary;
+  const bellColor = !isActiveGame
+    ? colors.textSecondary
+    : bell?.acknowledgeTime
+      ? colors.success
+      : bell
+        ? colors.accent
+        : colors.primary;
 
   const bellIcon: React.ComponentProps<typeof Ionicons>["name"] = bell
     ? "notifications-off-outline"
@@ -151,32 +159,40 @@ export default function GamePage() {
         <Table gameId={gameId} />
 
         <View style={styles.actionsGrid}>
-          {ACTION_BUTTONS.map(({ key, icon, labelKey, onPress }) => (
-            <TouchableOpacity
-              key={key}
-              style={styles.actionBtn}
-              activeOpacity={0.7}
-              onPress={() => onPress(gameId)}
-            >
-              <Ionicons name={icon} size={28} color={colors.primary} />
-              <Text style={styles.actionLabel}>{t(labelKey)}</Text>
-            </TouchableOpacity>
-          ))}
+          {ACTION_BUTTONS.map(({ key, icon, labelKey, onPress, requiresActiveGame }) => {
+            const disabled = requiresActiveGame && !isActiveGame;
+            return (
+              <TouchableOpacity
+                key={key}
+                style={[styles.actionBtn, disabled ? styles.actionBtnDisabled : undefined]}
+                activeOpacity={0.7}
+                onPress={() => onPress(gameId)}
+                disabled={disabled}
+              >
+                <Ionicons name={icon} size={28} color={disabled ? colors.textSecondary : colors.primary} />
+                <Text style={[styles.actionLabel, disabled ? styles.actionLabelDisabled : undefined]}>{t(labelKey)}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         <TouchableOpacity
           style={[
             styles.bellBtn,
-            bell?.acknowledgeTime
-              ? styles.bellBtnSuccess
-              : bell
-                ? styles.bellBtnActive
-                : undefined,
+            !isActiveGame
+              ? styles.actionBtnDisabled
+              : bell?.acknowledgeTime
+                ? styles.bellBtnSuccess
+                : bell
+                  ? styles.bellBtnActive
+                  : undefined,
           ]}
           activeOpacity={0.7}
           onPress={toggleBell}
           disabled={
-            bellActions.isLoading || (!!bell && !bellActions.canDelete(bell))
+            !isActiveGame ||
+            bellActions.isLoading ||
+            (!!bell && !bellActions.canDelete(bell))
           }
         >
           <View style={styles.bellIconRow}>
@@ -280,10 +296,16 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       ...type.caption,
       letterSpacing: 1,
     },
+    actionBtnDisabled: {
+      opacity: 0.4,
+    },
     actionLabel: {
       ...type.bodySmall,
       color: colors.text,
       fontWeight: "600",
+    },
+    actionLabelDisabled: {
+      color: colors.textSecondary,
     },
   });
 }

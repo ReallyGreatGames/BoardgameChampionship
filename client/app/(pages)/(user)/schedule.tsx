@@ -22,7 +22,7 @@ export default function ScheduleScreen() {
 
   return (
     <View style={styles.container}>
-      <ScheduleList></ScheduleList>
+      <ScheduleList />
     </View>
   );
 }

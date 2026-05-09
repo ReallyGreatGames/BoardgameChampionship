@@ -1,14 +1,14 @@
-import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
-import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BackButton } from "@/lib/components/BackButton";
 import { useDialog } from "@/lib/components/Dialog";
+import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
+import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { useResultStore } from "@/lib/stores/appwrite/result-store";
 import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
 import { useTableStore } from "@/lib/stores/appwrite/table-store";
 import { inset } from "@/lib/theme/spacing";
-import { ui } from "@/lib/theme/ui";
 import { type } from "@/lib/theme/typography";
+import { ui } from "@/lib/theme/ui";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -567,7 +567,7 @@ export default function ResultsPage() {
                       (!signatureIds[i] &&
                         !anySigned &&
                         (!allPlayersSet || !allScoresValid || isSubmitted))) &&
-                      styles.sigBtnDisabled,
+                    styles.sigBtnDisabled,
                   ]}
                   onPress={() => handleOpenSignature(i)}
                   disabled={

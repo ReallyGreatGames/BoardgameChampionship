@@ -258,7 +258,7 @@ export default function SignaturePage() {
                 <Path
                   key={idx}
                   d={strokeToD(stroke)}
-                  stroke={colors.text}
+                  stroke="#000000"
                   strokeWidth={2.5}
                   fill="none"
                   strokeLinecap="round"
@@ -341,7 +341,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     canvasWrapper: {
       flex: 1,
       marginTop: inset.card,
-      backgroundColor: colors.surface,
+      backgroundColor: "#ffffff",
       borderWidth: 2,
       borderColor: colors.border,
       borderRadius: 12,
