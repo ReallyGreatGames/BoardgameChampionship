@@ -73,6 +73,14 @@ export function toNumberArray(value: unknown): number[] {
   return [];
 }
 
+export function toBooleanArray(value: unknown): boolean[] {
+  if (Array.isArray(value)) {return value as boolean[];}
+  if (typeof value === "string") {
+    try { return JSON.parse(value) as boolean[]; } catch { return []; }
+  }
+  return [];
+}
+
 /** Handles Appwrite returning team as hydrated Team object OR bare string $id */
 export function teamName(player: Player): string {
   return typeof player.team === "string" ? player.team : player.team.name;
