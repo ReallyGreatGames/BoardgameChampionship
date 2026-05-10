@@ -13,9 +13,11 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { OrientationLock } from "expo-screen-orientation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StatusBar, StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 
 export default function TimerPage() {
   const { colors } = useTheme();
+  const { t } = useTranslation(["timer"]);
   const { forceOrientation, unlockOrientation } = useScreenOrientation();
   const params = useLocalSearchParams<{ gameId?: string }>();
 
@@ -50,6 +52,7 @@ export default function TimerPage() {
     cellSize,
     handleCellLayout,
     handlePress,
+    handlePause,
     handleReset,
     handleSaveCustomTimer,
     existingTimer,
@@ -85,18 +88,18 @@ export default function TimerPage() {
   const handleToggleBell = async () => {
     const done = bell
       ? await bellActions.dismiss(bell, {
-          title: "confirmDismiss.title",
-          message: "confirmDismiss.message",
-          confirmLabel: "confirmDismiss.confirm",
-          cancelLabel: "confirmDismiss.cancel",
+          title: t("confirmDismiss.title"),
+          message: t("confirmDismiss.message"),
+          confirmLabel: t("confirmDismiss.confirm"),
+          cancelLabel: t("confirmDismiss.cancel"),
           destructive: true,
         })
       : tableNumber !== null
         ? await bellActions.ring(tableNumber, undefined, {
-            title: "confirmRing.title",
-            message: "confirmRing.message",
-            confirmLabel: "confirmRing.confirm",
-            cancelLabel: "confirmRing.cancel",
+            title: t("confirmRing.title"),
+            message: t("confirmRing.message"),
+            confirmLabel: t("confirmRing.confirm"),
+            cancelLabel: t("confirmRing.cancel"),
           })
         : false;
     if (done) {
@@ -221,6 +224,7 @@ export default function TimerPage() {
         }}
         onCloseTimer={() => {
           setMenuOpen(false);
+          handlePause();
           router.replace(
             params.gameId
               ? `/(pages)/(user)/game?gameId=${params.gameId}`

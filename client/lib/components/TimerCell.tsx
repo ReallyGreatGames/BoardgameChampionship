@@ -15,6 +15,12 @@ import { useTranslation } from "react-i18next";
 const PLAYER_COUNT = 4;
 const rotations = ["180deg", "180deg", "0deg", "0deg"] as const;
 
+const TEXT_SHADOW = {
+  textShadowColor: "rgba(0,0,0,0.8)",
+  textShadowOffset: { width: 0, height: 1 },
+  textShadowRadius: 4,
+} as const;
+
 type PlayerColor = ReturnType<typeof buildPlayerColor>;
 
 type Props = {
@@ -60,11 +66,11 @@ export function TimerCell({
   const overlayAnchor =
     PLAYER_COUNT === 4
       ? isLeftCol
-        ? "left"
-        : "right"
+        ? direction === "up" ? "right" : "left"
+        : direction === "up" ? "left" : "right"
       : idx === 0
-        ? "top"
-        : "bottom";
+        ? direction === "up" ? "bottom" : "top"
+        : direction === "up" ? "top" : "bottom";
   const overlayMax = PLAYER_COUNT === 4 ? cellSize.w : cellSize.h;
   const overlaySize = depleteAnim.interpolate({
     inputRange: [0, 1],
@@ -77,15 +83,19 @@ export function TimerCell({
 
   const bgColor = isDepleted
     ? colors.error + "30"
-    : isRunning
-      ? playerColor.active + "cc"
-      : playerColor.muted + "55";
+    : direction === "up"
+      ? isRunning
+        ? playerColor.elapsed + "cc"
+        : playerColor.elapsedMuted + "55"
+      : isRunning
+        ? playerColor.active + "cc"
+        : playerColor.muted + "55";
 
   const timeColor = isDepleted
     ? colors.error
     : isRunning
       ? "#ffffff"
-      : playerColor.muted;
+      : playerColor.active;
 
   return (
     <Pressable
@@ -98,9 +108,9 @@ export function TimerCell({
           styles.depletionOverlay,
           {
             ...overlayStyle,
-            backgroundColor: isRunning
-              ? playerColor.elapsed
-              : playerColor.elapsedMuted,
+            backgroundColor: direction === "up"
+              ? isRunning ? playerColor.active : playerColor.muted
+              : isRunning ? playerColor.elapsed : playerColor.elapsedMuted,
           },
         ]}
         pointerEvents="none"
@@ -114,21 +124,28 @@ export function TimerCell({
         >
           {playerName ?? `P${idx + 1}`}
         </Text>
-        <Text style={[styles.timeText, { color: timeColor }]}>
-          {direction === "up"
-            ? formatTime(totalSeconds - timeLeft)
-            : formatTime(timeLeft)}
-        </Text>
-        {isRunning && (
-          <View style={[styles.activePip, { backgroundColor: "#ffffff" }]} />
-        )}
+        <View style={styles.timeGroup}>
+          <Text style={[styles.timeText, { color: timeColor, ...TEXT_SHADOW }]}>
+            {direction === "up"
+              ? formatTime(totalSeconds - timeLeft)
+              : formatTime(timeLeft)}
+          </Text>
+          {direction === "up" && timeLeft <= 0 && (
+            <Text style={[styles.overtimeText, { color: colors.error, ...TEXT_SHADOW }]}>
+              +{formatTime(-timeLeft)}
+            </Text>
+          )}
+          {isRunning && (
+            <View style={[styles.activePip, { backgroundColor: "#ffffff" }]} />
+          )}
+        </View>
         {isPausedHere && (
           <Text style={[type.eyebrow, { color: colors.textMuted, marginTop: 4 }]}>
             {t("paused")}
           </Text>
         )}
         {isDepleted && (
-          <Text style={[type.eyebrow, { color: colors.error, marginTop: 4 }]}>
+          <Text style={[type.eyebrow, { color: colors.error, marginTop: 4, ...TEXT_SHADOW }]}>
             {t("timeOut")}
           </Text>
         )}
@@ -150,6 +167,12 @@ const styles = StyleSheet.create({
     position: "absolute",
   },
   cellContent: {
+    alignSelf: "stretch",
+    alignItems: "center",
+    gap: 4,
+  },
+  timeGroup: {
+    width: "100%",
     alignItems: "center",
     gap: 4,
   },
@@ -158,11 +181,20 @@ const styles = StyleSheet.create({
     fontSize: 64,
     lineHeight: 68,
     letterSpacing: -1,
+    textAlign: "center",
+    width: "100%",
   },
   activePip: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginTop: 4,
+  },
+  overtimeText: {
+    fontFamily: "BarlowCondensed_800ExtraBold",
+    fontSize: 36,
+    lineHeight: 40,
+    letterSpacing: -0.5,
+    textAlign: "center",
+    width: "100%",
   },
 });
