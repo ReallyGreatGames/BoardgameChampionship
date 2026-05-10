@@ -140,13 +140,15 @@ export function useTimerState({
 
     remoteTimes.forEach((remoteTime, i) => {
       if (direction === "up") {
-        depleteAnims.current[i].setValue(Math.min(1, 1 - remoteTime / totalSeconds));
+        depleteAnims.current[i].setValue(
+          Math.min(1, 1 - remoteTime / totalSeconds),
+        );
       } else {
         const base = remoteOvertime[i] ? OVERTIME_SECONDS : totalSeconds;
         depleteAnims.current[i].setValue(1 - Math.min(remoteTime, base) / base);
       }
     });
-  }, [existingTimer, totalSeconds]);
+  }, [existingTimer, totalSeconds, direction]);
 
   const saveState = useCallback(
     async (
@@ -227,8 +229,12 @@ export function useTimerState({
     const interval = setInterval(() => {
       setTimes((prev) => {
         const idx = activeIdxRef.current;
-        if (idx === null) return prev;
-        if (directionRef.current === "down" && prev[idx] <= 0) return prev;
+        if (idx === null) {
+          return prev;
+        }
+        if (directionRef.current === "down" && prev[idx] <= 0) {
+          return prev;
+        }
         const next = [...prev];
         next[idx] -= 1;
         const base =
@@ -439,7 +445,9 @@ export function useTimerState({
   );
 
   const handlePause = useCallback(() => {
-    if (activeIdx === null || paused) return;
+    if (activeIdx === null || paused) {
+      return;
+    }
     depleteAnims.current[activeIdx].stopAnimation();
     const base =
       direction === "up"
@@ -454,7 +462,15 @@ export function useTimerState({
     depleteAnims.current[activeIdx].setValue(value);
     setPaused(true);
     saveState(times, activeIdx, true, playersInOvertime);
-  }, [activeIdx, paused, times, playersInOvertime, totalSeconds, direction, saveState]);
+  }, [
+    activeIdx,
+    paused,
+    times,
+    playersInOvertime,
+    totalSeconds,
+    direction,
+    saveState,
+  ]);
 
   return {
     times,

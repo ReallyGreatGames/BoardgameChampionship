@@ -231,7 +231,10 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
       }
 
       return (
-        <View style={styles.playerGrid}>
+        <ScrollView
+          style={styles.playerList}
+          contentContainerStyle={styles.playerListContent}
+        >
           {players.map((player) => (
             <AnimatedPlayerCard
               key={player.$id}
@@ -243,7 +246,7 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
               }}
             />
           ))}
-        </View>
+        </ScrollView>
       );
     };
 
@@ -359,37 +362,35 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       ...type.bodyLarge,
       color: colors.textSecondary,
     },
-    playerGrid: {
+    playerList: {
       flex: 1,
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: inset.card,
-      alignContent: "stretch",
+    },
+    playerListContent: {
+      gap: inset.list,
       paddingBottom: inset.screenBottom,
     },
-    playerCardPressable: {
-      flex: 1,
-      minWidth: "40%",
-    },
+    playerCardPressable: {},
     playerCard: {
-      flex: 1,
-      aspectRatio: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: inset.group,
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
       borderRadius: 8,
-      justifyContent: "center",
-      alignItems: "center",
-      gap: inset.tight,
+      paddingVertical: inset.card,
+      paddingHorizontal: inset.card,
     },
     playerNumber: {
-      ...type.bigNumber,
-      color: colors.text,
+      ...type.h2,
+      color: colors.primary,
+      width: 56,
+      textAlign: "center",
     },
     playerLabel: {
-      ...type.bodySmall,
-      color: colors.textSecondary,
-      textAlign: "center"
+      ...type.body,
+      fontFamily: "DMSans_700Bold",
+      color: colors.text,
     },
   });
 }

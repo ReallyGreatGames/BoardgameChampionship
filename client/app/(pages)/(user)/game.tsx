@@ -3,6 +3,8 @@ import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BackButton } from "@/lib/components/BackButton";
 import { PlayerColorSetupModal } from "@/lib/components/PlayerColorSetupModal";
 import { Table } from "@/lib/components/Table";
+import { FeatureFlagSlugs } from "@/lib/feature-flags/feature-flag-slugs";
+import { useFeatureFlags } from "@/lib/feature-flags/useFeatureFlags";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
 import { getItemAsync, setItemAsync } from "@/lib/secureStorage";
@@ -32,6 +34,7 @@ type ActionButton = {
   labelKey: string;
   onPress: (gameId: string) => void;
   requiresActiveGame?: boolean;
+  featureFlag?: (typeof FeatureFlagSlugs)[keyof typeof FeatureFlagSlugs];
 };
 
 const ACTION_BUTTONS: ActionButton[] = [
@@ -39,6 +42,7 @@ const ACTION_BUTTONS: ActionButton[] = [
     key: "lottery",
     icon: "shuffle",
     labelKey: "actions.lottery",
+    featureFlag: FeatureFlagSlugs.LOTTERY,
     onPress: (_gameId) => {},
   },
   {
@@ -52,6 +56,7 @@ const ACTION_BUTTONS: ActionButton[] = [
     icon: "timer-outline",
     labelKey: "actions.timer",
     requiresActiveGame: true,
+    featureFlag: FeatureFlagSlugs.TIMER,
     onPress: (gameId) => router.push(`/(pages)/(user)/timer?gameId=${gameId}`),
   },
   {
@@ -59,6 +64,7 @@ const ACTION_BUTTONS: ActionButton[] = [
     icon: "trophy-outline",
     labelKey: "actions.results",
     requiresActiveGame: true,
+    featureFlag: FeatureFlagSlugs.RESULTS,
     onPress: (gameId) =>
       router.push(`/(pages)/(user)/results?gameId=${gameId}`),
   },
@@ -86,6 +92,7 @@ export default function GamePage() {
   const bellActions = useTableBellActions();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
+  const isFeatureEnabled = useFeatureFlags();
   const tableNumber = usePlayerTable(gameId);
   const tableStore = useTableStore();
   const timerStore = useTimerStore();
@@ -228,8 +235,17 @@ export default function GamePage() {
 
         <View style={styles.actionsGrid}>
           {ACTION_BUTTONS.map(
-            ({ key, icon, labelKey, onPress, requiresActiveGame }) => {
-              const disabled = requiresActiveGame && !isActiveGame;
+            ({
+              key,
+              icon,
+              labelKey,
+              onPress,
+              requiresActiveGame,
+              featureFlag,
+            }) => {
+              const disabled =
+                (requiresActiveGame && !isActiveGame) ||
+                (featureFlag !== undefined && !isFeatureEnabled(featureFlag));
               const press =
                 key === "timer" ? handleTimerPress : () => onPress(gameId);
               return (
@@ -276,9 +292,10 @@ export default function GamePage() {
           activeOpacity={0.7}
           onPress={toggleBell}
           disabled={
-            !isActiveGame ||
-            bellActions.isLoading ||
-            (!!bell && !bellActions.canDelete(bell))
+            !isFeatureEnabled(FeatureFlagSlugs.TABLE_BELL) &&
+            (!isActiveGame ||
+              bellActions.isLoading ||
+              (!!bell && !bellActions.canDelete(bell)))
           }
         >
           <View style={styles.bellIconRow}>
