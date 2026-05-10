@@ -56,7 +56,7 @@ export function TimerSettingsModal({
       return;
     }
     if (existing) {
-      setDuration(String(existing.durationMinutesTotal));
+      setDuration(String(Math.round(existing.durationMinutesTotal / 4)));
       setDirection(existing.direction);
       setPlayerColors(
         existing.colors?.length === 4 ? existing.colors : DEFAULT_COLORS,
@@ -89,7 +89,7 @@ export function TimerSettingsModal({
     setSaving(true);
     try {
       const data = {
-        durationMinutesTotal: durNum,
+        durationMinutesTotal: durNum * 4,
         direction,
         colors: playerColors,
       };
