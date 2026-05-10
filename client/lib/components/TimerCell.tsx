@@ -119,7 +119,7 @@ export function TimerCell({
         <Text
           style={[
             type.eyebrow,
-            { color: colors.textMuted, fontSize: 14, lineHeight: 20, ...TEXT_SHADOW },
+            { color: colors.textMuted, fontSize: 14, lineHeight: 20 },
           ]}
         >
           {playerName ?? `P${idx + 1}`}
@@ -140,7 +140,7 @@ export function TimerCell({
           )}
         </View>
         {isPausedHere && (
-          <Text style={[type.eyebrow, { color: colors.textMuted, marginTop: 4, ...TEXT_SHADOW }]}>
+          <Text style={[type.eyebrow, { color: colors.textMuted, marginTop: 4 }]}>
             {t("paused")}
           </Text>
         )}

@@ -438,6 +438,24 @@ export function useTimerState({
     [timerStore, gameId, tableNumber],
   );
 
+  const handlePause = useCallback(() => {
+    if (activeIdx === null || paused) return;
+    depleteAnims.current[activeIdx].stopAnimation();
+    const base =
+      direction === "up"
+        ? totalSeconds
+        : playersInOvertime[activeIdx]
+          ? OVERTIME_SECONDS
+          : totalSeconds;
+    const value =
+      direction === "up"
+        ? Math.min(1, 1 - times[activeIdx] / totalSeconds)
+        : 1 - times[activeIdx] / base;
+    depleteAnims.current[activeIdx].setValue(value);
+    setPaused(true);
+    saveState(times, activeIdx, true, playersInOvertime);
+  }, [activeIdx, paused, times, playersInOvertime, totalSeconds, direction, saveState]);
+
   return {
     times,
     activeIdx,
@@ -450,6 +468,7 @@ export function useTimerState({
     cellSize,
     handleCellLayout,
     handlePress,
+    handlePause,
     handleReset,
     handleSaveCustomTimer,
     existingTimer,

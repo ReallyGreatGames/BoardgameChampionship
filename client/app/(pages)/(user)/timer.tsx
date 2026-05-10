@@ -52,6 +52,7 @@ export default function TimerPage() {
     cellSize,
     handleCellLayout,
     handlePress,
+    handlePause,
     handleReset,
     handleSaveCustomTimer,
     existingTimer,
@@ -223,6 +224,7 @@ export default function TimerPage() {
         }}
         onCloseTimer={() => {
           setMenuOpen(false);
+          handlePause();
           router.replace(
             params.gameId
               ? `/(pages)/(user)/game?gameId=${params.gameId}`
