@@ -76,6 +76,18 @@ const translations = {
         cancel: "Cancel",
       },
     },
+    colorSetup: {
+      title: "Player Colors",
+      save: "Save & Open Timer",
+      duplicatePlayer: "Each player can only be assigned once",
+      corners: {
+        topLeft: "Top Left",
+        topRight: "Top Right",
+        bottomRight: "Bottom Right",
+        bottomLeft: "Bottom Left",
+      },
+      playerFallback: "P{{number}}",
+    },
   },
   navigation: {
     back: "Back",
@@ -134,7 +146,7 @@ const translations = {
     bellRinging: "Bell ringing…",
     bellAcknowledged: "Bell acknowledged",
     resetTimers: "Reset Timer",
-    closeTimer: "Close Timer",
+    closeTimer: "Exit Timer",
     confirmRing: {
       title: "Ring Table Bell",
       message: "Alert the judges that your table needs assistance?",
@@ -157,8 +169,8 @@ const translations = {
     customTimer: "Custom Timer",
     customTimerModal: {
       title: "Custom Timer",
-      durationField: "Total Duration (min)",
-      durationPlaceholder: "e.g. 60",
+      durationField: "Time per Player (min)",
+      durationPlaceholder: "e.g. 15",
       directionField: "Count Direction",
       directionDown: "Count Down",
       directionUp: "Count Up",
@@ -313,11 +325,12 @@ const translations = {
       editTitle: "Edit Timer Settings",
       nameField: "Game Name",
       namePlaceholder: "e.g. Chess",
-      durationField: "Total Duration (min)",
-      durationPlaceholder: "e.g. 60",
+      durationField: "Time per Player (min)",
+      durationPlaceholder: "e.g. 15",
       directionField: "Count Direction",
       directionDown: "Count Down",
       directionUp: "Count Up",
+      playerColorField: "Player {{n}} Color",
       save: "Save",
     },
     tournamentSettings: {

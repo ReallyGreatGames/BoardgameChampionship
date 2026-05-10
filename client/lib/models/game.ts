@@ -1,6 +1,7 @@
 import { Models } from "react-native-appwrite";
 
-export type TimerSettings = {
+export type Game = {
   durationMinutesTotal: number;
   direction: "up" | "down";
-} & Models.Document;
+  colors: string[];
+} & Models.Row & Models.Document;

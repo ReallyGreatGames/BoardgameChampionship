@@ -1,4 +1,4 @@
-import { TimerSettings } from "@/lib/models/timer-settings";
+import { Game } from "@/lib/models/game";
 import { Models } from "react-native-appwrite";
 import { create } from "zustand";
 import {
@@ -9,12 +9,17 @@ import {
   updateInCollection,
 } from "../real-time-store";
 
-export type PartialTimerSettings = Partial<TimerSettings> & { $id: string };
+export type PartialGame = Partial<Game> & { $id: string };
 
-interface TimerSettingsState extends RealtimeCollectionStore<TimerSettings> {
+/** @deprecated Use PartialGame */
+export type PartialTimerSettings = PartialGame;
+
+type GameInput = Omit<Game, keyof Models.Document | keyof Models.Row>;
+
+interface TimerSettingsState extends RealtimeCollectionStore<Game> {
   init: () => Promise<void>;
-  add: (data: Omit<TimerSettings, keyof Models.Document>) => Promise<TimerSettings | null>;
-  update: (item: PartialTimerSettings, silent?: boolean) => Promise<boolean>;
+  add: (data: GameInput) => Promise<Game | null>;
+  update: (item: PartialGame, silent?: boolean) => Promise<boolean>;
 }
 
 export const useTimerSettingsStore = create<TimerSettingsState>((set) => {
@@ -24,10 +29,10 @@ export const useTimerSettingsStore = create<TimerSettingsState>((set) => {
   return {
     collection: [],
     init: async () => {
-      unsubscribe = await initCollection<TimerSettings, TimerSettingsState>(key, set, unsubscribe);
+      unsubscribe = await initCollection<Game, TimerSettingsState>(key, set, unsubscribe);
     },
 
-    add: async (data) => await addToCollection(key, data),
+    add: async (data) => await addToCollection<Game>(key, data as Omit<Game, keyof Models.Document>),
 
     update: async (item, silent = false) => await updateInCollection(key, item, silent),
   };

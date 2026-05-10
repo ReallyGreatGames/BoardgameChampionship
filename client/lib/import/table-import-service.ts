@@ -162,7 +162,7 @@ export async function importTables(
         const update = existing.rows.find(
           (table) =>
             table.tableNumber === entry.tableNumber &&
-            table.game === group.gameId,
+            table.game.$id === group.gameId,
         );
 
         if (update) {

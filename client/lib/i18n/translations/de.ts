@@ -76,6 +76,18 @@ const translations = {
         cancel: "Abbrechen",
       },
     },
+    colorSetup: {
+      title: "Spielerfarben",
+      save: "Speichern & Timer öffnen",
+      duplicatePlayer: "Jeder Spieler kann nur einmal zugewiesen werden",
+      corners: {
+        topLeft: "Oben Links",
+        topRight: "Oben Rechts",
+        bottomRight: "Unten Rechts",
+        bottomLeft: "Unten Links",
+      },
+      playerFallback: "S{{number}}",
+    },
   },
   navigation: {
     back: "Zurück",
@@ -134,7 +146,7 @@ const translations = {
     bellRinging: "Klingelt…",
     bellAcknowledged: "Auf dem Weg",
     resetTimers: "Zurücksetzen",
-    closeTimer: "Schließen",
+    closeTimer: "Timer verlassen",
     confirmRing: {
       title: "Tischklingel läuten",
       message: "Die Schiedsrichter:innen auf euren Tisch aufmerksam machen?",
@@ -157,8 +169,8 @@ const translations = {
     customTimer: "Benutzerdefiniert",
     customTimerModal: {
       title: "Benutzerdefinierter Timer",
-      durationField: "Gesamtdauer (min)",
-      durationPlaceholder: "z.B. 60",
+      durationField: "Zeit pro Spieler (min)",
+      durationPlaceholder: "z.B. 15",
       directionField: "Zählrichtung",
       directionDown: "Rückwärts",
       directionUp: "Vorwärts",
@@ -315,11 +327,12 @@ const translations = {
       editTitle: "Timer-Einstellungen bearbeiten",
       nameField: "Spielname",
       namePlaceholder: "z.B. Schach",
-      durationField: "Gesamtdauer (min)",
-      durationPlaceholder: "z.B. 60",
+      durationField: "Zeit pro Spieler (min)",
+      durationPlaceholder: "z.B. 15",
       directionField: "Zählrichtung",
       directionDown: "Rückwärts",
       directionUp: "Vorwärts",
+      playerColorField: "Spieler {{n}} Farbe",
       save: "Speichern",
     },
     tournamentSettings: {

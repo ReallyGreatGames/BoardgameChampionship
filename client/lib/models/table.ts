@@ -1,9 +1,10 @@
 import { Models } from "react-native-appwrite";
 import { Player } from "./player";
+import { Game } from "./game"
 
 export type Table = {
   tableNumber: number;
-  game: string | { $id: string };
   players: Player[];
+  game: Game;
 } & Models.Row & Models.Document;
 

@@ -7,7 +7,10 @@ import {
   useEffect,
   useState,
 } from "react";
-import { lockAsync, OrientationLock } from "expo-screen-orientation";
+import {
+  lockAsync,
+  OrientationLock,
+} from "expo-screen-orientation";
 
 export type ScreenOrientationContext = {
   orientation: OrientationLock;

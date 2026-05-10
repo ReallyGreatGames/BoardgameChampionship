@@ -67,7 +67,9 @@ export function TableOverview() {
   const numColumns = screenWidth >= 600 ? 2 : 1;
 
   const cardWidth = useMemo(() => {
-    if (!gridWidth) {return 0;}
+    if (!gridWidth) {
+      return 0;
+    }
     return (gridWidth - (numColumns - 1) * inset.list) / numColumns;
   }, [gridWidth, numColumns]);
 
@@ -81,9 +83,13 @@ export function TableOverview() {
 
   const defaultGameId = useMemo(() => {
     const active = gameSchedules.find((s) => s.isActive);
-    if (active) {return active.gameId!;}
+    if (active) {
+      return active.gameId!;
+    }
     const nextUp = gameSchedules.find((s) => !s.isFinished);
-    if (nextUp) {return nextUp.gameId!;}
+    if (nextUp) {
+      return nextUp.gameId!;
+    }
     return gameSchedules[gameSchedules.length - 1]?.gameId ?? null;
   }, [gameSchedules]);
 
@@ -96,7 +102,9 @@ export function TableOverview() {
   }, [defaultGameId, selectedGameId]);
 
   const tableEntries = useMemo<TableEntry[]>(() => {
-    if (!selectedGameId) {return [];}
+    if (!selectedGameId) {
+      return [];
+    }
     return tables
       .filter((t) => resolveGameId(t.game) === selectedGameId)
       .sort((a, b) => a.tableNumber - b.tableNumber)
