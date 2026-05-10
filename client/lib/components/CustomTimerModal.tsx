@@ -34,7 +34,7 @@ export function CustomTimerModal({
     if (!visible) {
       return;
     }
-    setDuration(initialDuration != null ? String(initialDuration) : "");
+    setDuration(initialDuration != null ? String(Math.round(initialDuration / 4)) : "");
     setDirection(initialDirection ?? "down");
     setSaving(false);
     setDurBlurred(false);
@@ -49,7 +49,7 @@ export function CustomTimerModal({
     }
     setSaving(true);
     try {
-      await onSave(durNum, direction);
+      await onSave(durNum * 4, direction);
       onClose();
     } finally {
       setSaving(false);
