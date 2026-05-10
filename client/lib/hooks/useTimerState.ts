@@ -1,5 +1,4 @@
 import { useDialog } from "@/lib/components/Dialog";
-import { getItemAsync } from "@/lib/secureStorage";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-store";
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
@@ -47,29 +46,13 @@ export function useTimerState({
     [timerStore.collection, gameId, tableNumber],
   );
 
-  const [storedColors, setStoredColors] = useState<string[] | null>(null);
-  useEffect(() => {
-    if (!gameId) {
-      return;
-    }
-    getItemAsync(`playerColors_${gameId}`).then((val) => {
-      if (!val) {
-        return;
-      }
-      try {
-        setStoredColors(JSON.parse(val));
-      } catch {}
-    });
-  }, [gameId]);
-
   const playerColors = useMemo(() => {
+    const saved = timerSettings?.colors;
     return Array.from({ length: PLAYER_COUNT }, (_, i) => {
-      const hex = storedColors?.[i];
-      return hex
-        ? buildPlayerColor(hex)
-        : PLAYER_COLORS[i % PLAYER_COLORS.length];
+      const hex = saved?.[i];
+      return hex ? buildPlayerColor(hex) : PLAYER_COLORS[i % PLAYER_COLORS.length];
     });
-  }, [storedColors]);
+  }, [timerSettings?.colors]);
 
   const effectiveDuration =
     existingTimer?.durationMinutesTotal ?? timerSettings?.durationMinutesTotal;
