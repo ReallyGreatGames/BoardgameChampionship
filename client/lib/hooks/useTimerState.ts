@@ -4,6 +4,7 @@ import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-stor
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
 import { buildPlayerColor, PLAYER_COLORS } from "@/lib/utils/timerColors";
 import { resolveGameId, toBooleanArray, toNumberArray } from "@/lib/utils";
+import { getItemAsync } from "@/lib/secureStorage";
 import { Animated, LayoutChangeEvent, useWindowDimensions } from "react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -46,13 +47,38 @@ export function useTimerState({
     [timerStore.collection, gameId, tableNumber],
   );
 
+  const [storedHexColors, setStoredHexColors] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    if (!gameId) {
+      setStoredHexColors(null);
+      return;
+    }
+    getItemAsync(`playerColors_${gameId}`).then((raw) => {
+      if (!raw) {
+        setStoredHexColors(null);
+        return;
+      }
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          setStoredHexColors(parsed);
+        }
+      } catch {
+        setStoredHexColors(null);
+      }
+    });
+  }, [gameId]);
+
   const playerColors = useMemo(() => {
-    const saved = timerSettings?.colors;
+    const saved = storedHexColors ?? timerSettings?.colors;
     return Array.from({ length: PLAYER_COUNT }, (_, i) => {
       const hex = saved?.[i];
-      return hex ? buildPlayerColor(hex) : PLAYER_COLORS[i % PLAYER_COLORS.length];
+      return hex
+        ? buildPlayerColor(hex)
+        : PLAYER_COLORS[i % PLAYER_COLORS.length];
     });
-  }, [timerSettings?.colors]);
+  }, [storedHexColors, timerSettings?.colors]);
 
   const effectiveDuration =
     existingTimer?.durationMinutesTotal ?? timerSettings?.durationMinutesTotal;
