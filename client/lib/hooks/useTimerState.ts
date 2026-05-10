@@ -104,6 +104,8 @@ export function useTimerState({
   activeIdxRef.current = activeIdx;
   const playersInOvertimeRef = useRef(playersInOvertime);
   playersInOvertimeRef.current = playersInOvertime;
+  const directionRef = useRef(direction);
+  directionRef.current = direction;
   const bellFiredRef = useRef(new Set<number>());
 
   useEffect(() => {
@@ -128,8 +130,12 @@ export function useTimerState({
     }
 
     remoteTimes.forEach((remoteTime, i) => {
-      const base = remoteOvertime[i] ? OVERTIME_SECONDS : totalSeconds;
-      depleteAnims.current[i].setValue(1 - Math.min(remoteTime, base) / base);
+      if (direction === "up") {
+        depleteAnims.current[i].setValue(Math.min(1, 1 - remoteTime / totalSeconds));
+      } else {
+        const base = remoteOvertime[i] ? OVERTIME_SECONDS : totalSeconds;
+        depleteAnims.current[i].setValue(1 - Math.min(remoteTime, base) / base);
+      }
     });
   }, [existingTimer, totalSeconds]);
 
@@ -212,16 +218,22 @@ export function useTimerState({
     const interval = setInterval(() => {
       setTimes((prev) => {
         const idx = activeIdxRef.current;
-        if (idx === null || prev[idx] <= 0) {
-          return prev;
-        }
+        if (idx === null) return prev;
+        if (directionRef.current === "down" && prev[idx] <= 0) return prev;
         const next = [...prev];
         next[idx] -= 1;
-        const base = playersInOvertimeRef.current[idx]
-          ? OVERTIME_SECONDS
-          : totalSeconds;
+        const base =
+          directionRef.current === "up"
+            ? totalSeconds
+            : playersInOvertimeRef.current[idx]
+              ? OVERTIME_SECONDS
+              : totalSeconds;
+        const toValue =
+          directionRef.current === "up"
+            ? Math.min(1, 1 - next[idx] / totalSeconds)
+            : 1 - next[idx] / base;
         Animated.timing(depleteAnims.current[idx], {
-          toValue: 1 - next[idx] / base,
+          toValue,
           duration: 950,
           useNativeDriver: false,
         }).start();
@@ -255,7 +267,7 @@ export function useTimerState({
   };
 
   const handlePress = (idx: number) => {
-    if (times[idx] <= 0) {
+    if (direction === "down" && times[idx] <= 0) {
       const nextTimes = [...times];
       if (
         activeIdx !== null &&
@@ -290,6 +302,7 @@ export function useTimerState({
     } else {
       const nextTimes = [...times];
       if (
+        direction === "down" &&
         activeIdx !== null &&
         playersInOvertime[activeIdx] &&
         nextTimes[activeIdx] > 0
@@ -297,7 +310,7 @@ export function useTimerState({
         nextTimes[activeIdx] = 0;
         depleteAnims.current[activeIdx].setValue(1);
       }
-      if (playersInOvertime[idx]) {
+      if (direction === "down" && playersInOvertime[idx]) {
         nextTimes[idx] = OVERTIME_SECONDS;
         depleteAnims.current[idx].setValue(0);
       }
@@ -359,6 +372,7 @@ export function useTimerState({
     const defaultTimes = Array(PLAYER_COUNT).fill(totalSeconds);
     const defaultOvertime = Array(PLAYER_COUNT).fill(false);
     timerStartedRef.current = false;
+    bellFiredRef.current.clear();
     setTimes(defaultTimes);
     setPlayersInOvertime(defaultOvertime);
     setActiveIdx(0);
@@ -374,6 +388,7 @@ export function useTimerState({
       const defaultTimes = Array(PLAYER_COUNT).fill(newTotalSeconds);
       const defaultOvertime = Array(PLAYER_COUNT).fill(false);
       timerStartedRef.current = false;
+      bellFiredRef.current.clear();
       setTimes(defaultTimes);
       setPlayersInOvertime(defaultOvertime);
       setActiveIdx(0);
