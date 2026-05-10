@@ -56,6 +56,7 @@ const ACTION_BUTTONS: ActionButton[] = [
     icon: "timer-outline",
     labelKey: "actions.timer",
     requiresActiveGame: true,
+    featureFlag: FeatureFlagSlugs.TIMER,
     onPress: (gameId) => router.push(`/(pages)/(user)/timer?gameId=${gameId}`),
   },
   {
@@ -63,6 +64,7 @@ const ACTION_BUTTONS: ActionButton[] = [
     icon: "trophy-outline",
     labelKey: "actions.results",
     requiresActiveGame: true,
+    featureFlag: FeatureFlagSlugs.RESULTS,
     onPress: (gameId) =>
       router.push(`/(pages)/(user)/results?gameId=${gameId}`),
   },
@@ -233,7 +235,14 @@ export default function GamePage() {
 
         <View style={styles.actionsGrid}>
           {ACTION_BUTTONS.map(
-            ({ key, icon, labelKey, onPress, requiresActiveGame, featureFlag }) => {
+            ({
+              key,
+              icon,
+              labelKey,
+              onPress,
+              requiresActiveGame,
+              featureFlag,
+            }) => {
               const disabled =
                 (requiresActiveGame && !isActiveGame) ||
                 (featureFlag !== undefined && !isFeatureEnabled(featureFlag));
@@ -283,9 +292,10 @@ export default function GamePage() {
           activeOpacity={0.7}
           onPress={toggleBell}
           disabled={
-            !isActiveGame ||
-            bellActions.isLoading ||
-            (!!bell && !bellActions.canDelete(bell))
+            !isFeatureEnabled(FeatureFlagSlugs.TABLE_BELL) &&
+            (!isActiveGame ||
+              bellActions.isLoading ||
+              (!!bell && !bellActions.canDelete(bell)))
           }
         >
           <View style={styles.bellIconRow}>
