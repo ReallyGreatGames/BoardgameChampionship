@@ -1,5 +1,5 @@
 /**
- * Brand color tokens — applied via `dark` and `light` objects.
+ * Brand color tokens — applied via `dark`, `light`, and `highContrast` objects.
  *
  * Usage strategy:
  *   primary   → interactive chrome (links, back buttons, icons, focused states, identifiers)
@@ -59,6 +59,40 @@ export const light = {
   success: "#4caf50",
   onAccent: "#ffffff",  // text on accent/primary CTA buttons
 } as const;
+
+export const highContrast = {
+  // Backgrounds — pastel surfaces from the requested palette
+  background: "#9ec3ff",
+  surface: "#a3a0ff",
+  surfaceHigh: "#c99bf0",
+
+  // Borders / dividers
+  border: "#1a1a1a",
+  borderMuted: "#3d3d3d",
+  divider: "#1a1a1a",
+
+  // Text — pure black on light pastel bgs
+  text: "#000000",
+  textSecondary: "#1a1a1a",
+  textMuted: "#3d3d3d",
+  textPlaceholder: "#5c5c5c",
+
+  // Brand — dark counterparts of the palette hues so they read as text
+  // and icons on pastel surfaces (primary/secondary/accent are used as
+  // foreground in most places, not just as button backgrounds).
+  primary: "#0a3a8a",     // dark blue, matches #9ec3ff hue
+  secondary: "#4a148c",   // dark purple, matches #c99bf0
+  accent: "#ad1457",      // dark magenta, matches #f8a5df / #ffafc1
+  error: "#8b0000",
+  success: "#1b5e20",
+  onAccent: "#ffffff",
+} as const;
+
+export type ColorScheme = "light" | "dark" | "highContrast";
+
+export type Palette = { [K in keyof typeof dark]: string };
+
+export const palettes: Record<ColorScheme, Palette> = { light, dark, highContrast };
 
 /** Fallback static palette — prefer useTheme() from ThemeProvider for dynamic theming */
 export const colors = dark;

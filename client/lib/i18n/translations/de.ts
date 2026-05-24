@@ -42,7 +42,12 @@ const translations = {
   settings: {
     title: "Einstellungen",
     appearance: "Erscheinungsbild",
-    darkMode: "Dunkelmodus",
+    colorScheme: "Farbschema",
+    schemes: {
+      light: "Hell",
+      dark: "Dunkel",
+      highContrast: "Hoher Kontrast",
+    },
     language: "Sprache",
     account: "Konto",
     currentTeam: "Team",
