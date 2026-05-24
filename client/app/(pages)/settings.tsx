@@ -1,100 +1,42 @@
 import { PIN_STORE_KEY, useAuth } from "@/lib/auth";
 import { usePlayer } from "@/lib/bootstrap/PlayerProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
+import { SelectPicker } from "@/lib/components/SelectPicker";
 import * as SecureStorage from "@/lib/secureStorage";
 import i18n, { LANGUAGE_STORE_KEY } from "@/lib/i18n/i18n";
 import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
+import { ColorScheme } from "@/lib/theme/colors";
 import { inset } from "@/lib/theme/spacing";
-import { ui } from "@/lib/theme/ui";
 import { type } from "@/lib/theme/typography";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Alert,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Switch,
-  Text,
-  View,
-} from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 type Language = "en" | "de";
 
 const LANGUAGES: Language[] = ["en", "de"];
-
-function LanguagePicker() {
-  const { t, i18n: i18nHook } = useTranslation(["settings"]);
-  const { colors } = useTheme();
-  const [open, setOpen] = useState(false);
-  const current = i18nHook.language as Language;
-
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-
-  return (
-    <>
-      <Pressable style={styles.combobox} onPress={() => setOpen(true)}>
-        <Text style={styles.comboboxText}>
-          {t(`settings:languages.${current}`)}
-        </Text>
-        <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
-      </Pressable>
-
-      <Modal
-        visible={open}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setOpen(false)}
-        supportedOrientations={["portrait"]}
-      >
-        <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
-          <View style={styles.dropdown}>
-            {LANGUAGES.map((code) => {
-              const active = current === code;
-              return (
-                <Pressable
-                  key={code}
-                  style={[
-                    styles.dropdownItem,
-                    active && styles.dropdownItemActive,
-                  ]}
-                  onPress={() => {
-                    i18n.changeLanguage(code);
-                    SecureStorage.setItemAsync(LANGUAGE_STORE_KEY, code);
-                    setOpen(false);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.dropdownText,
-                      active && styles.dropdownTextActive,
-                    ]}
-                  >
-                    {t(`settings:languages.${code}`)}
-                  </Text>
-                  {active && (
-                    <Ionicons name="checkmark" size={16} color={colors.text} />
-                  )}
-                </Pressable>
-              );
-            })}
-          </View>
-        </Pressable>
-      </Modal>
-    </>
-  );
-}
+const SCHEMES: ColorScheme[] = ["light", "dark", "highContrast"];
 
 export default function SettingsScreen() {
-  const { t } = useTranslation(["settings"]);
+  const { t, i18n: i18nHook } = useTranslation(["settings"]);
   const { user, logout } = useAuth();
   const { player, clearPlayer } = usePlayer();
-  const { colors, isDark, toggleTheme } = useTheme();
+  const { colors, scheme, setScheme } = useTheme();
   const scheduleCollection = useScheduleStore((s) => s.collection);
 
   const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  const schemeOptions = useMemo(
+    () => SCHEMES.map((s) => ({ value: s, label: t(`settings:schemes.${s}`) })),
+    [t],
+  );
+  const languageOptions = useMemo(
+    () =>
+      LANGUAGES.map((l) => ({ value: l, label: t(`settings:languages.${l}`) })),
+    [t],
+  );
 
   const activeItem = useMemo(
     () => scheduleCollection.find((s) => s.isActive),
@@ -130,18 +72,17 @@ export default function SettingsScreen() {
         <View style={styles.row}>
           <View style={styles.rowLeft}>
             <Ionicons
-              name="moon-outline"
+              name="color-palette-outline"
               size={20}
               color={colors.textMuted}
               style={styles.rowIcon}
             />
-            <Text style={styles.rowLabel}>{t("settings:darkMode")}</Text>
+            <Text style={styles.rowLabel}>{t("settings:colorScheme")}</Text>
           </View>
-          <Switch
-            value={isDark}
-            onValueChange={toggleTheme}
-            trackColor={{ false: colors.border, true: colors.primary }}
-            thumbColor={colors.text}
+          <SelectPicker
+            value={scheme}
+            options={schemeOptions}
+            onChange={setScheme}
           />
         </View>
       </View>
@@ -158,7 +99,14 @@ export default function SettingsScreen() {
             />
             <Text style={styles.rowLabel}>{t("settings:language")}</Text>
           </View>
-          <LanguagePicker />
+          <SelectPicker
+            value={i18nHook.language as Language}
+            options={languageOptions}
+            onChange={(v) => {
+              i18n.changeLanguage(v);
+              SecureStorage.setItemAsync(LANGUAGE_STORE_KEY, v);
+            }}
+          />
         </View>
       </View>
 
@@ -316,55 +264,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     rowBorderTop: {
       borderTopWidth: 1,
       borderTopColor: colors.border,
-    },
-    // Combobox
-    combobox: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      backgroundColor: colors.background,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 6,
-      paddingVertical: 6,
-      paddingHorizontal: 10,
-    },
-    comboboxText: {
-      ...type.bodySmall,
-      color: colors.text,
-    },
-    // Modal dropdown
-    backdrop: {
-      flex: 1,
-      backgroundColor: ui.backdropColor,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    dropdown: {
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 10,
-      minWidth: 180,
-      overflow: "hidden",
-    },
-    dropdownItem: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingVertical: 14,
-      paddingHorizontal: 16,
-    },
-    dropdownItemActive: {
-      backgroundColor: colors.surfaceHigh,
-    },
-    dropdownText: {
-      ...type.body,
-      color: colors.textSecondary,
-    },
-    dropdownTextActive: {
-      color: colors.text,
-      fontWeight: "600",
     },
   });
 }

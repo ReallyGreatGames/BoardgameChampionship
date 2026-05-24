@@ -26,7 +26,7 @@ function AppNavigator() {
   const screenOptions = useMemo(
     () => ({
       headerStyle: { backgroundColor: colors.background },
-      headerTintColor: colors.primary,
+      headerTintColor: colors.text,
       headerTitleStyle: {
         fontFamily: "BarlowCondensed_700Bold",
         fontSize: 20,

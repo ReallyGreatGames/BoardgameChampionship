@@ -42,7 +42,12 @@ const translations = {
   settings: {
     title: "Settings",
     appearance: "Appearance",
-    darkMode: "Dark Mode",
+    colorScheme: "Color Scheme",
+    schemes: {
+      light: "Light",
+      dark: "Dark",
+      highContrast: "High Contrast",
+    },
     language: "Language",
     account: "Account",
     currentTeam: "Team",

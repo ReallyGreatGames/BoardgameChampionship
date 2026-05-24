@@ -1,45 +1,66 @@
 import { FC, PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import * as SecureStorage from "@/lib/secureStorage";
-import { dark, light } from "@/lib/theme/colors";
+import { ColorScheme, Palette, palettes } from "@/lib/theme/colors";
 
-const THEME_STORE_KEY = "app_theme_dark";
+const SCHEME_STORE_KEY = "app_color_scheme";
+const LEGACY_DARK_KEY = "app_theme_dark";
 
-type ColorPalette = typeof dark | typeof light;
+type ColorPalette = Palette;
 
 type ThemeContextValue = {
+  scheme: ColorScheme;
+  setScheme: (scheme: ColorScheme) => void;
   isDark: boolean;
-  toggleTheme: () => void;
   colors: ColorPalette;
 };
 
+const DEFAULT_SCHEME: ColorScheme = "light";
+
 const ThemeContext = createContext<ThemeContextValue>({
+  scheme: DEFAULT_SCHEME,
+  setScheme: () => {},
   isDark: false,
-  toggleTheme: () => {},
-  colors: dark,
+  colors: palettes[DEFAULT_SCHEME],
 });
 
 export const useTheme = () => useContext(ThemeContext);
 
+const isColorScheme = (value: string): value is ColorScheme =>
+  value === "light" || value === "dark" || value === "highContrast";
+
 export const ThemeProvider: FC<PropsWithChildren> = ({ children }) => {
-  const [isDark, setIsDark] = useState(false);
+  const [scheme, setSchemeState] = useState<ColorScheme>(DEFAULT_SCHEME);
 
   useEffect(() => {
-    SecureStorage.getItemAsync(THEME_STORE_KEY).then((stored) => {
-      if (stored !== null) {
-        setIsDark(stored === "true");
+    (async () => {
+      const stored = await SecureStorage.getItemAsync(SCHEME_STORE_KEY);
+      if (stored && isColorScheme(stored)) {
+        setSchemeState(stored);
+        return;
       }
-    });
+      // Migrate from legacy boolean key
+      const legacy = await SecureStorage.getItemAsync(LEGACY_DARK_KEY);
+      if (legacy !== null) {
+        const migrated: ColorScheme = legacy === "true" ? "dark" : "light";
+        setSchemeState(migrated);
+        await SecureStorage.setItemAsync(SCHEME_STORE_KEY, migrated);
+      }
+    })();
   }, []);
 
-  const toggleTheme = useCallback(async () => {
-    const next = !isDark;
-    setIsDark(next);
-    await SecureStorage.setItemAsync(THEME_STORE_KEY, String(next));
-  }, [isDark]);
+  const setScheme = useCallback(async (next: ColorScheme) => {
+    setSchemeState(next);
+    await SecureStorage.setItemAsync(SCHEME_STORE_KEY, next);
+  }, []);
 
   const value: ThemeContextValue = useMemo(
-    () => ({ isDark, toggleTheme, colors: isDark ? dark : light }),
-    [isDark, toggleTheme],
+    () => ({
+      scheme,
+      setScheme,
+      isDark: scheme === "dark",
+      colors: palettes[scheme],
+    }),
+    [scheme, setScheme],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
