@@ -23,7 +23,27 @@ export function TableCard({ entry, cardWidth, now }: Props) {
   const bell = entry.bell;
   const bellColor = bell?.acknowledgeTime ? colors.success : colors.accent;
   const sigIds: string[] = entry.result?.signatureIds ?? [];
-  const playerTimes = toNumberArray(entry.timer?.playerTimes);
+  const storedTimes = toNumberArray(entry.timer?.playerTimes);
+
+  const playerTimes = useMemo(() => {
+    const timer = entry.timer;
+    if (!timer || entry.isSubmitted || timer.paused) {
+      return storedTimes;
+    }
+    const activeIdx = timer.activePlayerTimer;
+    if (activeIdx === null) {
+      return storedTimes;
+    }
+    const elapsed = Math.floor(
+      (now - new Date(timer.$updatedAt).getTime()) / 1000,
+    );
+    if (elapsed <= 0) {
+      return storedTimes;
+    }
+    const live = [...storedTimes];
+    live[activeIdx] = storedTimes[activeIdx] - elapsed;
+    return live;
+  }, [storedTimes, entry.timer, entry.isSubmitted, now]);
 
   return (
     <View
