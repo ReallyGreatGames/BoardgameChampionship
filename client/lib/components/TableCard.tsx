@@ -27,13 +27,19 @@ export function TableCard({ entry, cardWidth, now }: Props) {
 
   const playerTimes = useMemo(() => {
     const timer = entry.timer;
-    if (!timer || entry.isSubmitted || timer.paused) return storedTimes;
+    if (!timer || entry.isSubmitted || timer.paused) {
+      return storedTimes;
+    }
     const activeIdx = timer.activePlayerTimer;
-    if (activeIdx === null) return storedTimes;
+    if (activeIdx === null) {
+      return storedTimes;
+    }
     const elapsed = Math.floor(
       (now - new Date(timer.$updatedAt).getTime()) / 1000,
     );
-    if (elapsed <= 0) return storedTimes;
+    if (elapsed <= 0) {
+      return storedTimes;
+    }
     const live = [...storedTimes];
     live[activeIdx] = storedTimes[activeIdx] - elapsed;
     return live;
