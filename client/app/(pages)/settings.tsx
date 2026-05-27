@@ -21,7 +21,7 @@ const SCHEMES: ColorScheme[] = ["light", "dark", "highContrast"];
 
 export default function SettingsScreen() {
   const { t, i18n: i18nHook } = useTranslation(["settings"]);
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const { player, clearPlayer } = usePlayer();
   const { colors, scheme, setScheme } = useTheme();
   const scheduleCollection = useScheduleStore((s) => s.collection);
@@ -42,7 +42,7 @@ export default function SettingsScreen() {
     () => scheduleCollection.find((s) => s.isActive),
     [scheduleCollection],
   );
-  const canChangeUser = !player || activeItem?.allowUserChange !== false;
+  const canChangeUser = isAdmin || !player || activeItem?.allowUserChange !== false;
 
   async function handleDebugReset() {
     Alert.alert(
