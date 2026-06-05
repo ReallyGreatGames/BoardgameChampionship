@@ -83,9 +83,14 @@ export function ScoreTableView({ gameTables, resultForTable, globalPos, onTableP
 
             <View style={styles.colState}>
               <StateBadge result={result} t={t} />
-              {result?.note ? (
-                <Ionicons name="document-text-outline" size={12} color={colors.textMuted} style={{ marginTop: 2 }} />
-              ) : null}
+              <View style={styles.stateIcons}>
+                {result?.note ? (
+                  <Ionicons name="document-text-outline" size={14} color={colors.textMuted} />
+                ) : null}
+                {result && result.signatureIds?.some((id) => !id) ? (
+                  <Ionicons name="warning-outline" size={14} color={colors.error} />
+                ) : null}
+              </View>
             </View>
           </TouchableOpacity>
         );
@@ -116,7 +121,8 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     colTable: { width: 52 },
     colPlayer: { flex: 1, paddingHorizontal: 2 },
-    colState: { width: 72, alignItems: "flex-end" },
+    colState: { width: 72, alignItems: "flex-end", gap: 2 },
+    stateIcons: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
     tableNum: { ...type.bodySmall, color: colors.text, fontWeight: "600" },
     globalNum: { ...type.caption, color: colors.textMuted },
     playerScoreRow: { flexDirection: "row", alignItems: "center", gap: 4 },

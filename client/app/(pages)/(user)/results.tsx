@@ -1,22 +1,24 @@
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BackButton } from "@/lib/components/BackButton";
 import { useDialog } from "@/lib/components/Dialog";
+import { PlayerResultRow, type PlayerResultRowHandle } from "@/lib/components/PlayerResultRow";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { useResultStore } from "@/lib/stores/appwrite/result-store";
 import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
 import { useTableStore } from "@/lib/stores/appwrite/table-store";
-import { inset } from "@/lib/theme/spacing";
+import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
+import { hasScorePlacementConflict, isValidPlacementCombo } from "@/lib/utils/placements";
+import { teamName } from "@/lib/utils";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
-  Modal,
-  Pressable,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -26,190 +28,11 @@ import {
 } from "react-native";
 
 const PLAYER_COUNT = 4;
-const PLAYER_OPTIONS = ["1", "2", "3", "4"] as const;
 
 function padArray<T>(arr: T[], length: number, fill: T): T[] {
   const copy = [...arr];
-  while (copy.length < length) {
-    copy.push(fill);
-  }
+  while (copy.length < length) copy.push(fill);
   return copy.slice(0, length);
-}
-
-type PlayerPickerProps = {
-  value: string;
-  onChange: (v: string) => void;
-  takenValues: string[];
-  disabled?: boolean;
-  colors: ReturnType<typeof useTheme>["colors"];
-  t: (key: string) => string;
-  playerNames?: string[];
-};
-
-function PlayerPicker({
-  value,
-  onChange,
-  takenValues,
-  disabled,
-  colors,
-  t,
-  playerNames = [],
-}: PlayerPickerProps) {
-  const [open, setOpen] = useState(false);
-  const styles = useMemo(() => makePickerStyles(colors), [colors]);
-
-  const handleSelect = (opt: string) => {
-    onChange(opt);
-    setOpen(false);
-  };
-
-  const labelFor = (opt: string) => {
-    const name = playerNames[parseInt(opt, 10) - 1];
-    return name ?? t("playerValue").replace("{n}", opt);
-  };
-
-  return (
-    <>
-      <TouchableOpacity
-        style={[styles.btn, disabled && styles.btnDisabled]}
-        onPress={() => !disabled && setOpen(true)}
-        activeOpacity={0.7}
-      >
-        <Text style={value ? styles.btnValue : styles.btnPlaceholder}>
-          {value ? labelFor(value) : t("playerPlaceholder")}
-        </Text>
-        {!disabled && (
-          <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
-        )}
-      </TouchableOpacity>
-
-      <Modal
-        visible={open}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setOpen(false)}
-        supportedOrientations={["portrait"]}
-      >
-        <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
-          <View style={styles.sheet}>
-            {PLAYER_OPTIONS.map((opt) => {
-              const taken = takenValues.includes(opt);
-              const selected = value === opt;
-              return (
-                <TouchableOpacity
-                  key={opt}
-                  style={[
-                    styles.option,
-                    selected && styles.optionSelected,
-                    taken && !selected && styles.optionTaken,
-                  ]}
-                  onPress={() => handleSelect(opt)}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.optionText,
-                      selected && styles.optionTextSelected,
-                      taken && !selected && styles.optionTextTaken,
-                    ]}
-                  >
-                    {labelFor(opt)}
-                  </Text>
-                  {selected && (
-                    <Ionicons
-                      name="checkmark"
-                      size={16}
-                      color={colors.accent}
-                    />
-                  )}
-                  {taken && !selected && (
-                    <Ionicons
-                      name="swap-horizontal-outline"
-                      size={14}
-                      color={colors.textMuted}
-                    />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </Pressable>
-      </Modal>
-    </>
-  );
-}
-
-function makePickerStyles(colors: ReturnType<typeof useTheme>["colors"]) {
-  return StyleSheet.create({
-    btn: {
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      backgroundColor: colors.surfaceHigh,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 8,
-      paddingVertical: 9,
-      paddingHorizontal: 10,
-      gap: 4,
-    },
-    btnDisabled: {
-      opacity: 0.5,
-    },
-    btnValue: {
-      ...type.body,
-      color: colors.text,
-      flex: 1,
-    },
-    btnPlaceholder: {
-      ...type.body,
-      color: colors.textPlaceholder,
-      flex: 1,
-    },
-    backdrop: {
-      flex: 1,
-      backgroundColor: ui.backdropColor,
-      justifyContent: "center",
-      alignItems: "center",
-      padding: inset.screen,
-    },
-    sheet: {
-      width: "100%",
-      maxWidth: 320,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 14,
-      overflow: "hidden",
-    },
-    option: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingVertical: 16,
-      paddingHorizontal: inset.card,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-    },
-    optionSelected: {
-      backgroundColor: colors.accent + "18",
-    },
-    optionTaken: {
-      backgroundColor: colors.surfaceHigh,
-    },
-    optionText: {
-      ...type.body,
-      color: colors.text,
-    },
-    optionTextSelected: {
-      color: colors.accent,
-      fontWeight: "600",
-    },
-    optionTextTaken: {
-      color: colors.textMuted,
-    },
-  });
 }
 
 export default function ResultsPage() {
@@ -224,13 +47,14 @@ export default function ResultsPage() {
   const tableNumber = usePlayerTable(gameId);
   const tables = useTableStore((s) => s.collection);
 
-  const playerNames = useMemo(() => {
-    if (!gameId || tableNumber === null) {return [];}
-    const entry = tables.find((t) => {
-      const tGameId = typeof t.game === "string" ? t.game : t.game.$id;
-      return tGameId === gameId && t.tableNumber === tableNumber;
+  // Player names ordered by seat index
+  const playerData = useMemo(() => {
+    if (!gameId || tableNumber === null) return [];
+    const entry = tables.find((tbl) => {
+      const tGameId = typeof tbl.game === "string" ? tbl.game : tbl.game.$id;
+      return tGameId === gameId && tbl.tableNumber === tableNumber;
     });
-    return entry?.players?.map((p) => p.name) ?? [];
+    return entry?.players ?? [];
   }, [tables, gameId, tableNumber]);
 
   const isActiveGame = useMemo(
@@ -246,7 +70,8 @@ export default function ResultsPage() {
     [resultStore.collection, gameId, tableNumber],
   );
 
-  const [players, setPlayers] = useState<string[]>(() =>
+  // State: all arrays are seat-indexed (index = seat at table)
+  const [placements, setPlacements] = useState<string[]>(() =>
     Array(PLAYER_COUNT).fill(""),
   );
   const [scores, setScores] = useState<string[]>(() =>
@@ -259,28 +84,27 @@ export default function ResultsPage() {
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // $updatedAt of the last DB state we acknowledged (null = form not yet populated).
   const acknowledgedAtRef = useRef<string | null>(null);
-  // True after our own save, until the real-time echo arrives and advances the ref.
   const ownSaveRef = useRef(false);
 
-  // Reset form when navigating to a different game.
+  // Refs for score/chip tab order
+  const scoreRefs = useRef<(PlayerResultRowHandle | null)[]>([null, null, null, null]);
+  const noteRef = useRef<TextInput | null>(null);
+
   useEffect(() => {
     acknowledgedAtRef.current = null;
     ownSaveRef.current = false;
-    setPlayers(Array(PLAYER_COUNT).fill(""));
+    setPlacements(Array(PLAYER_COUNT).fill(""));
     setScores(Array(PLAYER_COUNT).fill(""));
     setNote("");
     setSignatureIds(Array(PLAYER_COUNT).fill(""));
-  }, [gameId]);
+  }, [gameId, tableNumber]);
 
   useEffect(() => {
-    if (!existingResult) {
-      return;
-    }
+    if (!existingResult) return;
     if (acknowledgedAtRef.current === null) {
       acknowledgedAtRef.current = existingResult.$updatedAt;
-      setPlayers(padArray(existingResult.placements ?? [], PLAYER_COUNT, ""));
+      setPlacements(padArray(existingResult.placements ?? [], PLAYER_COUNT, ""));
       setScores(
         padArray((existingResult.scores ?? []).map(String), PLAYER_COUNT, ""),
       );
@@ -294,7 +118,6 @@ export default function ResultsPage() {
     }
   }, [existingResult]);
 
-  // Refresh signature IDs each time we return from the signature page.
   useFocusEffect(
     useCallback(() => {
       if (existingResult && acknowledgedAtRef.current !== null) {
@@ -306,59 +129,60 @@ export default function ResultsPage() {
   );
 
   const handleBack = useCallback(() => {
-    if (gameId) {
-      router.replace(`/game?gameId=${gameId}`);
-    } else {
-      router.replace("/");
-    }
+    if (gameId) router.replace(`/game?gameId=${gameId}`);
+    else router.replace("/");
   }, [gameId]);
 
   const isSubmitted = existingResult?.submitted ?? false;
-  const anySigned = signatureIds.some(Boolean);
   const signatureCount = signatureIds.filter(Boolean).length;
+  const anySigned = signatureCount > 0;
   const twoSigned = signatureCount >= 2;
   const hasNote = note.trim().length > 0;
+  const disabled = isSubmitted || twoSigned;
 
-  const allPlayersSet = players.every((p) => p !== "");
+  const allPlacementsSet = placements.every((p) => p !== "");
   const allScoresValid = scores.every((s) => {
     const n = parseFloat(s);
     return s.trim() !== "" && !isNaN(n) && n >= 0;
   });
+  const placementComboValid = !allPlacementsSet || isValidPlacementCombo(placements);
+  const scoreConflict = hasScorePlacementConflict(placements, scores);
+
   const canSave =
-    allPlayersSet && allScoresValid && !isSubmitted && isActiveGame;
+    allPlacementsSet &&
+    allScoresValid &&
+    placementComboValid &&
+    !scoreConflict &&
+    !isSubmitted &&
+    isActiveGame;
 
   const canSubmit =
     !isSubmitted &&
     isActiveGame &&
     (signatureCount === PLAYER_COUNT || (signatureCount === 3 && hasNote));
+
   const showNoteHint = !isSubmitted && signatureCount === 3 && !hasNote;
 
   const buildPayload = useCallback(
-    (submitted: boolean) => ({
+    (submittedFlag: boolean) => ({
       gameId: gameId ?? "",
       table: tableNumber ?? 0,
-      placements: players,
+      placements,
       scores: scores.map((s) => parseFloat(s) || 0),
       note: note.trim(),
       signatureIds,
-      submitted,
+      submitted: submittedFlag,
     }),
-    [gameId, tableNumber, players, scores, note, signatureIds],
+    [gameId, tableNumber, placements, scores, note, signatureIds],
   );
 
   const handleSave = useCallback(async (): Promise<boolean> => {
-    if (!canSave || saving) {
-      return false;
-    }
+    if (!canSave || saving) return false;
 
     if (existingResult) {
       const timestampDrifted =
         existingResult.$updatedAt !== acknowledgedAtRef.current;
-      const dbPlayers = padArray(
-        existingResult.placements ?? [],
-        PLAYER_COUNT,
-        "",
-      );
+      const dbPlacements = padArray(existingResult.placements ?? [], PLAYER_COUNT, "");
       const dbScores = padArray(
         (existingResult.scores ?? []).map(String),
         PLAYER_COUNT,
@@ -366,10 +190,8 @@ export default function ResultsPage() {
       );
       const dbNote = existingResult.note ?? "";
       const valuesDiffer =
-        players.some((p, i) => p !== dbPlayers[i]) ||
-        scores.some(
-          (s, i) => parseFloat(s) !== parseFloat(dbScores[i] || "0"),
-        ) ||
+        placements.some((p, i) => p !== dbPlacements[i]) ||
+        scores.some((s, i) => parseFloat(s) !== parseFloat(dbScores[i] || "0")) ||
         note.trim() !== dbNote.trim();
 
       if (timestampDrifted && valuesDiffer) {
@@ -380,7 +202,7 @@ export default function ResultsPage() {
           cancelLabel: t("confirmOverwrite.cancel"),
         });
         if (!overwrite) {
-          setPlayers(dbPlayers);
+          setPlacements(dbPlacements);
           setScores(dbScores);
           setNote(dbNote);
           acknowledgedAtRef.current = existingResult.$updatedAt;
@@ -404,32 +226,45 @@ export default function ResultsPage() {
     } finally {
       setSaving(false);
     }
-  }, [
-    canSave,
-    saving,
-    existingResult,
-    players,
-    scores,
-    note,
-    confirm,
-    t,
-    buildPayload,
-    resultStore,
-  ]);
+  }, [canSave, saving, existingResult, placements, scores, note, confirm, t, buildPayload, resultStore]);
 
   const handleSubmit = useCallback(async () => {
-    if (!canSubmit || submitting) {
+    if (submitting) return;
+
+    // Always try to save first
+    if (canSave) {
+      const saved = await handleSave();
+      if (!saved) return;
+    }
+
+    if (!canSubmit) {
+      if (signatureCount < 3) {
+        await confirm({
+          title: t("sigRequiredTitle"),
+          message: t("sigRequiredMessage"),
+          confirmLabel: t("submitBlockedOk"),
+          cancelLabel: null,
+          icon: "pencil-outline",
+        });
+      } else {
+        await confirm({
+          title: t("submitBlockedTitle"),
+          message: t("submitBlockedMessage"),
+          confirmLabel: t("submitBlockedOk"),
+          cancelLabel: null,
+        });
+      }
       return;
     }
+
     const ok = await confirm({
       title: t("confirmSubmit.title"),
       message: t("confirmSubmit.message"),
       confirmLabel: t("confirmSubmit.confirm"),
       cancelLabel: t("confirmSubmit.cancel"),
     });
-    if (!ok) {
-      return;
-    }
+    if (!ok) return;
+
     setSubmitting(true);
     try {
       const data = buildPayload(true);
@@ -442,8 +277,10 @@ export default function ResultsPage() {
       setSubmitting(false);
     }
   }, [
-    canSubmit,
     submitting,
+    canSave,
+    canSubmit,
+    handleSave,
     confirm,
     t,
     buildPayload,
@@ -451,29 +288,15 @@ export default function ResultsPage() {
     resultStore,
   ]);
 
-  const setPlayer = useCallback(
-    (i: number, v: string) => {
-      const conflictIdx = players.findIndex((p, j) => j !== i && p === v);
-      setPlayers((prev) => {
-        const next = [...prev];
-        if (conflictIdx !== -1) {
-          next[conflictIdx] = prev[i];
-        }
-        next[i] = v;
-        return next;
-      });
-      if (conflictIdx !== -1) {
-        setSignatureIds((prev) => {
-          const next = [...prev];
-          [next[i], next[conflictIdx]] = [next[conflictIdx], next[i]];
-          return next;
-        });
-      }
-    },
-    [players],
-  );
+  const handleSetPlacement = useCallback((i: number, v: string) => {
+    setPlacements((prev) => {
+      const next = [...prev];
+      next[i] = v;
+      return next;
+    });
+  }, []);
 
-  const setScore = useCallback((i: number, v: string) => {
+  const handleSetScore = useCallback((i: number, v: string) => {
     setScores((prev) => {
       const next = [...prev];
       next[i] = v;
@@ -482,21 +305,17 @@ export default function ResultsPage() {
   }, []);
 
   const handleOpenSignature = useCallback(
-    async (place: number) => {
+    async (seat: number) => {
       if (canSave) {
         const saved = await handleSave();
-        if (!saved) {
-          return;
-        }
+        if (!saved) return;
       }
-      router.push(`/(pages)/(user)/signature?gameId=${gameId}&place=${place}`);
+      router.push(`/(pages)/(user)/signature?gameId=${gameId}&place=${seat}`);
     },
     [canSave, handleSave, gameId],
   );
 
-  if (loading || !user) {
-    return null;
-  }
+  if (loading || !user) return null;
 
   return (
     <View style={styles.container}>
@@ -508,13 +327,12 @@ export default function ResultsPage() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
+          <Text style={styles.tableHeading}>
+            {tableNumber !== null ? t("tableHeader").replace("{n}", String(tableNumber)) : "—"}
+          </Text>
           {isSubmitted && (
             <View style={styles.submittedBadge}>
-              <Ionicons
-                name="checkmark-circle"
-                size={14}
-                color={colors.success}
-              />
+              <Ionicons name="checkmark-circle" size={14} color={colors.success} />
               <Text style={styles.submittedBadgeText}>{t("submitted")}</Text>
             </View>
           )}
@@ -522,84 +340,101 @@ export default function ResultsPage() {
 
         <View style={styles.card}>
           {Array.from({ length: PLAYER_COUNT }, (_, i) => {
-            const takenByOthers = players.filter((p, j) => j !== i && p !== "");
+            const player = playerData[i];
+            const sigId = signatureIds[i];
             return (
-              <View
+              <PlayerResultRow
                 key={i}
-                style={[styles.row, i < PLAYER_COUNT - 1 && styles.rowBorder]}
-              >
-                <View style={styles.placeCircle}>
-                  <Text style={styles.placeNumber}>{i + 1}</Text>
-                </View>
-
-                <PlayerPicker
-                  value={players[i]}
-                  onChange={(v) => setPlayer(i, v)}
-                  takenValues={takenByOthers}
-                  disabled={isSubmitted || twoSigned}
-                  colors={colors}
-                  t={t}
-                  playerNames={playerNames}
-                />
-
-                <View
-                  style={[
-                    styles.scoreInputWrapper,
-                    (isSubmitted || twoSigned) && styles.inputDisabled,
-                  ]}
-                  pointerEvents={isSubmitted || twoSigned ? "none" : "auto"}
-                >
-                  <TextInput
-                    style={[styles.input, styles.scoreInput]}
-                    value={scores[i]}
-                    onChangeText={(v) => setScore(i, v)}
-                    placeholder={t("scorePlaceholder")}
-                    placeholderTextColor={colors.textPlaceholder}
-                    keyboardType="decimal-pad"
-                  />
-                </View>
-
-                <TouchableOpacity
-                  style={[
-                    styles.sigBtn,
-                    !!signatureIds[i] && styles.sigBtnSigned,
-                    (!isActiveGame ||
-                      (!signatureIds[i] &&
-                        !anySigned &&
-                        (!allPlayersSet || !allScoresValid || isSubmitted))) &&
-                    styles.sigBtnDisabled,
-                  ]}
-                  onPress={() => handleOpenSignature(i)}
-                  disabled={
-                    !isActiveGame ||
-                    (!signatureIds[i] &&
-                      !anySigned &&
-                      (!allPlayersSet || !allScoresValid || isSubmitted))
-                  }
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name={
-                      signatureIds[i] ? "checkmark-circle" : "pencil-outline"
+                ref={(el) => { scoreRefs.current[i] = el; }}
+                playerName={player?.name ?? `P${i + 1}`}
+                playerTeam={player ? teamName(player) : undefined}
+                placement={placements[i]}
+                score={scores[i]}
+                onSetPlacement={(v) => handleSetPlacement(i, v)}
+                onSetScore={(v) => handleSetScore(i, v)}
+                onScoreSubmitEditing={() => {
+                  if (i < PLAYER_COUNT - 1) scoreRefs.current[i + 1]?.focusScore();
+                  else noteRef.current?.focus();
+                }}
+                onScoreTabForward={() => {
+                  if (i < PLAYER_COUNT - 1) scoreRefs.current[i + 1]?.focusScore();
+                  else scoreRefs.current[0]?.focusChips();
+                }}
+                onScoreTabBackward={i > 0 ? () => scoreRefs.current[i - 1]?.focusScore() : undefined}
+                onChipTabForward={() => {
+                  if (i < PLAYER_COUNT - 1) scoreRefs.current[i + 1]?.focusChips();
+                  else noteRef.current?.focus();
+                }}
+                onChipTabBackward={() => {
+                  if (i > 0) scoreRefs.current[i - 1]?.focusChips();
+                  else scoreRefs.current[PLAYER_COUNT - 1]?.focusScore();
+                }}
+                disabled={disabled}
+                placementError={scoreConflict}
+                signatureSlot={
+                  <TouchableOpacity
+                    style={[
+                      styles.sigBtn,
+                      !!sigId && styles.sigBtnSigned,
+                      (!isActiveGame ||
+                        (!sigId && !anySigned && (!allPlacementsSet || !allScoresValid || isSubmitted))) &&
+                        styles.sigBtnDisabled,
+                    ]}
+                    onPress={() => handleOpenSignature(i)}
+                    disabled={
+                      !isActiveGame ||
+                      (!sigId && !anySigned && (!allPlacementsSet || !allScoresValid || isSubmitted))
                     }
-                    size={18}
-                    color={
-                      signatureIds[i]
-                        ? colors.success
-                        : !allPlayersSet || !allScoresValid
-                          ? colors.textMuted
-                          : colors.primary
-                    }
-                  />
-                </TouchableOpacity>
-              </View>
+                    activeOpacity={0.7}
+                    // @ts-expect-error — web-only: remove sig from tab order
+                    tabIndex={Platform.OS === "web" ? -1 : undefined}
+                  >
+                    <Ionicons
+                      name={sigId ? "checkmark-circle" : "pencil-outline"}
+                      size={20}
+                      color={
+                        sigId
+                          ? colors.success
+                          : !allPlacementsSet || !allScoresValid
+                            ? colors.textMuted
+                            : colors.primary
+                      }
+                    />
+                  </TouchableOpacity>
+                }
+              />
             );
           })}
+
+          {/* Error / hint area — anchored inside the card so the card position never shifts */}
+          {(scoreConflict || !placementComboValid || (signatureCount < 3 && !isSubmitted && isActiveGame)) && (
+            <View style={styles.cardErrors}>
+              {scoreConflict && (
+                <View style={styles.cardErrorRow}>
+                  <Ionicons name="alert-circle-outline" size={14} color={colors.error} />
+                  <Text style={styles.cardErrorText}>{t("warnScoreConflict")}</Text>
+                </View>
+              )}
+              {!placementComboValid && (
+                <View style={styles.cardErrorRow}>
+                  <Ionicons name="alert-circle-outline" size={14} color={colors.error} />
+                  <Text style={styles.cardErrorText}>{t("warnPlacementInvalid")}</Text>
+                </View>
+              )}
+              {signatureCount < 3 && !isSubmitted && isActiveGame && (
+                <View style={styles.cardErrorRow}>
+                  <Ionicons name="pencil-outline" size={14} color={colors.error} />
+                  <Text style={styles.cardErrorText}>{t("hintSignatures")}</Text>
+                </View>
+              )}
+            </View>
+          )}
         </View>
 
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>{t("note")}</Text>
           <TextInput
+            ref={noteRef}
             style={[
               styles.input,
               styles.noteInput,
@@ -620,72 +455,39 @@ export default function ResultsPage() {
               <Text style={styles.hintError}>{t("hintNote")}</Text>
             </View>
           )}
-          {signatureCount < 3 && !isSubmitted && (
-            <View style={styles.hint}>
-              <Ionicons
-                name="create-outline"
-                size={13}
-                color={colors.textMuted}
-              />
-              <Text style={styles.hintMuted}>{t("hintSignatures")}</Text>
-            </View>
-          )}
           {!isActiveGame && !isSubmitted && (
             <View style={styles.hint}>
-              <Ionicons
-                name="lock-closed-outline"
-                size={13}
-                color={colors.textMuted}
-              />
+              <Ionicons name="lock-closed-outline" size={13} color={colors.textMuted} />
               <Text style={styles.hintMuted}>{t("notActiveGame")}</Text>
             </View>
           )}
         </View>
 
-        <View style={styles.actions}>
-          <TouchableOpacity
-            style={[styles.saveBtn, (!canSave || saving) && styles.btnDisabled]}
-            onPress={handleSave}
-            disabled={!canSave || saving}
-            activeOpacity={0.7}
-          >
-            {saving ? (
-              <ActivityIndicator size="small" color={colors.text} />
-            ) : (
-              <>
-                <Ionicons name="save-outline" size={18} color={colors.text} />
-                <Text style={styles.saveBtnText}>{t("save")}</Text>
-              </>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.submitBtn, !canSubmit && styles.btnDisabled]}
-            onPress={handleSubmit}
-            disabled={!canSubmit || submitting}
-            activeOpacity={0.7}
-          >
-            {submitting ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <>
-                <Ionicons
-                  name="checkmark-done-outline"
-                  size={18}
-                  color={canSubmit ? "#fff" : colors.textMuted}
-                />
-                <Text
-                  style={[
-                    styles.submitBtnText,
-                    !canSubmit && styles.submitBtnTextMuted,
-                  ]}
-                >
-                  {t("submit")}
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
+        {/* Single submit button */}
+        <TouchableOpacity
+          style={[
+            styles.submitBtn,
+            (isSubmitted || (!canSave && !canSubmit)) && styles.btnDisabled,
+          ]}
+          onPress={handleSubmit}
+          disabled={isSubmitted || submitting || saving}
+          activeOpacity={0.7}
+        >
+          {submitting || saving ? (
+            <ActivityIndicator size="small" color={colors.onAccent} />
+          ) : (
+            <>
+              <Ionicons
+                name="checkmark-done-outline"
+                size={18}
+                color={isSubmitted ? colors.textMuted : colors.onAccent}
+              />
+              <Text style={[styles.submitBtnText, isSubmitted && styles.submitBtnTextMuted]}>
+                {t("submit")}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -709,8 +511,8 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       gap: inset.tight,
       paddingTop: inset.group,
     },
-    title: {
-      ...type.h1,
+    tableHeading: {
+      ...type.h2,
       color: colors.text,
       flex: 1,
     },
@@ -730,59 +532,54 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       color: colors.success,
       fontWeight: "600",
     },
+    warnRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      backgroundColor: colors.error + "18",
+      borderRadius: 8,
+      paddingHorizontal: inset.card,
+      paddingVertical: 8,
+      borderWidth: 1,
+      borderColor: colors.error + "40",
+    },
+    warnText: {
+      ...type.caption,
+      color: colors.error,
+      flex: 1,
+    },
+    cardErrors: {
+      marginTop: space[2],
+      marginBottom: space[1],
+      gap: 4,
+    },
+    cardErrorRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      backgroundColor: colors.error + "18",
+      borderRadius: 8,
+      paddingHorizontal: inset.card,
+      paddingVertical: 8,
+      borderWidth: 1,
+      borderColor: colors.error + "40",
+    },
+    cardErrorText: {
+      ...type.caption,
+      color: colors.error,
+      flex: 1,
+    },
     card: {
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
       borderRadius: 12,
       overflow: "hidden",
-    },
-    row: {
-      flexDirection: "row",
-      alignItems: "center",
       paddingHorizontal: inset.card,
-      paddingVertical: 10,
-      gap: inset.tight,
-    },
-    rowBorder: {
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-    },
-    placeCircle: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
-      backgroundColor: colors.primary + "20",
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    placeNumber: {
-      ...type.caption,
-      color: colors.primary,
-      fontWeight: "700",
-    },
-    input: {
-      ...type.body,
-      color: colors.text,
-      backgroundColor: colors.surfaceHigh,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 8,
-      paddingVertical: 8,
-      paddingHorizontal: 10,
-    },
-    scoreInput: {
-      width: 68,
-    },
-    scoreInputWrapper: {
-      width: 68,
-    },
-    inputDisabled: {
-      opacity: 0.5,
     },
     sigBtn: {
-      width: 36,
-      height: 36,
+      width: 40,
+      height: 40,
       borderRadius: 8,
       backgroundColor: colors.surfaceHigh,
       borderWidth: 1,
@@ -806,6 +603,16 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       textTransform: "uppercase",
       letterSpacing: 0.5,
     },
+    input: {
+      ...type.body,
+      color: colors.text,
+      backgroundColor: colors.surfaceHigh,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 10,
+    },
     noteInput: {
       minHeight: 96,
     },
@@ -825,35 +632,14 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       ...type.caption,
       color: colors.textMuted,
     },
-    actions: {
-      flexDirection: "row",
-      gap: inset.tight,
-    },
-    saveBtn: {
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 6,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 10,
-      paddingVertical: 14,
-    },
-    saveBtnText: {
-      ...type.button,
-      color: colors.text,
-    },
     submitBtn: {
-      flex: 1,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       gap: 6,
       backgroundColor: colors.accent,
       borderRadius: ui.buttonRadius,
-      paddingVertical: 14,
+      paddingVertical: 16,
     },
     submitBtnText: {
       ...type.button,
