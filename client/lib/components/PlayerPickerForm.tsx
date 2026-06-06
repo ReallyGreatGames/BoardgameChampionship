@@ -1,5 +1,6 @@
 import { BackButton } from "@/lib/components/BackButton";
-import { useQuery } from "@tanstack/react-query";
+import { usePlayerStore } from "@/lib/stores/appwrite/player-store";
+import { useTeamStore } from "@/lib/stores/appwrite/team-store";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -10,40 +11,20 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
-import { Query } from "react-native-appwrite";
-import { DATABASE_ID, tablesDB } from "../appwrite";
 import { useTheme } from "../bootstrap/ThemeProvider";
 import { Player } from "../models/player";
 import { Team } from "../models/team";
 import { inset } from "../theme/spacing";
 import { type } from "../theme/typography";
 
-async function fetchTeams(): Promise<Team[]> {
-  const res = await tablesDB.listRows({
-    databaseId: DATABASE_ID,
-    tableId: "teams",
-    queries: [Query.orderAsc("code"), Query.limit(100)],
-  });
-  return res.rows as unknown as Team[];
-}
-
-async function fetchPlayersByTeam(teamId: string): Promise<Player[]> {
-  const res = await tablesDB.listRows({
-    databaseId: DATABASE_ID,
-    tableId: "players",
-    queries: [Query.equal("team", teamId), Query.orderAsc("playerNumber")],
-  });
-  return res.rows as unknown as Player[];
-}
-
 type Props = {
   onConfirm: (player: Player) => void;
   onBack?: () => void;
 };
 
-// Animated team card — crisp scale press
 function AnimatedTeamCard({
   team,
   onPress,
@@ -86,7 +67,6 @@ function AnimatedTeamCard({
   );
 }
 
-// Animated player card — dramatic spring-back "claim" moment
 function AnimatedPlayerCard({
   player,
   onConfirm,
@@ -139,38 +119,48 @@ function AnimatedPlayerCard({
 export function PlayerPickerForm({ onConfirm, onBack }: Props) {
   const [step, setStep] = useState<"team" | "player">("team");
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [teamSearch, setTeamSearch] = useState("");
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useTranslation(["components"]);
+
+  const teamStore = useTeamStore();
+  const allPlayers = usePlayerStore((s) => s.collection);
+  const playerStoreInitialized = usePlayerStore((s) => s.initialized);
+
+  const filteredTeams = useMemo(() => {
+    const q = teamSearch.toLowerCase().trim();
+    const sorted = [...teamStore.collection].sort((a, b) =>
+      a.code.localeCompare(b.code),
+    );
+    if (!q) return sorted;
+    return sorted.filter(
+      (t) =>
+        t.name.toLowerCase().includes(q) || t.code.toLowerCase().includes(q),
+    );
+  }, [teamStore.collection, teamSearch]);
+
+  const players = useMemo(() => {
+    if (!selectedTeam) return [];
+    return allPlayers
+      .filter((p) => {
+        const teamId =
+          typeof p.team === "string" ? p.team : (p.team as Team).$id;
+        return teamId === selectedTeam.$id;
+      })
+      .sort((a, b) => a.playerNumber - b.playerNumber);
+  }, [allPlayers, selectedTeam]);
 
   useFocusEffect(
     useCallback(() => {
       return () => {
         setStep("team");
         setSelectedTeam(null);
+        setTeamSearch("");
       };
     }, []),
   );
-
-  const {
-    data: teams,
-    isLoading: teamsLoading,
-    isError: teamsError,
-  } = useQuery<Team[]>({
-    queryKey: ["teams"],
-    queryFn: fetchTeams,
-  });
-
-  const {
-    data: players,
-    isLoading: playersLoading,
-    isError: playersError,
-  } = useQuery<Player[]>({
-    queryKey: ["players", selectedTeam?.$id],
-    queryFn: () => fetchPlayersByTeam(selectedTeam!.$id),
-    enabled: step === "player" && !!selectedTeam,
-  });
 
   function handleTeamSelect(team: Team) {
     setSelectedTeam(team);
@@ -188,7 +178,7 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
     }
   }, [step, fadeAnim]);
 
-  if (teamsLoading) {
+  if (!teamStore.initialized) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -196,36 +186,21 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
     );
   }
 
-  if (teamsError) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>{t("components:playerPicker.serverError")}</Text>
-        <Text style={styles.errorHint}>{t("components:playerPicker.connectionHint")}</Text>
-      </View>
-    );
-  }
-
   if (step === "player" && selectedTeam) {
     const playerContent = () => {
-      if (playersLoading) {
+      if (!playerStoreInitialized) {
         return (
           <View style={styles.centered}>
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
         );
       }
-      if (playersError || !players) {
-        return (
-          <View style={styles.centered}>
-            <Text style={styles.errorText}>{t("components:playerPicker.loadPlayersError")}</Text>
-            <Text style={styles.errorHint}>{t("components:playerPicker.connectionHint")}</Text>
-          </View>
-        );
-      }
       if (players.length === 0) {
         return (
           <View style={styles.centered}>
-            <Text style={styles.errorText}>{t("components:playerPicker.noPlayersFound")}</Text>
+            <Text style={styles.errorText}>
+              {t("components:playerPicker.noPlayersFound")}
+            </Text>
           </View>
         );
       }
@@ -257,7 +232,9 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
 
           <View style={styles.playerHeaderZone}>
             <Text style={styles.title}>{selectedTeam.name}</Text>
-            <Text style={styles.subtitle}>{t("components:playerPicker.whoAreYou")}</Text>
+            <Text style={styles.subtitle}>
+              {t("components:playerPicker.whoAreYou")}
+            </Text>
           </View>
 
           {playerContent()}
@@ -269,17 +246,38 @@ export function PlayerPickerForm({ onConfirm, onBack }: Props) {
   return (
     <View style={styles.container}>
       {onBack && <BackButton onPress={onBack} />}
+      <TextInput
+        style={styles.searchInput}
+        value={teamSearch}
+        onChangeText={setTeamSearch}
+        placeholder={t("components:playerPicker.searchTeams")}
+        placeholderTextColor={colors.textPlaceholder}
+        autoCorrect={false}
+        autoCapitalize="none"
+        clearButtonMode="while-editing"
+      />
       <ScrollView
         style={styles.list}
         contentContainerStyle={styles.listContent}
+        keyboardShouldPersistTaps="handled"
       >
-        {teams?.map((team) => (
-          <AnimatedTeamCard
-            key={team.code}
-            team={team}
-            onPress={() => handleTeamSelect(team)}
-          />
-        ))}
+        {filteredTeams.length === 0 ? (
+          <View style={styles.centered}>
+            <Text style={styles.errorText}>
+              {teamStore.collection.length === 0
+                ? t("components:playerPicker.serverError")
+                : t("components:playerPicker.noTeamsFound")}
+            </Text>
+          </View>
+        ) : (
+          filteredTeams.map((team) => (
+            <AnimatedTeamCard
+              key={team.$id}
+              team={team}
+              onPress={() => handleTeamSelect(team)}
+            />
+          ))
+        )}
       </ScrollView>
     </View>
   );
@@ -299,7 +297,17 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       backgroundColor: colors.background,
       gap: inset.tight,
     },
-    // Team selection
+    searchInput: {
+      ...type.body,
+      color: colors.text,
+      backgroundColor: colors.surfaceHigh,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      marginBottom: inset.list,
+    },
     teamHeaderZone: {
       marginBottom: inset.group,
     },
@@ -348,12 +356,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       ...type.body,
       color: colors.error,
     },
-    errorHint: {
-      ...type.bodySmall,
-      color: colors.textMuted,
-    },
-
-    // Player selection
     playerHeaderZone: {
       gap: 4,
       marginBottom: inset.section,

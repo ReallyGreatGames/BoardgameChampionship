@@ -1,4 +1,5 @@
-import { FC, PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { FC, PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useColorScheme } from "react-native";
 import * as SecureStorage from "@/lib/secureStorage";
 import { ColorScheme, Palette, palettes } from "@/lib/theme/colors";
 
@@ -30,6 +31,8 @@ const isColorScheme = (value: string): value is ColorScheme =>
 
 export const ThemeProvider: FC<PropsWithChildren> = ({ children }) => {
   const [scheme, setSchemeState] = useState<ColorScheme>(DEFAULT_SCHEME);
+  const systemScheme = useColorScheme();
+  const systemSchemeRef = useRef(systemScheme);
 
   useEffect(() => {
     (async () => {
@@ -44,6 +47,11 @@ export const ThemeProvider: FC<PropsWithChildren> = ({ children }) => {
         const migrated: ColorScheme = legacy === "true" ? "dark" : "light";
         setSchemeState(migrated);
         await SecureStorage.setItemAsync(SCHEME_STORE_KEY, migrated);
+        return;
+      }
+      // No stored preference — follow system theme
+      if (systemSchemeRef.current === "dark") {
+        setSchemeState("dark");
       }
     })();
   }, []);

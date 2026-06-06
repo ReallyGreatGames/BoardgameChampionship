@@ -53,6 +53,8 @@ const translations = {
     currentTeam: "Team",
     currentPlayer: "Spieler",
     changeTeam: "Team / Spieler wechseln",
+    selectPlayer: "Team & Spieler auswählen",
+    continueSetup: "Weiter",
     legal: "Rechtliches",
     legalNotice: "Impressum & Datenschutz",
     languages: {
@@ -414,6 +416,8 @@ const translations = {
       connectionHint: "Bitte überprüfe deine Verbindung.",
       loadPlayersError: "Spieler konnten nicht geladen werden.",
       noPlayersFound: "Keine Spieler für dieses Team gefunden.",
+      searchTeams: "Teams suchen...",
+      noTeamsFound: "Keine Teams gefunden.",
     },
   },
   info: {
