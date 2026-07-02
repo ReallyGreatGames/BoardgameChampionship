@@ -1,6 +1,6 @@
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
-import { BackButton } from "@/lib/components/BackButton";
-import { RuleList } from "@/lib/components/RuleList";
+import { BackButton } from "@/lib/components/ui/BackButton";
+import { RuleList } from "@/lib/components/rules/RuleList";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";

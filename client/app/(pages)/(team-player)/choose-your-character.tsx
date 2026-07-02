@@ -1,8 +1,8 @@
 import { usePlayer } from "@/lib/bootstrap/PlayerProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
-import { PlayerPickerForm } from "@/lib/components/PlayerPickerForm";
-import { PlayerSelectionCard } from "@/lib/components/PlayerSelectionCard";
-import { SelectPicker } from "@/lib/components/SelectPicker";
+import { PlayerPickerForm } from "@/lib/components/onboarding/PlayerPickerForm";
+import { PlayerSelectionCard } from "@/lib/components/ui/PlayerSelectionCard";
+import { SelectPicker } from "@/lib/components/ui/SelectPicker";
 import i18n, { LANGUAGE_STORE_KEY } from "@/lib/i18n/i18n";
 import { Player } from "@/lib/models/player";
 import * as SecureStorage from "@/lib/secureStorage";

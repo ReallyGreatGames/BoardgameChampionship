@@ -1,7 +1,7 @@
 import { useScreenOrientation } from "@/lib/bootstrap/ScreenOrientationProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
-import { TimerCell } from "@/lib/components/TimerCell";
-import { TimerMenu } from "@/lib/components/TimerMenu";
+import { TimerCell } from "@/lib/components/timer/TimerCell";
+import { TimerMenu } from "@/lib/components/timer/TimerMenu";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
 import { useTimerState } from "@/lib/hooks/useTimerState";

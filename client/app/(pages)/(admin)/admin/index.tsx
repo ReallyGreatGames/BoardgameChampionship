@@ -1,13 +1,13 @@
-import { FeatureFlags } from "@/lib/components/FeatureFlags";
-import { ImportTab } from "@/lib/components/ImportTab";
-import { RankingsTab } from "@/lib/components/RankingsTab";
-import { ResultsAdminTab } from "@/lib/components/ResultsAdminTab";
-import { ScheduleList } from "@/lib/components/Schedule";
+import { FeatureFlags } from "@/lib/components/admin/FeatureFlags";
+import { ImportTab } from "@/lib/components/admin/ImportTab";
+import { RankingsTab } from "@/lib/components/admin/RankingsTab";
+import { ResultsAdminTab } from "@/lib/components/results/ResultsAdminTab";
+import { ScheduleList } from "@/lib/components/schedule/Schedule";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../../../../lib/bootstrap/ThemeProvider";
-import { TournamentSettings } from "../../../../lib/components/TournamentSettings";
+import { TournamentSettings } from "@/lib/components/admin/TournamentSettings";
 import { inset, space } from "../../../../lib/theme/spacing";
 
 type Tab = "results" | "rankings" | "schedule" | "tournamentSettings" | "import";

@@ -1,8 +1,8 @@
 import { PIN_STORE_KEY, useAuth } from "@/lib/auth";
 import { usePlayer } from "@/lib/bootstrap/PlayerProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
-import { PlayerSelectionCard } from "@/lib/components/PlayerSelectionCard";
-import { SelectPicker } from "@/lib/components/SelectPicker";
+import { PlayerSelectionCard } from "@/lib/components/ui/PlayerSelectionCard";
+import { SelectPicker } from "@/lib/components/ui/SelectPicker";
 import * as SecureStorage from "@/lib/secureStorage";
 import i18n, { LANGUAGE_STORE_KEY } from "@/lib/i18n/i18n";
 import { ColorScheme } from "@/lib/theme/colors";

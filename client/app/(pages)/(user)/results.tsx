@@ -1,7 +1,7 @@
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
-import { BackButton } from "@/lib/components/BackButton";
-import { useDialog } from "@/lib/components/Dialog";
-import { PlayerResultRow, type PlayerResultRowHandle } from "@/lib/components/PlayerResultRow";
+import { BackButton } from "@/lib/components/ui/BackButton";
+import { useDialog } from "@/lib/components/ui/Dialog";
+import { PlayerResultRow, type PlayerResultRowHandle } from "@/lib/components/results/PlayerResultRow";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { useResultStore } from "@/lib/stores/appwrite/result-store";

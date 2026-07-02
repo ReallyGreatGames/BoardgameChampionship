@@ -1,7 +1,7 @@
 import { BootstrapProvider } from "@/lib/bootstrap/BootstrapProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { useTournament } from "@/lib/bootstrap/TournamentProvider";
-import { AppDrawer } from "@/lib/components/AppDrawer";
+import { AppDrawer } from "@/lib/components/shell/AppDrawer";
 import "@/lib/i18n/i18n";
 import { BarlowCondensed_600SemiBold } from "@expo-google-fonts/barlow-condensed/600SemiBold";
 import { BarlowCondensed_700Bold } from "@expo-google-fonts/barlow-condensed/700Bold";
