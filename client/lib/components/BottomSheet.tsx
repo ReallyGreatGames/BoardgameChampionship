@@ -167,10 +167,5 @@ export function makeSheetStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     inputError: {
       borderColor: colors.error,
     },
-    inputMultiline: {
-      minHeight: 96,
-      textAlignVertical: "top" as const,
-      paddingTop: 10,
-    },
   });
 }

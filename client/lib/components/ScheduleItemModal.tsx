@@ -20,6 +20,7 @@ import { inset } from "../theme/spacing";
 import { type } from "../theme/typography";
 import { BottomSheet, makeSheetStyles } from "./BottomSheet";
 import { FormField } from "./FormField";
+import { ResizableTextInput } from "./ResizableTextInput";
 
 type ScheduleIconEntry = { name: string; translationKey: string };
 
@@ -383,14 +384,12 @@ export function ScheduleItemModal({
         icon="document-text-outline"
         label={t("schedule.form.descriptionField")}
       >
-        <TextInput
-          style={[sheetStyles.input, sheetStyles.inputMultiline]}
+        <ResizableTextInput
+          style={sheetStyles.input}
           value={description}
           onChangeText={setDescription}
           placeholder={t("schedule.form.descriptionPlaceholder")}
-          placeholderTextColor={colors.textPlaceholder}
-          multiline
-          numberOfLines={3}
+          resetOn={visible}
         />
       </FormField>
 

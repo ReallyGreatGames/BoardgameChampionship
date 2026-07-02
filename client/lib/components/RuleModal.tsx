@@ -18,6 +18,7 @@ import { inset } from "../theme/spacing";
 import { type } from "../theme/typography";
 import { BottomSheet, makeSheetStyles } from "./BottomSheet";
 import { FormField } from "./FormField";
+import { ResizableTextInput } from "./ResizableTextInput";
 
 export type RuleFormData = Omit<Rule, keyof Models.Document>;
 
@@ -164,14 +165,12 @@ export function RuleModal({ visible, item, gameId, onClose, onSave }: Props) {
         label={t("form.textField")}
         required
       >
-        <TextInput
-          style={[sheetStyles.input, sheetStyles.inputMultiline]}
+        <ResizableTextInput
+          style={sheetStyles.input}
           value={text}
           onChangeText={setText}
           placeholder={t("form.textPlaceholder")}
-          placeholderTextColor={colors.textPlaceholder}
-          multiline
-          numberOfLines={4}
+          resetOn={visible}
         />
       </FormField>
     </BottomSheet>
