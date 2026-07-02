@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../auth";
-import { useDialog, DialogOptions } from "../components/Dialog";
+import { useDialog, DialogOptions } from "@/lib/components/ui/Dialog";
 import { TableBell } from "../models/table-bell";
 import { useTableBellStore } from "../stores/appwrite/table-bell-store";
 

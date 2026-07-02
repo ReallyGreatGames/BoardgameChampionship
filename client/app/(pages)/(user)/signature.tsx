@@ -1,6 +1,6 @@
 import { ID, SIGNATURES_BUCKET_ID, storage } from "@/lib/appwrite";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
-import { BackButton } from "@/lib/components/BackButton";
+import { BackButton } from "@/lib/components/ui/BackButton";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useResultStore } from "@/lib/stores/appwrite/result-store";
 import { inset } from "@/lib/theme/spacing";

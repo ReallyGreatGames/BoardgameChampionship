@@ -1,4 +1,13 @@
 const translations = {
+  adminDashboard: {
+    tabs: {
+      results: "Ergebnisse",
+      rankings: "Rangliste",
+      schedule: "Zeitplan",
+      tournamentSettings: "Einstellungen",
+      import: "Import",
+    },
+  },
   home: {
     welcome: "Willkommen",
     welcomeDescription:
@@ -283,7 +292,7 @@ const translations = {
   tableOverview: {
     noActiveSchedule: "Kein aktiver Zeitplaneintrag",
     noGame: "Aktiver Zeitplaneintrag hat kein Spiel",
-    searchPlaceholder: "Team, Name oder Tisch suchen…",
+    searchPlaceholder: "Team, Name oder Tisch",
     filterBellAny: "Alle",
     filterBellActive: "Klingel",
     filterBellAck: "Best.",
@@ -299,6 +308,14 @@ const translations = {
     sortResultStatus: "Status",
     sortBellFirst: "Klingel ↑",
     sortSigsFirst: "Untersch. ↑",
+    filtersButton: "Filter",
+    filtersTitle: "Filter",
+    filtersReset: "Zurücksetzen",
+    filtersDone: "Fertig",
+    filterLabelBell: "Klingel",
+    filterLabelSubmit: "Eingereicht",
+    filterLabelTimer: "Timer",
+    filterLabelSort: "Sortierung",
     confirmAcknowledge: {
       title: "Klingel bestätigen",
       message: "Als bestätigt markieren? Ein Schiedsrichter ist unterwegs.",
@@ -399,6 +416,7 @@ const translations = {
       save: "Speichern",
     },
     tournamentSettings: {
+      heading: "Turniereinstellungen",
       activeBadge: "AKTIV",
       fieldType: "Typ",
       fieldPin: "PIN",
@@ -409,6 +427,10 @@ const translations = {
       loadError: "Turniere konnten nicht geladen werden.",
       retry: "Erneut versuchen",
       empty: "Keine Turniere gefunden.",
+      featureFlagsHeading: "Feature Flags",
+      featureFlagsEmpty: "Keine Feature Flags gefunden.",
+      featureFlagsSaveTitle: "Änderungen speichern",
+      featureFlagsSaveMessage: "{{count}} Feature-Flag-Änderung(en) speichern?",
     },
     playerPicker: {
       whoAreYou: "Wer bist du?",

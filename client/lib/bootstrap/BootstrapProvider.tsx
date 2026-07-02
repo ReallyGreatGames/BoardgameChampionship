@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { FC, PropsWithChildren } from "react";
 import { AuthProvider } from "../auth";
-import { DialogProvider } from "../components/Dialog";
+import { DialogProvider } from "@/lib/components/ui/Dialog";
 import { PlayerProvider } from "./PlayerProvider";
 import { RealTimeStoreProvider } from "./RealTimeStoreProvider";
 import { ScreenOrientationProvider } from "./ScreenOrientationProvider";

@@ -1,4 +1,4 @@
-import { useDialog } from "@/lib/components/Dialog";
+import { useDialog } from "@/lib/components/ui/Dialog";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-store";
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";

@@ -1,9 +1,9 @@
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
-import { BackButton } from "@/lib/components/BackButton";
-import { PlayerColorSetupModal } from "@/lib/components/PlayerColorSetupModal";
-import { PlayerSelectionCard } from "@/lib/components/PlayerSelectionCard";
-import { Table } from "@/lib/components/Table";
+import { BackButton } from "@/lib/components/ui/BackButton";
+import { PlayerColorSetupModal } from "@/lib/components/onboarding/PlayerColorSetupModal";
+import { PlayerSelectionCard } from "@/lib/components/ui/PlayerSelectionCard";
+import { Table } from "@/lib/components/game/Table";
 import { FeatureFlagSlugs } from "@/lib/feature-flags/feature-flag-slugs";
 import { useFeatureFlags } from "@/lib/feature-flags/useFeatureFlags";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";

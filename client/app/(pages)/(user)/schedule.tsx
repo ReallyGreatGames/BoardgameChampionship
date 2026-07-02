@@ -1,6 +1,6 @@
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
-import { ScheduleList } from "@/lib/components/Schedule";
+import { ScheduleList } from "@/lib/components/schedule/Schedule";
 import { inset } from "@/lib/theme/spacing";
 import { router } from "expo-router";
 import { useEffect, useMemo } from "react";
