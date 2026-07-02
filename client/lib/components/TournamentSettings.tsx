@@ -4,9 +4,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
-  Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   Switch,
   Text,
@@ -18,6 +16,7 @@ import { DATABASE_ID, tablesDB } from "../appwrite";
 import { useTheme } from "../bootstrap/ThemeProvider";
 import { inset } from "../theme/spacing";
 import { type } from "../theme/typography";
+import { Combobox } from "./Combobox";
 
 const TABLE_ID = "tournament";
 
@@ -29,73 +28,10 @@ type TournamentRow = {
   type: "dmmib" | "europemasters";
 };
 
-type EnumPickerProps<T extends string> = {
-  value: T;
-  options: T[];
-  labels: Record<T, string>;
-  onChange: (value: T) => void;
-};
-
-function EnumPicker<T extends string>({
-  value,
-  options,
-  labels,
-  onChange,
-}: EnumPickerProps<T>) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const [open, setOpen] = useState(false);
-
-  return (
-    <>
-      <Pressable style={styles.combobox} onPress={() => setOpen(true)}>
-        <Text style={styles.comboboxText}>{labels[value]}</Text>
-        <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
-      </Pressable>
-
-      <Modal
-        visible={open}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setOpen(false)}
-        supportedOrientations={["portrait"]}
-      >
-        <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
-          <View style={styles.dropdown}>
-            {options.map((opt) => {
-              const active = value === opt;
-              return (
-                <Pressable
-                  key={opt}
-                  style={[
-                    styles.dropdownItem,
-                    active && styles.dropdownItemActive,
-                  ]}
-                  onPress={() => {
-                    onChange(opt);
-                    setOpen(false);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.dropdownText,
-                      active && styles.dropdownTextActive,
-                    ]}
-                  >
-                    {labels[opt]}
-                  </Text>
-                  {active && (
-                    <Ionicons name="checkmark" size={14} color={colors.text} />
-                  )}
-                </Pressable>
-              );
-            })}
-          </View>
-        </Pressable>
-      </Modal>
-    </>
-  );
-}
+const TOURNAMENT_TYPE_OPTIONS: { value: "dmmib" | "europemasters"; label: string }[] = [
+  { value: "dmmib", label: "DMMiB" },
+  { value: "europemasters", label: "Europe Masters" },
+];
 
 type TournamentCardProps = {
   row: TournamentRow;
@@ -143,10 +79,9 @@ function TournamentCard({ row, onSaved }: TournamentCardProps) {
 
       <View style={styles.fieldRow}>
         <Text style={styles.fieldLabel}>{t("tournamentSettings.fieldType")}</Text>
-        <EnumPicker<"dmmib" | "europemasters">
+        <Combobox<"dmmib" | "europemasters">
           value={tournamentType}
-          options={["dmmib", "europemasters"]}
-          labels={{ dmmib: "DMMiB", europemasters: "Europe Masters" }}
+          options={TOURNAMENT_TYPE_OPTIONS}
           onChange={setTournamentType}
         />
       </View>
@@ -245,19 +180,14 @@ export function TournamentSettings() {
   }
 
   return (
-    <>
-      <ScrollView
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-      >
-        {data?.length === 0 && (
-          <Text style={styles.emptyText}>{t("tournamentSettings.empty")}</Text>
-        )}
-        {data?.map((row) => (
-          <TournamentCard key={row.$id} row={row} onSaved={handleSaved} />
-        ))}
-      </ScrollView>
-    </>
+    <View style={styles.list}>
+      {data?.length === 0 && (
+        <Text style={styles.emptyText}>{t("tournamentSettings.empty")}</Text>
+      )}
+      {data?.map((row) => (
+        <TournamentCard key={row.$id} row={row} onSaved={handleSaved} />
+      ))}
+    </View>
   );
 }
 
@@ -276,13 +206,12 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       color: colors.text,
     },
     center: {
-      flex: 1,
+      paddingVertical: inset.group * 2,
       justifyContent: "center",
       alignItems: "center",
     },
     list: {
       gap: inset.list,
-      paddingBottom: inset.screenBottom,
     },
     // Card
     card: {
@@ -401,54 +330,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       color: colors.textMuted,
       textAlign: "center",
       marginTop: 40,
-    },
-    // Combobox / dropdown
-    combobox: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      backgroundColor: colors.surfaceHigh,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 6,
-      paddingVertical: 6,
-      paddingHorizontal: 10,
-    },
-    comboboxText: {
-      ...type.bodySmall,
-      color: colors.text,
-    },
-    backdrop: {
-      flex: 1,
-      backgroundColor: "rgba(0,0,0,0.5)",
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    dropdown: {
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 10,
-      minWidth: 200,
-      overflow: "hidden",
-    },
-    dropdownItem: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-    },
-    dropdownItemActive: {
-      backgroundColor: colors.surfaceHigh,
-    },
-    dropdownText: {
-      ...type.bodySmall,
-      color: colors.textSecondary,
-    },
-    dropdownTextActive: {
-      color: colors.text,
-      fontWeight: "600",
     },
   });
 }

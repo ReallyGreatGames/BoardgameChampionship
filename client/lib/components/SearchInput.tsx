@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo } from "react";
-import { StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TextInput, TouchableOpacity, View, ViewStyle } from "react-native";
 import { useTheme } from "../bootstrap/ThemeProvider";
 import { inset } from "../theme/spacing";
 import { type } from "../theme/typography";
@@ -9,14 +9,15 @@ type SearchInputProps = {
   value: string;
   onChangeText: (v: string) => void;
   placeholder?: string;
+  style?: ViewStyle;
 };
 
-export function SearchInput({ value, onChangeText, placeholder }: SearchInputProps) {
+export function SearchInput({ value, onChangeText, placeholder, style }: SearchInputProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
-    <View style={styles.searchRow}>
+    <View style={[styles.searchRow, style]}>
       <Ionicons name="search-outline" size={16} color={colors.textMuted} />
       <TextInput
         style={styles.searchInput}

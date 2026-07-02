@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   StyleSheet,
   Switch,
   Text,
@@ -11,7 +11,7 @@ import {
 import { useTheme } from "../bootstrap/ThemeProvider";
 import { useFeatureFlagStore } from "../stores/appwrite/feature-flag-store";
 import { updateInCollection } from "../stores/real-time-store";
-import { inset, space } from "../theme/spacing";
+import { inset } from "../theme/spacing";
 import { type } from "../theme/typography";
 import { useDialog } from "./Dialog";
 
@@ -20,12 +20,14 @@ const COLLECTION_ID = "feature_flags";
 export function FeatureFlags() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t } = useTranslation(["components"]);
   const collection = useFeatureFlagStore((s) => s.collection);
   const [pending, setPending] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
   const { confirm } = useDialog();
 
-  const hasPendingChanges = Object.keys(pending).length > 0;
+  const pendingCount = Object.keys(pending).length;
+  const hasPendingChanges = pendingCount > 0;
 
   function toggle(id: string, currentValue: boolean) {
     setPending((prev) => {
@@ -39,10 +41,12 @@ export function FeatureFlags() {
     return pending[id] !== undefined ? pending[id] : storedValue;
   }
 
-  async function handleApply() {
+  async function handleSave() {
     const ok = await confirm({
-      title: "Apply changes",
-      message: `Update ${Object.keys(pending).length} feature flag(s)?`,
+      title: t("tournamentSettings.featureFlagsSaveTitle"),
+      message: t("tournamentSettings.featureFlagsSaveMessage", {
+        count: pendingCount,
+      }),
     });
 
     if (ok) {
@@ -57,52 +61,47 @@ export function FeatureFlags() {
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-      >
-        {collection.length === 0 && (
-          <Text style={styles.emptyText}>No feature flags found.</Text>
-        )}
-        {collection.map((flag) => {
-          const displayValue = getDisplayValue(flag.$id, flag.enabled);
-          const isDirty = pending[flag.$id] !== undefined;
-          return (
-            <View
-              key={flag.$id}
-              style={[styles.row, isDirty && styles.rowDirty]}
+    <View style={styles.card}>
+      {collection.length === 0 && (
+        <Text style={styles.emptyText}>
+          {t("tournamentSettings.featureFlagsEmpty")}
+        </Text>
+      )}
+      {collection.map((flag) => {
+        const displayValue = getDisplayValue(flag.$id, flag.enabled);
+        const isDirty = pending[flag.$id] !== undefined;
+        return (
+          <View key={flag.$id} style={styles.fieldRow}>
+            <Text
+              style={[styles.fieldLabel, isDirty && styles.fieldLabelDirty]}
             >
-              <View style={styles.rowInfo}>
-                <Text style={styles.rowName}>{flag.feature}</Text>
-                <Text style={styles.rowSlug}>{flag.slug}</Text>
-              </View>
-              <Switch
-                value={displayValue}
-                onValueChange={() => toggle(flag.$id, displayValue)}
-                trackColor={{ false: colors.border, true: colors.accent }}
-                thumbColor={colors.text}
-              />
-            </View>
-          );
-        })}
-      </ScrollView>
+              {flag.feature}
+            </Text>
+            <Switch
+              value={displayValue}
+              onValueChange={() => toggle(flag.$id, displayValue)}
+              trackColor={{ false: colors.border, true: colors.accent }}
+              thumbColor={colors.text}
+            />
+          </View>
+        );
+      })}
 
-      <View style={styles.footer}>
+      <View style={styles.cardFooter}>
         <Pressable
           style={[
-            styles.applyButton,
-            (!hasPendingChanges || saving) && styles.applyButtonDisabled,
+            styles.saveButton,
+            (!hasPendingChanges || saving) && styles.saveButtonDisabled,
           ]}
-          onPress={handleApply}
+          onPress={handleSave}
           disabled={!hasPendingChanges || saving}
         >
           {saving ? (
             <ActivityIndicator size="small" color={colors.background} />
           ) : (
-            <Text style={styles.applyButtonText}>
-              Apply
-              {hasPendingChanges ? ` (${Object.keys(pending).length})` : ""}
+            <Text style={styles.saveButtonText}>
+              {t("tournamentSettings.save")}
+              {hasPendingChanges ? ` (${pendingCount})` : ""}
             </Text>
           )}
         </Pressable>
@@ -113,62 +112,54 @@ export function FeatureFlags() {
 
 function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
   return StyleSheet.create({
-    container: {
-      flex: 1,
-    },
-    list: {
-      gap: space[2],
-      paddingBottom: inset.screenBottom,
-    },
-    row: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
+    card: {
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: 10,
-      paddingVertical: space[3],
-      paddingHorizontal: inset.card,
+      borderRadius: 12,
+      padding: inset.card,
+      overflow: "hidden",
     },
-    rowDirty: {
-      borderColor: colors.accent,
+    fieldRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
     },
-    rowInfo: {
-      flex: 1,
-      marginRight: space[4],
+    fieldLabel: {
+      ...type.bodySmall,
+      color: colors.textSecondary,
     },
-    rowName: {
-      ...type.body,
-      color: colors.text,
-    },
-    rowSlug: {
-      ...type.caption,
-      color: colors.textMuted,
-      marginTop: 2,
+    fieldLabelDirty: {
+      color: colors.accent,
     },
     emptyText: {
       ...type.body,
       color: colors.textMuted,
       textAlign: "center",
-      marginTop: 40,
+      marginVertical: 12,
     },
-    footer: {
-      paddingTop: space[4],
-      alignItems: "flex-end",
+    cardFooter: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "flex-end",
+      gap: 12,
+      marginTop: 12,
     },
-    applyButton: {
+    saveButton: {
       backgroundColor: colors.accent,
       borderRadius: 8,
       paddingVertical: 8,
       paddingHorizontal: 20,
-      minWidth: 90,
+      minWidth: 72,
       alignItems: "center",
     },
-    applyButtonDisabled: {
+    saveButtonDisabled: {
       opacity: 0.4,
     },
-    applyButtonText: {
+    saveButtonText: {
       ...type.button,
       color: colors.onAccent,
       fontSize: 14,

@@ -1,4 +1,13 @@
 const translations = {
+  adminDashboard: {
+    tabs: {
+      results: "Results",
+      rankings: "Rankings",
+      schedule: "Schedule",
+      tournamentSettings: "Settings",
+      import: "Import",
+    },
+  },
   home: {
     welcome: "Welcome",
     welcomeDescription:
@@ -281,7 +290,7 @@ const translations = {
   tableOverview: {
     noActiveSchedule: "No active schedule item",
     noGame: "Active schedule item has no game",
-    searchPlaceholder: "Search team, player or table…",
+    searchPlaceholder: "Team, player or table",
     filterBellAny: "Any",
     filterBellActive: "Bell",
     filterBellAck: "Ack'd",
@@ -297,6 +306,14 @@ const translations = {
     sortResultStatus: "Status",
     sortBellFirst: "Bell ↑",
     sortSigsFirst: "Sigs ↑",
+    filtersButton: "Filters",
+    filtersTitle: "Filters",
+    filtersReset: "Reset",
+    filtersDone: "Done",
+    filterLabelBell: "Bell",
+    filterLabelSubmit: "Submitted",
+    filterLabelTimer: "Timer",
+    filterLabelSort: "Sort by",
     confirmAcknowledge: {
       title: "Acknowledge call",
       message: "Mark as acknowledged? A referee is on the way.",
@@ -397,6 +414,7 @@ const translations = {
       save: "Save",
     },
     tournamentSettings: {
+      heading: "Tournament Settings",
       activeBadge: "ACTIVE",
       fieldType: "Type",
       fieldPin: "PIN",
@@ -407,6 +425,10 @@ const translations = {
       loadError: "Failed to load tournaments.",
       retry: "Retry",
       empty: "No tournament rows found.",
+      featureFlagsHeading: "Feature Flags",
+      featureFlagsEmpty: "No feature flags found.",
+      featureFlagsSaveTitle: "Save changes",
+      featureFlagsSaveMessage: "Save {{count}} feature flag change(s)?",
     },
     playerPicker: {
       whoAreYou: "Who are you?",

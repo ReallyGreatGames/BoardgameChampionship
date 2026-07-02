@@ -31,9 +31,11 @@ import {
 } from "../utils/placements";
 import { resolveGameId, teamName, toNumberArray } from "../utils";
 import { ChipGroup } from "./ChipGroup";
+import { Combobox } from "./Combobox";
 import { useDialog } from "./Dialog";
 import { EmptyState } from "./EmptyState";
 import { PlayerResultRow, type PlayerResultRowHandle } from "./PlayerResultRow";
+import { ResultsFilterDialog } from "./ResultsFilterDialog";
 import { ScoreNavBar } from "./ScoreNavBar";
 import { ScoreSignatureModal } from "./ScoreSignatureModal";
 import { SearchInput } from "./SearchInput";
@@ -43,10 +45,10 @@ import { TableCard } from "./TableCard";
 import type { TableEntry } from "./TableOverview";
 
 type ViewMode = "overview" | "input";
-type BellFilter = "any" | "active" | "acknowledged";
-type SubmitFilter = "all" | "submitted" | "notSubmitted";
-type TimerFilter = "any" | "running" | "noTimer";
-type SortOrder = "table" | "totalTimer" | "minTimer" | "resultStatus" | "bellFirst" | "sigsFirst";
+export type BellFilter = "any" | "active" | "acknowledged";
+export type SubmitFilter = "all" | "submitted" | "notSubmitted";
+export type TimerFilter = "any" | "running" | "noTimer";
+export type SortOrder = "table" | "totalTimer" | "minTimer" | "resultStatus" | "bellFirst" | "sigsFirst";
 
 const PLAYER_COUNT = 4;
 
@@ -77,6 +79,7 @@ export function ResultsAdminTab() {
   const [timerFilter, setTimerFilter] = useState<TimerFilter>("any");
   const [sortOrder, setSortOrder] = useState<SortOrder>("table");
   const [gridWidth, setGridWidth] = useState(0);
+  const [filterDialogVisible, setFilterDialogVisible] = useState(false);
 
   // Input state
   const [currentTableIdx, setCurrentTableIdx] = useState(0);
@@ -156,6 +159,20 @@ export function ResultsAdminTab() {
     }).length;
     return { submitted: sub, pending, total: gameTables.length };
   }, [gameTables, resultForTable]);
+
+  const activeFilterCount = useMemo(
+    () =>
+      [bellFilter !== "any", submitFilter !== "all", timerFilter !== "any"].filter(Boolean)
+        .length,
+    [bellFilter, submitFilter, timerFilter],
+  );
+
+  const resetFilters = useCallback(() => {
+    setBellFilter("any");
+    setSubmitFilter("all");
+    setTimerFilter("any");
+    setSortOrder("table");
+  }, []);
 
   // Build TableEntry list (for overview mode)
   const tableEntries = useMemo<TableEntry[]>(() => {
@@ -423,34 +440,53 @@ export function ResultsAdminTab() {
 
   const header = (
     <View style={styles.stickyHeader}>
+      {mode === "overview" && gameTables.length > 0 && (
+        <>
+          <SearchInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder={t("tableOverview:searchPlaceholder")}
+            style={styles.headerSearch}
+          />
+          <TouchableOpacity
+            style={styles.filtersButton}
+            onPress={() => setFilterDialogVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="options-outline" size={16} color={colors.text} />
+            <Text style={styles.filtersButtonText}>{t("tableOverview:filtersButton")}</Text>
+            {activeFilterCount > 0 && (
+              <View style={styles.filtersBadge}>
+                <Text style={styles.filtersBadgeText}>{activeFilterCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </>
+      )}
       <ChipGroup
-        mode="select"
-        options={gameSchedules.map((s) => ({ value: s.gameId!, label: s.title, isLive: s.isActive }))}
+        mode="cycle"
+        options={[
+          { value: "overview", icon: "grid-outline", color: colors.primary, label: t("modeOverview") },
+          { value: "input", icon: "create-outline", color: colors.primary, label: t("modeInput") },
+        ]}
+        value={mode}
+        onChange={(v) => setMode(v as ViewMode)}
+      />
+      <Combobox
         value={selectedGameId ?? ""}
+        options={gameSchedules.map((s) => ({ value: s.gameId!, label: s.title, isLive: s.isActive }))}
         onChange={(v) => setSelectedGameId(v)}
       />
-      <View style={styles.controlRow}>
-        <ChipGroup
-          mode="select"
-          options={[
-            { value: "overview", label: t("modeOverview") },
-            { value: "input", label: t("modeInput") },
-          ]}
-          value={mode}
-          onChange={(v) => setMode(v as ViewMode)}
-        />
-        {gameTables.length > 0 && (
-          <View style={styles.progressStats}>
-            <Text style={styles.progressText}>
-              {t("progressSubmitted")}: {progressStats.submitted} / {progressStats.total}
-            </Text>
-            <Text style={styles.progressSep}>·</Text>
-            <Text style={styles.progressText}>
-              {t("progressPending")}: {progressStats.pending}
-            </Text>
-          </View>
-        )}
-      </View>
+      {gameTables.length > 0 && (
+        <View style={styles.progressStats}>
+          <Ionicons name="checkmark-circle-outline" size={14} color={colors.success} />
+          <Text style={styles.progressText}>
+            {progressStats.submitted}/{progressStats.total}
+          </Text>
+          <Ionicons name="hourglass-outline" size={14} color={colors.accent} />
+          <Text style={styles.progressText}>{progressStats.pending}</Text>
+        </View>
+      )}
     </View>
   );
 
@@ -459,65 +495,22 @@ export function ResultsAdminTab() {
     return (
       <View style={styles.container}>
         {header}
+        <ResultsFilterDialog
+          visible={filterDialogVisible}
+          onClose={() => setFilterDialogVisible(false)}
+          bellFilter={bellFilter}
+          onBellFilterChange={setBellFilter}
+          submitFilter={submitFilter}
+          onSubmitFilterChange={setSubmitFilter}
+          timerFilter={timerFilter}
+          onTimerFilterChange={setTimerFilter}
+          sortOrder={sortOrder}
+          onSortOrderChange={setSortOrder}
+          onReset={resetFilters}
+        />
         {gameTables.length === 0 ? (
           <EmptyState message={t("noTables")} />
         ) : (
-          <>
-            <View style={styles.overviewFilters}>
-              <SearchInput
-                value={search}
-                onChangeText={setSearch}
-                placeholder={t("tableOverview:searchPlaceholder")}
-              />
-              <View style={styles.filtersRow}>
-                <View style={styles.filtersLeft}>
-                  <ChipGroup<BellFilter>
-                    mode="cycle"
-                    options={[
-                      { value: "any", icon: "notifications-outline", color: colors.textMuted, label: t("tableOverview:filterBellAny") },
-                      { value: "active", icon: "notifications-outline", color: colors.accent, label: t("tableOverview:filterBellActive") },
-                      { value: "acknowledged", icon: "notifications-off-outline", color: colors.success, label: t("tableOverview:filterBellAck") },
-                    ]}
-                    value={bellFilter}
-                    onChange={setBellFilter}
-                  />
-                  <ChipGroup<SubmitFilter>
-                    mode="cycle"
-                    options={[
-                      { value: "all", icon: "document-outline", color: colors.textMuted, label: t("tableOverview:filterSubmitAll") },
-                      { value: "submitted", icon: "checkmark-circle-outline", color: colors.success, label: t("tableOverview:filterSubmitYes") },
-                      { value: "notSubmitted", icon: "hourglass-outline", color: colors.accent, label: t("tableOverview:filterSubmitNo") },
-                    ]}
-                    value={submitFilter}
-                    onChange={setSubmitFilter}
-                  />
-                  <ChipGroup<TimerFilter>
-                    mode="cycle"
-                    options={[
-                      { value: "any", icon: "timer-outline", color: colors.textMuted, label: t("tableOverview:filterTimerAny") },
-                      { value: "running", icon: "play-circle-outline", color: colors.primary, label: t("tableOverview:filterTimerRunning") },
-                      { value: "noTimer", icon: "ban-outline", color: colors.textSecondary, label: t("tableOverview:filterTimerNone") },
-                    ]}
-                    value={timerFilter}
-                    onChange={setTimerFilter}
-                  />
-                </View>
-                <ChipGroup<SortOrder>
-                  mode="cycle"
-                  options={[
-                    { value: "table", icon: "list-outline", color: colors.textMuted, label: t("tableOverview:sortTable") },
-                    { value: "totalTimer", icon: "timer-outline", color: colors.primary, label: t("tableOverview:sortTotalTimer") },
-                    { value: "minTimer", icon: "person-outline", color: colors.primary, label: t("tableOverview:sortMinTimer") },
-                    { value: "resultStatus", icon: "document-text-outline", color: colors.primary, label: t("tableOverview:sortResultStatus") },
-                    { value: "bellFirst", icon: "notifications-outline", color: colors.accent, label: t("tableOverview:sortBellFirst") },
-                    { value: "sigsFirst", icon: "pencil-outline", color: colors.primary, label: t("tableOverview:sortSigsFirst") },
-                  ]}
-                  value={sortOrder}
-                  onChange={setSortOrder}
-                />
-              </View>
-            </View>
-
             <ScrollView
               contentContainerStyle={styles.overviewList}
               showsVerticalScrollIndicator={false}
@@ -552,7 +545,6 @@ export function ResultsAdminTab() {
                 })}
               </View>
             </ScrollView>
-          </>
         )}
       </View>
     );
@@ -727,37 +719,49 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
       paddingBottom: inset.list,
-      gap: inset.list,
-    },
-    controlRow: {
       flexDirection: "row",
+      flexWrap: "wrap",
       alignItems: "center",
-      justifyContent: "space-between",
       gap: space[2],
     },
     progressStats: {
       flexDirection: "row",
       alignItems: "center",
-      gap: space[1],
+      gap: 4,
     },
     progressText: { ...type.caption, color: colors.textMuted },
-    progressSep: { ...type.caption, color: colors.border },
-    overviewFilters: {
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border,
-      paddingBottom: inset.list,
-      gap: inset.tight,
+    headerSearch: {
+      flexGrow: 1,
+      flexShrink: 1,
+      maxWidth: 240,
+      paddingVertical: 6,
     },
-    filtersRow: {
+    filtersButton: {
       flexDirection: "row",
       alignItems: "center",
-      gap: inset.tight,
+      gap: 6,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
     },
-    filtersLeft: {
-      flex: 1,
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: inset.tight,
+    filtersButtonText: { ...type.bodySmall, color: colors.text },
+    filtersBadge: {
+      backgroundColor: colors.accent,
+      borderRadius: 10,
+      minWidth: 18,
+      height: 18,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 4,
+    },
+    filtersBadgeText: {
+      ...type.caption,
+      fontSize: 11,
+      color: colors.onAccent,
+      fontWeight: "600",
     },
     overviewList: {
       gap: inset.list,
