@@ -189,12 +189,12 @@ export function ScheduleItemModal({
         icon,
         startTimePlanned: startTime,
         durationPlanned: parseInt(duration, 10),
-        description: description.trim() || undefined,
-        gameId: gameId.trim() || undefined,
+        description: description.trim(),
+        gameId: gameId.trim(),
         sortIndex: item ? item.sortIndex : nextSortIndex,
         isActive: item ? item.isActive : false,
         isFinished: item ? item.isFinished : false,
-        allowUserChange: item ? item.allowUserChange : false,
+        allowUserChange,
       });
       onClose();
     } catch (e: any) {
@@ -329,9 +329,9 @@ export function ScheduleItemModal({
           style={[
             sheetStyles.input,
             timeBlurred &&
-              startTime !== "" &&
-              !timeValid &&
-              sheetStyles.inputError,
+            startTime !== "" &&
+            !timeValid &&
+            sheetStyles.inputError,
           ]}
           value={startTime}
           onChangeText={(v) => {
@@ -361,9 +361,9 @@ export function ScheduleItemModal({
           style={[
             sheetStyles.input,
             durBlurred &&
-              duration !== "" &&
-              !durValid &&
-              sheetStyles.inputError,
+            duration !== "" &&
+            !durValid &&
+            sheetStyles.inputError,
           ]}
           value={duration}
           onChangeText={(v) => {
