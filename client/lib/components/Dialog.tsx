@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import {
   createContext,
   FC,
@@ -10,7 +11,7 @@ import {
 } from "react";
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useTheme } from "../bootstrap/ThemeProvider";
-import { inset } from "../theme/spacing";
+import { inset, space } from "../theme/spacing";
 import { ui } from "../theme/ui";
 import { type } from "../theme/typography";
 
@@ -18,8 +19,11 @@ export type DialogOptions = {
   title: string;
   message?: string;
   confirmLabel?: string;
-  cancelLabel?: string;
+  /** Pass null to hide the cancel button (info/alert mode). */
+  cancelLabel?: string | null;
   destructive?: boolean;
+  /** Ionicons icon name shown above the message. */
+  icon?: string;
 };
 
 type DialogContextValue = {
@@ -76,16 +80,23 @@ export const DialogProvider: FC<PropsWithChildren> = ({ children }) => {
       >
         <View style={styles.overlay}>
           <View style={styles.card}>
+            {options.icon ? (
+              <View style={styles.iconRow}>
+                <Ionicons name={options.icon as any} size={32} color={colors.primary} />
+              </View>
+            ) : null}
             <Text style={styles.title}>{options.title}</Text>
             {options.message ? (
               <Text style={styles.message}>{options.message}</Text>
             ) : null}
             <View style={styles.buttons}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel}>
-                <Text style={styles.cancelLabel}>
-                  {options.cancelLabel ?? "Cancel"}
-                </Text>
-              </TouchableOpacity>
+              {options.cancelLabel !== null && (
+                <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel}>
+                  <Text style={styles.cancelBtnLabel}>
+                    {options.cancelLabel ?? "Cancel"}
+                  </Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
                 style={[
                   styles.confirmBtn,
@@ -136,6 +147,10 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       gap: inset.tight,
       marginTop: inset.tight,
     },
+    iconRow: {
+      alignItems: "center",
+      paddingBottom: space[2],
+    },
     cancelBtn: {
       flex: 1,
       paddingVertical: 12,
@@ -144,7 +159,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       borderColor: colors.border,
       alignItems: "center",
     },
-    cancelLabel: {
+    cancelBtnLabel: {
       ...type.button,
       color: colors.textSecondary,
     },

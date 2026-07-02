@@ -1,25 +1,19 @@
 import { FeatureFlags } from "@/lib/components/FeatureFlags";
 import { ImportTab } from "@/lib/components/ImportTab";
+import { RankingsTab } from "@/lib/components/RankingsTab";
+import { ResultsAdminTab } from "@/lib/components/ResultsAdminTab";
 import { ScheduleList } from "@/lib/components/Schedule";
-import { ScoreOverview } from "@/lib/components/ScoreOverview";
-import { TableOverview } from "@/lib/components/TableOverview";
 import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../../../../lib/bootstrap/ThemeProvider";
 import { TournamentSettings } from "../../../../lib/components/TournamentSettings";
 import { inset, space } from "../../../../lib/theme/spacing";
 
-type Tab =
-  | "tableOverview"
-  | "scores"
-  | "schedule"
-  | "tournamentSettings"
-  | "featureFlags"
-  | "import";
+type Tab = "results" | "rankings" | "schedule" | "tournamentSettings" | "featureFlags" | "import";
 
 const TABS: { key: Tab; label: string }[] = [
-  { key: "tableOverview", label: "Table Overview" },
-  { key: "scores", label: "Scores" },
+  { key: "results", label: "Results" },
+  { key: "rankings", label: "Rankings" },
   { key: "schedule", label: "Schedule" },
   { key: "tournamentSettings", label: "Settings" },
   { key: "featureFlags", label: "Feature Flags" },
@@ -29,32 +23,39 @@ const TABS: { key: Tab; label: string }[] = [
 export default function AdminDashboard() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const [activeTab, setActiveTab] = useState<Tab>("tableOverview");
+  const [activeTab, setActiveTab] = useState<Tab>("results");
 
   return (
     <View style={styles.container}>
-      <View style={styles.tabBar}>
-        {TABS.map((tab) => (
-          <Pressable
-            key={tab.key}
-            style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-            onPress={() => setActiveTab(tab.key)}
-          >
-            <Text
-              style={[
-                styles.tabLabel,
-                activeTab === tab.key && styles.tabLabelActive,
-              ]}
+      <View style={styles.tabBarWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabBar}
+          bounces={false}
+        >
+          {TABS.map((tab) => (
+            <Pressable
+              key={tab.key}
+              style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+              onPress={() => setActiveTab(tab.key)}
             >
-              {tab.label}
-            </Text>
-          </Pressable>
-        ))}
+              <Text
+                style={[
+                  styles.tabLabel,
+                  activeTab === tab.key && styles.tabLabelActive,
+                ]}
+              >
+                {tab.label}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
       </View>
 
       <View style={styles.content}>
-        {activeTab === "tableOverview" && <TableOverview />}
-        {activeTab === "scores" && <ScoreOverview />}
+        {activeTab === "results" && <ResultsAdminTab />}
+        {activeTab === "rankings" && <RankingsTab />}
         {activeTab === "schedule" && <ScheduleList />}
         {activeTab === "tournamentSettings" && <TournamentSettings />}
         {activeTab === "featureFlags" && <FeatureFlags />}
@@ -70,10 +71,12 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       flex: 1,
       backgroundColor: colors.background,
     },
-    tabBar: {
-      flexDirection: "row",
+    tabBarWrapper: {
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
+    },
+    tabBar: {
+      flexDirection: "row",
       paddingHorizontal: inset.screen,
     },
     tab: {

@@ -1,6 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import {
   Platform,
   ScrollView,
@@ -10,62 +8,96 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { SIGNATURES_BUCKET_ID, storage } from "../appwrite";
 import { useTheme } from "../bootstrap/ThemeProvider";
-import { Table } from "../models/table";
+import { useTableBellActions } from "../hooks/useTableBellActions";
+import type { Result } from "../models/result";
+import type { Table } from "../models/table";
+import type { TableBell } from "../models/table-bell";
 import { useResultStore } from "../stores/appwrite/result-store";
 import { useScheduleStore } from "../stores/appwrite/schedule-store";
+import { useTableBellStore } from "../stores/appwrite/table-bell-store";
 import { useTableStore } from "../stores/appwrite/table-store";
+import { useTimerStore } from "../stores/appwrite/timer-store";
 import { inset, space } from "../theme/spacing";
 import { type } from "../theme/typography";
 import {
   hasScorePlacementConflict,
   isValidPlacementCombo,
 } from "../utils/placements";
-import { resolveGameId, teamName } from "../utils";
+import { resolveGameId, teamName, toNumberArray } from "../utils";
 import { ChipGroup } from "./ChipGroup";
 import { useDialog } from "./Dialog";
 import { EmptyState } from "./EmptyState";
 import { PlayerResultRow, type PlayerResultRowHandle } from "./PlayerResultRow";
 import { ScoreNavBar } from "./ScoreNavBar";
 import { ScoreSignatureModal } from "./ScoreSignatureModal";
-import { ScoreTableView } from "./ScoreTableView";
+import { SearchInput } from "./SearchInput";
 import { SignatureSlot } from "./SignatureSlot";
 import { StateBadge } from "./StateBadge";
+import { TableCard } from "./TableCard";
+import type { TableEntry } from "./TableOverview";
 
-type ViewMode = "table" | "input";
+type ViewMode = "overview" | "input";
+type BellFilter = "any" | "active" | "acknowledged";
+type SubmitFilter = "all" | "submitted" | "notSubmitted";
+type TimerFilter = "any" | "running" | "noTimer";
+type SortOrder = "table" | "totalTimer" | "minTimer" | "resultStatus" | "bellFirst" | "sigsFirst";
 
 const PLAYER_COUNT = 4;
 
-export function ScoreOverview() {
+export function ResultsAdminTab() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { t } = useTranslation(["scoreOverview"]);
+  const { t } = useTranslation(["scoreOverview", "tableOverview"]);
   const { confirm } = useDialog();
+  const { width: screenWidth } = useWindowDimensions();
 
   const { collection: schedules } = useScheduleStore();
   const { collection: results } = useResultStore();
   const tables = useTableStore((s) => s.collection);
+  const { collection: timers } = useTimerStore();
+  const bells = useTableBellStore((s) => s.collection);
   const resultStore = useResultStore();
+  const bellActions = useTableBellActions();
 
-  const [mode, setMode] = useState<ViewMode>("table");
+  // Shared state
+  const [mode, setMode] = useState<ViewMode>("overview");
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now);
+
+  // Overview state
+  const [search, setSearch] = useState("");
+  const [bellFilter, setBellFilter] = useState<BellFilter>("any");
+  const [submitFilter, setSubmitFilter] = useState<SubmitFilter>("all");
+  const [timerFilter, setTimerFilter] = useState<TimerFilter>("any");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("table");
+  const [gridWidth, setGridWidth] = useState(0);
+
+  // Input state
   const [currentTableIdx, setCurrentTableIdx] = useState(0);
   const [jumpText, setJumpText] = useState("");
   const [saving, setSaving] = useState(false);
+  const [placements, setPlacements] = useState<string[]>(Array(PLAYER_COUNT).fill(""));
+  const [scores, setScores] = useState<string[]>(Array(PLAYER_COUNT).fill(""));
+  const [note, setNote] = useState("");
+  const [submitted, setSubmitted] = useState(false);
   const [sigModalIdx, setSigModalIdx] = useState<number | null>(null);
   const [modalSvg, setModalSvg] = useState<string | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [confirmingReset, setConfirmingReset] = useState(false);
 
-  const [placements, setPlacements] = useState<string[]>(Array(PLAYER_COUNT).fill(""));
-  const [scores, setScores] = useState<string[]>(Array(PLAYER_COUNT).fill(""));
-  const [note, setNote] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-
-  // Refs for tab-order: score[0..3] → chips[0..3] → note
   const rowRefs = useRef<(PlayerResultRowHandle | null)[]>([null, null, null, null]);
   const noteRef = useRef<TextInput | null>(null);
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const gameSchedules = useMemo(
     () => [...schedules].filter((s) => !!s.gameId).sort((a, b) => a.sortIndex - b.sortIndex),
@@ -80,13 +112,15 @@ export function ScoreOverview() {
     return gameSchedules[gameSchedules.length - 1]?.gameId ?? null;
   }, [gameSchedules]);
 
-  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
-
   useEffect(() => {
     if (selectedGameId === null && defaultGameId !== null) {
       setSelectedGameId(defaultGameId);
     }
   }, [defaultGameId, selectedGameId]);
+
+  useEffect(() => {
+    setCurrentTableIdx(0);
+  }, [selectedGameId]);
 
   const gameIndex = useMemo(
     () => gameSchedules.findIndex((s) => s.gameId === selectedGameId),
@@ -109,15 +143,13 @@ export function ScoreOverview() {
   );
 
   const resultForTable = useCallback(
-    (tableNumber: number) =>
+    (tableNumber: number): Result | undefined =>
       results.find((r) => r.gameId === selectedGameId && r.table === tableNumber),
     [results, selectedGameId],
   );
 
   const progressStats = useMemo(() => {
-    const sub = gameTables.filter(
-      (t) => resultForTable(t.tableNumber)?.submitted === true,
-    ).length;
+    const sub = gameTables.filter((t) => resultForTable(t.tableNumber)?.submitted === true).length;
     const pending = gameTables.filter((t) => {
       const r = resultForTable(t.tableNumber);
       return r !== undefined && !r.submitted;
@@ -125,8 +157,112 @@ export function ScoreOverview() {
     return { submitted: sub, pending, total: gameTables.length };
   }, [gameTables, resultForTable]);
 
-  const currentTable: Table | undefined = gameTables[currentTableIdx];
+  // Build TableEntry list (for overview mode)
+  const tableEntries = useMemo<TableEntry[]>(() => {
+    if (!selectedGameId) return [];
+    return gameTables.map((t): TableEntry => {
+      const timer = timers.find(
+        (tm) => resolveGameId(tm.games) === selectedGameId && tm.table === t.tableNumber,
+      );
+      const result = resultForTable(t.tableNumber);
+      const bell = bells.find((b) => b.table === t.tableNumber);
+      return {
+        id: t.tableNumber,
+        players: t.players,
+        timer,
+        result,
+        bell,
+        hasBell: !!bell && !bell.acknowledgeTime,
+        bellAcknowledged: !!bell?.acknowledgeTime,
+        isRunning: !!timer,
+        isSubmitted: result?.submitted ?? false,
+        hasNote: !!result?.note,
+      };
+    });
+  }, [gameTables, timers, results, bells, selectedGameId, resultForTable]);
 
+  const filteredEntries = useMemo<TableEntry[]>(() => {
+    const q = search.trim().toLowerCase();
+    return tableEntries.filter((entry) => {
+      if (q) {
+        const hit =
+          String(entry.id).includes(q) ||
+          entry.players.some((p) => teamName(p).toLowerCase().includes(q)) ||
+          entry.players.some((p) => p.name.toLowerCase().includes(q));
+        if (!hit) return false;
+      }
+      if (bellFilter === "active" && !entry.hasBell) return false;
+      if (bellFilter === "acknowledged" && !entry.bellAcknowledged) return false;
+      if (submitFilter === "submitted" && !entry.isSubmitted) return false;
+      if (submitFilter === "notSubmitted") {
+        const hasSig = entry.result?.signatureIds?.some(Boolean) ?? false;
+        if (entry.isSubmitted || !entry.result || !hasSig) return false;
+      }
+      if (timerFilter === "running" && !entry.isRunning) return false;
+      if (timerFilter === "noTimer" && !!entry.timer) return false;
+      return true;
+    });
+  }, [tableEntries, search, bellFilter, submitFilter, timerFilter]);
+
+  const sortedEntries = useMemo<TableEntry[]>(() => {
+    return [...filteredEntries].sort((a, b) => {
+      switch (sortOrder) {
+        case "table":
+          return a.id - b.id;
+        case "totalTimer": {
+          if (!a.timer && !b.timer) return a.id - b.id;
+          if (!a.timer) return 1;
+          if (!b.timer) return -1;
+          const aSum = toNumberArray(a.timer.playerTimes).reduce((s, v) => s + v, 0);
+          const bSum = toNumberArray(b.timer.playerTimes).reduce((s, v) => s + v, 0);
+          return aSum - bSum;
+        }
+        case "minTimer": {
+          if (!a.timer && !b.timer) return a.id - b.id;
+          if (!a.timer) return 1;
+          if (!b.timer) return -1;
+          const aTimes = toNumberArray(a.timer.playerTimes);
+          const bTimes = toNumberArray(b.timer.playerTimes);
+          const aMin = aTimes.length ? Math.min(...aTimes) : Infinity;
+          const bMin = bTimes.length ? Math.min(...bTimes) : Infinity;
+          return aMin - bMin;
+        }
+        case "resultStatus": {
+          const score = (e: TableEntry): number => {
+            if (e.isSubmitted) return 4;
+            if (!e.result) return 0;
+            const sigs = e.result.signatureIds?.filter(Boolean).length ?? 0;
+            const total = e.result.signatureIds?.length ?? 1;
+            if (sigs === 0) return 1;
+            if (sigs < total) return 2;
+            return 3;
+          };
+          return score(a) - score(b);
+        }
+        case "bellFirst": {
+          const aBell = a.hasBell ? 0 : a.bellAcknowledged ? 1 : 2;
+          const bBell = b.hasBell ? 0 : b.bellAcknowledged ? 1 : 2;
+          return aBell - bBell || a.id - b.id;
+        }
+        case "sigsFirst": {
+          const aSigs = a.result?.signatureIds?.filter(Boolean).length ?? 0;
+          const bSigs = b.result?.signatureIds?.filter(Boolean).length ?? 0;
+          return aSigs - bSigs || a.id - b.id;
+        }
+        default:
+          return a.id - b.id;
+      }
+    });
+  }, [filteredEntries, sortOrder]);
+
+  const numColumns = screenWidth >= 600 ? 2 : 1;
+  const cardWidth = useMemo(() => {
+    if (!gridWidth) return 0;
+    return (gridWidth - (numColumns - 1) * inset.list) / numColumns;
+  }, [gridWidth, numColumns]);
+
+  // Input mode — current table
+  const currentTable: Table | undefined = gameTables[currentTableIdx];
   const currentResult = useMemo(
     () => (currentTable ? resultForTable(currentTable.tableNumber) : undefined),
     [currentTable, resultForTable],
@@ -147,26 +283,21 @@ export function ScoreOverview() {
     setSubmitted(currentResult?.submitted ?? false);
   }, [currentResult, currentTableIdx]);
 
-  useEffect(() => {
-    setCurrentTableIdx(0);
-  }, [selectedGameId]);
-
-  // Arrow-key navigation between tables in input mode — web only
+  // Arrow-key navigation between tables — web only
   useEffect(() => {
     if (mode !== "input" || Platform.OS !== "web") return;
     const onKeyDown = (e: KeyboardEvent) => {
       const tag = (document.activeElement as HTMLElement)?.tagName?.toLowerCase();
       if (tag === "input" || tag === "textarea") return;
-      if (e.key === "ArrowLeft") {
-        setCurrentTableIdx((i) => Math.max(0, i - 1));
-      } else if (e.key === "ArrowRight") {
+      if (e.key === "ArrowLeft") setCurrentTableIdx((i) => Math.max(0, i - 1));
+      else if (e.key === "ArrowRight")
         setCurrentTableIdx((i) => Math.min(gameTables.length - 1, i + 1));
-      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [mode, gameTables.length]);
 
+  // Signature modal
   const modalFileId =
     sigModalIdx !== null ? currentResult?.signatureIds?.[sigModalIdx] : undefined;
 
@@ -211,20 +342,6 @@ export function ScoreOverview() {
     }
   }, [currentTable, selectedGameId, saving, placements, scores, note, submitted, currentResult, resultStore, confirm, t]);
 
-  const handleCloseModal = useCallback(() => {
-    setSigModalIdx(null);
-    setConfirmingReset(false);
-  }, []);
-
-  const handleResetSingleSignature = useCallback(async () => {
-    if (!currentResult || sigModalIdx === null) return;
-    const newIds = [...(currentResult.signatureIds ?? Array(PLAYER_COUNT).fill(""))];
-    newIds[sigModalIdx] = "";
-    await resultStore.update({ $id: currentResult.$id, signatureIds: newIds });
-    setSigModalIdx(null);
-    setConfirmingReset(false);
-  }, [currentResult, sigModalIdx, resultStore]);
-
   const handleSetPlacement = useCallback((seatIdx: number, value: string) => {
     setPlacements((prev) => {
       const next = [...prev];
@@ -244,23 +361,54 @@ export function ScoreOverview() {
   const handleJump = useCallback(() => {
     const raw = parseInt(jumpText, 10);
     if (isNaN(raw)) return;
-    const idx = gameTables.findIndex((t) => t.tableNumber === raw);
-    if (idx !== -1) {
-      setCurrentTableIdx(idx);
-      setJumpText("");
-    }
+    const idx = gameTables.findIndex((tbl) => tbl.tableNumber === raw);
+    if (idx !== -1) { setCurrentTableIdx(idx); setJumpText(""); }
   }, [jumpText, gameTables]);
+
+  const handleBellPress = useCallback(
+    async (bell: TableBell) => {
+      if (bell.acknowledgeTime) {
+        await bellActions.dismiss(bell, {
+          title: t("tableOverview:confirmDelete.title"),
+          message: t("tableOverview:confirmDelete.message"),
+          confirmLabel: t("tableOverview:confirmDelete.confirm"),
+          cancelLabel: t("tableOverview:confirmDelete.cancel"),
+          destructive: true,
+        });
+      } else {
+        await bellActions.acknowledge(bell, {
+          title: t("tableOverview:confirmAcknowledge.title"),
+          message: t("tableOverview:confirmAcknowledge.message"),
+          confirmLabel: t("tableOverview:confirmAcknowledge.confirm"),
+          cancelLabel: t("tableOverview:confirmAcknowledge.cancel"),
+        });
+      }
+    },
+    [bellActions, t],
+  );
+
+  const handleCloseModal = useCallback(() => {
+    setSigModalIdx(null);
+    setConfirmingReset(false);
+  }, []);
+
+  const handleResetSingleSignature = useCallback(async () => {
+    if (!currentResult || sigModalIdx === null) return;
+    const newIds = [...(currentResult.signatureIds ?? Array(PLAYER_COUNT).fill(""))];
+    newIds[sigModalIdx] = "";
+    await resultStore.update({ $id: currentResult.$id, signatureIds: newIds });
+    setSigModalIdx(null);
+    setConfirmingReset(false);
+  }, [currentResult, sigModalIdx, resultStore]);
 
   const scoreConflict = useMemo(
     () => hasScorePlacementConflict(placements, scores),
     [placements, scores],
   );
-
   const placementInvalid = useMemo(
     () => placements.every(Boolean) && !isValidPlacementCombo(placements),
     [placements],
   );
-
   const sigIds = currentResult?.signatureIds ?? [];
   const missingSig = sigIds.length > 0 && sigIds.some((id) => !id);
 
@@ -281,11 +429,11 @@ export function ScoreOverview() {
         value={selectedGameId ?? ""}
         onChange={(v) => setSelectedGameId(v)}
       />
-      <View style={styles.modeRow}>
+      <View style={styles.controlRow}>
         <ChipGroup
           mode="select"
           options={[
-            { value: "table", label: t("modeTable") },
+            { value: "overview", label: t("modeOverview") },
             { value: "input", label: t("modeInput") },
           ]}
           value={mode}
@@ -306,25 +454,111 @@ export function ScoreOverview() {
     </View>
   );
 
-  if (mode === "table") {
+  // ── Overview mode ─────────────────────────────────────────────────────────
+  if (mode === "overview") {
     return (
       <View style={styles.container}>
         {header}
         {gameTables.length === 0 ? (
           <EmptyState message={t("noTables")} />
         ) : (
-          <ScoreTableView
-            gameTables={gameTables}
-            resultForTable={resultForTable}
-            globalPos={globalPos}
-            onTablePress={(idx) => { setCurrentTableIdx(idx); setMode("input"); }}
-            t={t}
-          />
+          <>
+            <View style={styles.overviewFilters}>
+              <SearchInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder={t("tableOverview:searchPlaceholder")}
+              />
+              <View style={styles.filtersRow}>
+                <View style={styles.filtersLeft}>
+                  <ChipGroup<BellFilter>
+                    mode="cycle"
+                    options={[
+                      { value: "any", icon: "notifications-outline", color: colors.textMuted, label: t("tableOverview:filterBellAny") },
+                      { value: "active", icon: "notifications-outline", color: colors.accent, label: t("tableOverview:filterBellActive") },
+                      { value: "acknowledged", icon: "notifications-off-outline", color: colors.success, label: t("tableOverview:filterBellAck") },
+                    ]}
+                    value={bellFilter}
+                    onChange={setBellFilter}
+                  />
+                  <ChipGroup<SubmitFilter>
+                    mode="cycle"
+                    options={[
+                      { value: "all", icon: "document-outline", color: colors.textMuted, label: t("tableOverview:filterSubmitAll") },
+                      { value: "submitted", icon: "checkmark-circle-outline", color: colors.success, label: t("tableOverview:filterSubmitYes") },
+                      { value: "notSubmitted", icon: "hourglass-outline", color: colors.accent, label: t("tableOverview:filterSubmitNo") },
+                    ]}
+                    value={submitFilter}
+                    onChange={setSubmitFilter}
+                  />
+                  <ChipGroup<TimerFilter>
+                    mode="cycle"
+                    options={[
+                      { value: "any", icon: "timer-outline", color: colors.textMuted, label: t("tableOverview:filterTimerAny") },
+                      { value: "running", icon: "play-circle-outline", color: colors.primary, label: t("tableOverview:filterTimerRunning") },
+                      { value: "noTimer", icon: "ban-outline", color: colors.textSecondary, label: t("tableOverview:filterTimerNone") },
+                    ]}
+                    value={timerFilter}
+                    onChange={setTimerFilter}
+                  />
+                </View>
+                <ChipGroup<SortOrder>
+                  mode="cycle"
+                  options={[
+                    { value: "table", icon: "list-outline", color: colors.textMuted, label: t("tableOverview:sortTable") },
+                    { value: "totalTimer", icon: "timer-outline", color: colors.primary, label: t("tableOverview:sortTotalTimer") },
+                    { value: "minTimer", icon: "person-outline", color: colors.primary, label: t("tableOverview:sortMinTimer") },
+                    { value: "resultStatus", icon: "document-text-outline", color: colors.primary, label: t("tableOverview:sortResultStatus") },
+                    { value: "bellFirst", icon: "notifications-outline", color: colors.accent, label: t("tableOverview:sortBellFirst") },
+                    { value: "sigsFirst", icon: "pencil-outline", color: colors.primary, label: t("tableOverview:sortSigsFirst") },
+                  ]}
+                  value={sortOrder}
+                  onChange={setSortOrder}
+                />
+              </View>
+            </View>
+
+            <ScrollView
+              contentContainerStyle={styles.overviewList}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {sortedEntries.length === 0 && tableEntries.length > 0 && (
+                <EmptyState
+                  message={t("tableOverview:noFilterResults")}
+                  style={{ paddingVertical: inset.group, flex: 0 }}
+                />
+              )}
+              <View
+                style={styles.cardsGrid}
+                onLayout={(e) => setGridWidth(e.nativeEvent.layout.width)}
+              >
+                {sortedEntries.map((entry) => {
+                  const tableIdx = gameTables.findIndex((t) => t.tableNumber === entry.id);
+                  return (
+                    <TableCard
+                      key={entry.id}
+                      entry={entry}
+                      cardWidth={cardWidth}
+                      now={now}
+                      onPress={() => {
+                        setCurrentTableIdx(tableIdx >= 0 ? tableIdx : 0);
+                        setMode("input");
+                      }}
+                      onBellPress={entry.bell ? () => handleBellPress(entry.bell!) : undefined}
+                      bellLoading={entry.bell ? bellActions.isLoadingBell(entry.bell) : false}
+                    />
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </>
         )}
       </View>
     );
   }
 
+  // ── Input mode ────────────────────────────────────────────────────────────
   return (
     <View style={styles.container}>
       {header}
@@ -348,7 +582,7 @@ export function ScoreOverview() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {/* Card header: table label, status badge, submitted toggle */}
+            {/* Header */}
             <View style={styles.inputCardHeader}>
               <Text style={styles.inputTableNum}>
                 {currentTable
@@ -372,7 +606,7 @@ export function ScoreOverview() {
               </View>
             </View>
 
-            {/* Score column label row */}
+            {/* Column labels */}
             <View style={styles.columnLabels}>
               <Text style={styles.colLabelPlayer}>{t("colPlayer")}</Text>
               <Text style={styles.colLabelScore}>{t("colScore")}</Text>
@@ -422,7 +656,7 @@ export function ScoreOverview() {
               />
             ))}
 
-            {/* Errors — above the note field, inside the scrollable card */}
+            {/* Warnings — above the note field */}
             {(missingSig || scoreConflict || placementInvalid) && (
               <View style={styles.warningGroup}>
                 {missingSig && (
@@ -495,7 +729,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       paddingBottom: inset.list,
       gap: inset.list,
     },
-    modeRow: {
+    controlRow: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
@@ -508,6 +742,32 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     progressText: { ...type.caption, color: colors.textMuted },
     progressSep: { ...type.caption, color: colors.border },
+    overviewFilters: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+      paddingBottom: inset.list,
+      gap: inset.tight,
+    },
+    filtersRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: inset.tight,
+    },
+    filtersLeft: {
+      flex: 1,
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: inset.tight,
+    },
+    overviewList: {
+      gap: inset.list,
+      paddingBottom: inset.screenBottom,
+    },
+    cardsGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: inset.list,
+    },
     inputOuter: { flex: 1 },
     inputCard: {
       padding: inset.card,
@@ -551,7 +811,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       flexDirection: "row",
       alignItems: "center",
       gap: space[2],
-      paddingHorizontal: 0,
     },
     colLabelPlayer: { ...type.caption, color: colors.textMuted, flex: 1 },
     colLabelScore: { ...type.caption, color: colors.textMuted, width: 64, textAlign: "center" },
