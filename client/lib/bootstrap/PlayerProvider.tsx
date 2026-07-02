@@ -4,8 +4,10 @@ import {
   PropsWithChildren,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
+import { usePlayerStore } from "../stores/appwrite/player-store";
 import * as SecureStorage from "../secureStorage";
 import { Player } from "../models/player";
 
@@ -34,6 +36,8 @@ export const playerContext = createContext<PlayerContext>({
 export const PlayerProvider: FC<PropsWithChildren> = ({ children }) => {
   const [player, setPlayer] = useState<Player | null>(null);
   const [playerLoading, setPlayerLoading] = useState(true);
+  const playerStoreCollection = usePlayerStore((s) => s.collection);
+  const storeWasEmpty = useRef(true);
 
   useEffect(() => {
     (async () => {
@@ -53,9 +57,27 @@ export const PlayerProvider: FC<PropsWithChildren> = ({ children }) => {
     })();
   }, []);
 
-  const assignPlayer = async (player: Player) => {
-    setPlayer(player);
-    await SecureStorage.setItemAsync(PLAYER_INFO_KEY, JSON.stringify(player));
+  // Validate stored player against the player store once it first loads.
+  // Only triggers on the empty→populated transition; skips mid-session updates.
+  useEffect(() => {
+    if (playerStoreCollection.length === 0) {
+      storeWasEmpty.current = true;
+      return;
+    }
+    if (!storeWasEmpty.current) return;
+    storeWasEmpty.current = false;
+    if (!player) return;
+
+    const valid = playerStoreCollection.some((p) => p.$id === player.$id);
+    if (!valid) {
+      setPlayer(null);
+      SecureStorage.deleteItemAsync(PLAYER_INFO_KEY);
+    }
+  }, [playerStoreCollection, player]);
+
+  const assignPlayer = async (p: Player) => {
+    setPlayer(p);
+    await SecureStorage.setItemAsync(PLAYER_INFO_KEY, JSON.stringify(p));
   };
 
   const clearPlayer = async () => {

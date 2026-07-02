@@ -4,11 +4,13 @@ import { AppState, AppStateStatus } from "react-native";
 import { useAuth } from "../auth";
 import { useTableBellNotifications } from "../notifications/useTableBellNotifications";
 import { useFeatureFlagStore } from "../stores/appwrite/feature-flag-store";
+import { usePlayerStore } from "../stores/appwrite/player-store";
 import { useResultStore } from "../stores/appwrite/result-store";
 import { useRuleStore } from "../stores/appwrite/rule-store";
 import { useScheduleStore } from "../stores/appwrite/schedule-store";
 import { useTableBellStore } from "../stores/appwrite/table-bell-store";
 import { useTableStore } from "../stores/appwrite/table-store";
+import { useTeamStore } from "../stores/appwrite/team-store";
 import { useTimerSettingsStore } from "../stores/appwrite/timer-settings-store";
 import { useTimerStore } from "../stores/appwrite/timer-store";
 import { clearAllSubscriptions } from "../stores/real-time-store";
@@ -32,6 +34,8 @@ const userInits = [
   useTimerSettingsStore,
   useResultStore,
   useTableStore,
+  useTeamStore,
+  usePlayerStore,
 ];
 
 const adminInits: any[] = [];

@@ -1,10 +1,10 @@
 import { PIN_STORE_KEY, useAuth } from "@/lib/auth";
 import { usePlayer } from "@/lib/bootstrap/PlayerProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
+import { PlayerSelectionCard } from "@/lib/components/PlayerSelectionCard";
 import { SelectPicker } from "@/lib/components/SelectPicker";
 import * as SecureStorage from "@/lib/secureStorage";
 import i18n, { LANGUAGE_STORE_KEY } from "@/lib/i18n/i18n";
-import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
 import { ColorScheme } from "@/lib/theme/colors";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
@@ -21,10 +21,9 @@ const SCHEMES: ColorScheme[] = ["light", "dark", "highContrast"];
 
 export default function SettingsScreen() {
   const { t, i18n: i18nHook } = useTranslation(["settings"]);
-  const { user, logout, isAdmin } = useAuth();
-  const { player, clearPlayer } = usePlayer();
+  const { user, logout } = useAuth();
+  const { clearPlayer } = usePlayer();
   const { colors, scheme, setScheme } = useTheme();
-  const scheduleCollection = useScheduleStore((s) => s.collection);
 
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -37,12 +36,6 @@ export default function SettingsScreen() {
       LANGUAGES.map((l) => ({ value: l, label: t(`settings:languages.${l}`) })),
     [t],
   );
-
-  const activeItem = useMemo(
-    () => scheduleCollection.find((s) => s.isActive),
-    [scheduleCollection],
-  );
-  const canChangeUser = isAdmin || !player || activeItem?.allowUserChange !== false;
 
   async function handleDebugReset() {
     Alert.alert(
@@ -134,64 +127,8 @@ export default function SettingsScreen() {
       {user && (
         <>
           <Text style={styles.sectionLabel}>{t("settings:account")}</Text>
-          <View style={styles.card}>
-            {player && (
-              <>
-                <View style={styles.row}>
-                  <View style={styles.rowLeft}>
-                    <Ionicons
-                      name="shield-outline"
-                      size={20}
-                      color={colors.textMuted}
-                      style={styles.rowIcon}
-                    />
-                    <Text style={styles.rowLabel}>
-                      {t("settings:currentTeam")}
-                    </Text>
-                  </View>
-                  <Text style={styles.rowValue}>{player.team.name}</Text>
-                </View>
-                <View style={[styles.row, styles.rowBorderTop]}>
-                  <View style={styles.rowLeft}>
-                    <Ionicons
-                      name="person-outline"
-                      size={20}
-                      color={colors.textMuted}
-                      style={styles.rowIcon}
-                    />
-                    <Text style={styles.rowLabel}>
-                      {t("settings:currentPlayer")}
-                    </Text>
-                  </View>
-                  <Text style={styles.rowValue}>{player.name}</Text>
-                </View>
-              </>
-            )}
-            {canChangeUser && (
-              <Pressable
-                style={[styles.row, player && styles.rowBorderTop]}
-                onPress={() =>
-                  router.push(
-                    "/(pages)/(team-player)/choose-your-character?from=settings",
-                  )
-                }
-              >
-                <View style={styles.rowLeft}>
-                  <Ionicons
-                    name="people-outline"
-                    size={20}
-                    color={colors.textMuted}
-                    style={styles.rowIcon}
-                  />
-                  <Text style={styles.rowLabel}>{t("settings:changeTeam")}</Text>
-                </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={colors.textMuted}
-                />
-              </Pressable>
-            )}
+          <View style={styles.cardSpaced}>
+            <PlayerSelectionCard from="settings" />
           </View>
         </>
       )}
@@ -236,6 +173,9 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       borderRadius: 10,
       marginBottom: 24,
       overflow: "hidden",
+    },
+    cardSpaced: {
+      marginBottom: 24,
     },
     row: {
       flexDirection: "row",

@@ -2,6 +2,7 @@ import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BackButton } from "@/lib/components/BackButton";
 import { PlayerColorSetupModal } from "@/lib/components/PlayerColorSetupModal";
+import { PlayerSelectionCard } from "@/lib/components/PlayerSelectionCard";
 import { Table } from "@/lib/components/Table";
 import { FeatureFlagSlugs } from "@/lib/feature-flags/feature-flag-slugs";
 import { useFeatureFlags } from "@/lib/feature-flags/useFeatureFlags";
@@ -231,7 +232,11 @@ export default function GamePage() {
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       >
-        <Table gameId={gameId} />
+        {tableNumber !== null ? (
+          <Table gameId={gameId} />
+        ) : (
+          <PlayerSelectionCard from="game" forceAllow gameId={gameId} />
+        )}
 
         <View style={styles.actionsGrid}>
           {ACTION_BUTTONS.map(
@@ -244,6 +249,7 @@ export default function GamePage() {
               featureFlag,
             }) => {
               const disabled =
+                (tableNumber === null && key !== "rules") ||
                 (requiresActiveGame && !isActiveGame) ||
                 (featureFlag !== undefined && !isFeatureEnabled(featureFlag));
               const press =
@@ -292,10 +298,11 @@ export default function GamePage() {
           activeOpacity={0.7}
           onPress={toggleBell}
           disabled={
-            !isFeatureEnabled(FeatureFlagSlugs.TABLE_BELL) &&
-            (!isActiveGame ||
-              bellActions.isLoading ||
-              (!!bell && !bellActions.canDelete(bell)))
+            tableNumber === null ||
+            (!isFeatureEnabled(FeatureFlagSlugs.TABLE_BELL) &&
+              (!isActiveGame ||
+                bellActions.isLoading ||
+                (!!bell && !bellActions.canDelete(bell))))
           }
         >
           <View style={styles.bellIconRow}>

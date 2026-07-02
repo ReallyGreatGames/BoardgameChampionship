@@ -53,6 +53,8 @@ const translations = {
     currentTeam: "Team",
     currentPlayer: "Player",
     changeTeam: "Change Team / Player",
+    selectPlayer: "Select Team & Player",
+    continueSetup: "Continue",
     legal: "Legal",
     legalNotice: "Imprint & Privacy Policy",
     languages: {
@@ -412,6 +414,8 @@ const translations = {
       connectionHint: "Check your connection and try again.",
       loadPlayersError: "Couldn't load players.",
       noPlayersFound: "No players found for this team.",
+      searchTeams: "Search teams...",
+      noTeamsFound: "No teams match your search.",
     },
   },
   info: {
