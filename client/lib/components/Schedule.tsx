@@ -26,6 +26,7 @@ import { inset } from "../theme/spacing";
 import { type } from "../theme/typography";
 import { addMinutesToTime, deepClone } from "../utils";
 import { useDialog } from "./Dialog";
+import { Markdown } from "./Markdown";
 import { ScheduleFormData, ScheduleItemModal } from "./ScheduleItemModal";
 import { Table } from "./Table";
 import { TimerSettingsModal } from "./TimerSettingsModal";
@@ -291,7 +292,9 @@ export function ScheduleItem({
             {schedule.gameId ? <Table gameId={schedule.gameId} /> : null}
 
             {schedule.description ? (
-              <Text style={styles.description}>{schedule.description}</Text>
+              <Markdown textStyle={styles.description}>
+                {schedule.description}
+              </Markdown>
             ) : null}
           </View>
         </>

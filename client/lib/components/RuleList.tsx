@@ -15,6 +15,7 @@ import { useRuleStore } from "../stores/appwrite/rule-store";
 import { inset } from "../theme/spacing";
 import { type } from "../theme/typography";
 import { useDialog } from "./Dialog";
+import { Markdown } from "./Markdown";
 import { RuleFormData, RuleModal, typeColor } from "./RuleModal";
 import { SearchInput } from "./SearchInput";
 
@@ -175,7 +176,9 @@ export function RuleList({ gameId, isAdmin }: Props) {
                     >
                       <View style={styles.cardContent}>
                         <Text style={styles.ruleTitle}>{rule.title}</Text>
-                        <Text style={styles.ruleText}>{rule.text}</Text>
+                        <Markdown textStyle={styles.ruleText}>
+                          {rule.text}
+                        </Markdown>
                       </View>
 
                       {isAdmin && (
