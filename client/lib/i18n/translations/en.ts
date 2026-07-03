@@ -272,10 +272,6 @@ const translations = {
     warnMissingSignature: "At least one signature is missing.",
     warnScoreConflict: "Scores do not match the placements.",
     warnPlacementInvalid: "Invalid placement combination.",
-    colPlayer: "Player",
-    colScore: "Score",
-    colPlacement: "Place",
-    colSig: "Sig.",
   },
   rankings: {
     noGames: "No games found",

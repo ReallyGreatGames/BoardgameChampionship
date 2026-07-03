@@ -274,10 +274,6 @@ const translations = {
     warnMissingSignature: "Mindestens eine Unterschrift fehlt.",
     warnScoreConflict: "Punkte stimmen nicht mit der Platzierung überein.",
     warnPlacementInvalid: "Ungültige Platzierungskombination.",
-    colPlayer: "Spieler:in",
-    colScore: "Punkte",
-    colPlacement: "Platz",
-    colSig: "Unt.",
   },
   rankings: {
     noGames: "Keine Spiele gefunden",

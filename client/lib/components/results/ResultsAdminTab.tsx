@@ -8,7 +8,6 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  useWindowDimensions,
 } from "react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -25,6 +24,7 @@ import { useTableStore } from "@/lib/stores/appwrite/table-store";
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
 import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
+import { ui } from "@/lib/theme/ui";
 import {
   hasScorePlacementConflict,
   isValidPlacementCombo,
@@ -57,7 +57,6 @@ export function ResultsAdminTab() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useTranslation(["scoreOverview", "tableOverview"]);
   const { confirm } = useDialog();
-  const { width: screenWidth } = useWindowDimensions();
 
   const { collection: schedules } = useScheduleStore();
   const { collection: results } = useResultStore();
@@ -272,7 +271,10 @@ export function ResultsAdminTab() {
     });
   }, [filteredEntries, sortOrder]);
 
-  const numColumns = screenWidth >= 600 ? 2 : 1;
+  // Based on the grid's own measured width, not window width — window.innerWidth
+  // shifts with browser zoom on web, which made the column count flicker between
+  // 1 and 2 at the same physical zoom-independent layout size.
+  const numColumns = gridWidth >= ui.breakpointTablet - inset.screen * 2 ? 2 : 1;
   const cardWidth = useMemo(() => {
     if (!gridWidth) return 0;
     return (gridWidth - (numColumns - 1) * inset.list) / numColumns;
@@ -493,7 +495,10 @@ export function ResultsAdminTab() {
   // ── Overview mode ─────────────────────────────────────────────────────────
   if (mode === "overview") {
     return (
-      <View style={styles.container}>
+      <View
+        style={styles.container}
+        onLayout={(e) => setGridWidth(e.nativeEvent.layout.width)}
+      >
         {header}
         <ResultsFilterDialog
           visible={filterDialogVisible}
@@ -522,10 +527,7 @@ export function ResultsAdminTab() {
                   style={{ paddingVertical: inset.group, flex: 0 }}
                 />
               )}
-              <View
-                style={styles.cardsGrid}
-                onLayout={(e) => setGridWidth(e.nativeEvent.layout.width)}
-              >
+              <View style={styles.cardsGrid}>
                 {sortedEntries.map((entry) => {
                   const tableIdx = gameTables.findIndex((t) => t.tableNumber === entry.id);
                   return (
@@ -596,14 +598,6 @@ export function ResultsAdminTab() {
                   thumbColor={submitted ? colors.onAccent : colors.textMuted}
                 />
               </View>
-            </View>
-
-            {/* Column labels */}
-            <View style={styles.columnLabels}>
-              <Text style={styles.colLabelPlayer}>{t("colPlayer")}</Text>
-              <Text style={styles.colLabelScore}>{t("colScore")}</Text>
-              <Text style={styles.colLabelPlacement}>{t("colPlacement")}</Text>
-              <Text style={styles.colLabelSig}>{t("colSig")}</Text>
             </View>
 
             {Array.from({ length: PLAYER_COUNT }, (_, i) => (
@@ -811,15 +805,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       borderColor: colors.error + "40",
     },
     warningText: { ...type.bodySmall, color: colors.error, flex: 1 },
-    columnLabels: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: space[2],
-    },
-    colLabelPlayer: { ...type.caption, color: colors.textMuted, flex: 1 },
-    colLabelScore: { ...type.caption, color: colors.textMuted, width: 64, textAlign: "center" },
-    colLabelPlacement: { ...type.caption, color: colors.textMuted, width: 4 * 40 + 3 * 4, textAlign: "center" },
-    colLabelSig: { ...type.caption, color: colors.textMuted, width: 48, textAlign: "center" },
     noteInput: {
       borderWidth: 1,
       borderColor: colors.border,
