@@ -1,6 +1,6 @@
 import { Tournament } from "@/lib/models/tournament";
 import { create } from "zustand";
-import { initCollection, Key, RealtimeCollectionStore } from "../real-time-store";
+import { fetchCollection, Key, RealtimeCollectionStore } from "../real-time-store";
 
 interface TournamentState extends RealtimeCollectionStore<Tournament> {
   initialized: boolean;
@@ -8,14 +8,15 @@ interface TournamentState extends RealtimeCollectionStore<Tournament> {
 }
 
 export const useTournamentStore = create<TournamentState>((set) => {
-  let unsubscribe: (() => void) | null = null;
   const key: Key = "tournament";
 
   return {
     collection: [],
+    key,
+    realtimeSet: set as any,
     initialized: false,
     init: async () => {
-      unsubscribe = await initCollection<Tournament>(key, set as any, unsubscribe);
+      await fetchCollection<Tournament>(key, set as any);
       set((s) => ({ ...s, initialized: true }));
     },
   };

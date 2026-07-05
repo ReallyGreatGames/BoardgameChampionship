@@ -3,7 +3,7 @@ import { Models, Query } from "react-native-appwrite";
 import { create } from "zustand";
 import {
   addToCollection,
-  initCollection,
+  fetchCollection,
   Key,
   RealtimeCollectionStore,
   updateInCollection,
@@ -18,16 +18,16 @@ interface TimerState extends RealtimeCollectionStore<Timer> {
 }
 
 export const useTimerStore = create<TimerState>((set) => {
-  let unsubscribe: (() => void) | null = null;
   const key: Key = "timers";
 
   return {
     collection: [],
+    key,
+    realtimeSet: set,
     init: async () => {
-      unsubscribe = await initCollection<Timer, TimerState>(
+      await fetchCollection<Timer, TimerState>(
         key,
         set,
-        unsubscribe,
         [Query.select(["*", "playerPositions.*"])],
       );
     },

@@ -3,7 +3,7 @@ import { Models } from "react-native-appwrite";
 import { create } from "zustand";
 import {
   addToCollection,
-  initCollection,
+  fetchCollection,
   Key,
   RealtimeCollectionStore,
   removeFromCollection,
@@ -20,13 +20,14 @@ interface TableBellState extends RealtimeCollectionStore<TableBell> {
 }
 
 export const useTableBellStore = create<TableBellState>((set) => {
-  let unsubscribe: (() => void) | null = null;
   const key: Key = "table-bell";
 
   return {
     collection: [],
+    key,
+    realtimeSet: set,
     init: async () => {
-      unsubscribe = await initCollection<TableBell, TableBellState>(key, set, unsubscribe);
+      await fetchCollection<TableBell, TableBellState>(key, set);
     },
 
     add: async (data: Omit<TableBell, keyof Models.Document>) =>

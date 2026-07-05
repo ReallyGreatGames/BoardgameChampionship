@@ -1,7 +1,7 @@
 import { Player } from "@/lib/models/player";
 import { Query } from "react-native-appwrite";
 import { create } from "zustand";
-import { initCollection, Key, RealtimeCollectionStore } from "../real-time-store";
+import { fetchCollection, Key, RealtimeCollectionStore } from "../real-time-store";
 
 interface PlayerState extends RealtimeCollectionStore<Player> {
   initialized: boolean;
@@ -9,14 +9,15 @@ interface PlayerState extends RealtimeCollectionStore<Player> {
 }
 
 export const usePlayerStore = create<PlayerState>((set) => {
-  let unsubscribe: (() => void) | null = null;
   const key: Key = "players";
 
   return {
     collection: [],
+    key,
+    realtimeSet: set as any,
     initialized: false,
     init: async () => {
-      unsubscribe = await initCollection<Player>(key, set as any, unsubscribe, [
+      await fetchCollection<Player>(key, set as any, [
         Query.select(["*", "team.*"]),
       ]);
       set((s) => ({ ...s, initialized: true }));
