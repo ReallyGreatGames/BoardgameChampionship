@@ -16,6 +16,9 @@ export type ParsedRow = {
   errors: string[];
 };
 
+/** Used when a row has no country code column, or it's left blank. */
+const DEFAULT_COUNTRY = "DE";
+
 export function parseTsv(raw: string): ParsedRow[] {
   const lines = raw
     .split("\n")
@@ -32,11 +35,14 @@ export function parseTsv(raw: string): ParsedRow[] {
 function parseRow(raw: string, line: number): ParsedRow {
   const cols = raw.split("\t");
 
-  if (cols.length < 8) {
+  // Columns 0-6 (name, country/city, 4 players, team code) are required.
+  // Column 7 (2-letter country code) is optional — some MANNSCHAFTEN exports
+  // omit it entirely, or leave it blank; both default to DEFAULT_COUNTRY.
+  if (cols.length < 7) {
     return {
       line,
       team: { name: cols[0]?.trim() ?? "", country: "", code: "", players: [] },
-      errors: [`Expected 8 columns, got ${cols.length}`],
+      errors: [`Expected at least 7 columns, got ${cols.length}`],
     };
   }
 
@@ -48,16 +54,13 @@ function parseRow(raw: string, line: number): ParsedRow {
   const p3 = cols[4].trim();
   const p4 = cols[5].trim();
   const code = cols[6].trim();
-  const country = cols[7].trim();
+  const country = cols[7]?.trim() || DEFAULT_COUNTRY;
 
   if (!name) {
     errors.push("Team name is missing");
   }
   if (!code) {
     errors.push("Team code is missing");
-  }
-  if (!country) {
-    errors.push("Country code is missing");
   }
 
   const playerNames = [p1, p2, p3, p4];
