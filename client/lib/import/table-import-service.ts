@@ -140,6 +140,7 @@ export async function importTables(
     entryIndex: number,
     status: ImportRowStatus,
   ) => void,
+  isMounted: () => boolean = () => true,
 ): Promise<void> {
   const existing = await retry(() =>
     tablesDB.listRows<Table>({
@@ -152,6 +153,9 @@ export async function importTables(
   for (let g = 0; g < groups.length; g++) {
     const group = groups[g];
     for (let e = 0; e < group.entries.length; e++) {
+      if (!isMounted()) {
+        return;
+      }
       const entry = group.entries[e];
       onStatus(g, e, { state: "importing" });
       try {

@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import {
   createContext,
   ReactNode,
@@ -7,7 +8,9 @@ import {
 } from "react";
 import { Models, Query } from "react-native-appwrite";
 import { account, DATABASE_ID, tablesDB } from "./appwrite";
+import { useTournament } from "./bootstrap/TournamentProvider";
 import * as SecureStore from "./secureStorage";
+import { useTournamentStore } from "./stores/appwrite/tournament-store";
 
 const PIN_COLLECTION_ID = "tournament";
 export const PIN_STORE_KEY = "bgcs_pin_auth";
@@ -65,6 +68,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const raw = await SecureStore.getItemAsync(PIN_STORE_KEY);
         if (!raw) {
+          // No verified PIN — stay logged out, but still establish at least
+          // an anonymous session so pre-login reads (e.g. checking whether
+          // the tournament is active, on the login screen) work.
+          await getOrCreateAnonymousSession();
           return;
         }
 
@@ -102,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function login(email: string, password: string) {
+    await account.deleteSessions().catch(() => {});
     await account.createEmailPasswordSession({ email, password });
     const u = await account.get();
     setUser(u);
@@ -136,6 +144,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isAdmin = !!user?.labels?.includes("admin");
   const isPinVerified = !isAdmin && pinVerified;
+
+  const { active: tournamentActive } = useTournament();
+  const tournamentInitialized = useTournamentStore((s) => s.initialized);
+
+  // Force-logout: once the tournament is confirmed inactive, non-admin
+  // sessions can no longer stay logged in. Gated on tournamentInitialized so
+  // the still-empty store on a cold start (before its first realtime fetch
+  // resolves) isn't mistaken for "no active tournament".
+  useEffect(() => {
+    if (loading || !tournamentInitialized) {
+      return;
+    }
+    if (!tournamentActive && isPinVerified) {
+      logout();
+      router.replace("/");
+    }
+  }, [loading, tournamentInitialized, tournamentActive, isPinVerified]);
 
   return (
     <AuthContext.Provider

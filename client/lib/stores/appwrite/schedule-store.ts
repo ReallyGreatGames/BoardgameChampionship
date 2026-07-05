@@ -3,7 +3,7 @@ import { Models } from "react-native-appwrite";
 import { create } from "zustand";
 import {
   addToCollection,
-  initCollection,
+  fetchCollection,
   Key,
   RealtimeCollectionStore,
   removeFromCollection,
@@ -20,13 +20,14 @@ interface ScheduleState extends RealtimeCollectionStore<Schedule> {
 }
 
 export const useScheduleStore = create<ScheduleState>((set) => {
-  let unsubscribe: (() => void) | null = null;
   const key: Key = "schedule";
 
   return {
     collection: [],
+    key,
+    realtimeSet: set,
     init: async () => {
-      unsubscribe = await initCollection<Schedule, ScheduleState>(key, set, unsubscribe);
+      await fetchCollection<Schedule, ScheduleState>(key, set);
     },
 
     add: async (data: Omit<Schedule, keyof Models.Document>) =>

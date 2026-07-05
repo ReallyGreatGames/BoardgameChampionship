@@ -1,15 +1,14 @@
-import { Player } from "@/lib/models/player";
-import { Query } from "react-native-appwrite";
+import { Tournament } from "@/lib/models/tournament";
 import { create } from "zustand";
 import { fetchCollection, Key, RealtimeCollectionStore } from "../real-time-store";
 
-interface PlayerState extends RealtimeCollectionStore<Player> {
+interface TournamentState extends RealtimeCollectionStore<Tournament> {
   initialized: boolean;
   init: () => Promise<void>;
 }
 
-export const usePlayerStore = create<PlayerState>((set) => {
-  const key: Key = "players";
+export const useTournamentStore = create<TournamentState>((set) => {
+  const key: Key = "tournament";
 
   return {
     collection: [],
@@ -17,9 +16,7 @@ export const usePlayerStore = create<PlayerState>((set) => {
     realtimeSet: set as any,
     initialized: false,
     init: async () => {
-      await fetchCollection<Player>(key, set as any, [
-        Query.select(["*", "team.*"]),
-      ]);
+      await fetchCollection<Tournament>(key, set as any);
       set((s) => ({ ...s, initialized: true }));
     },
   };

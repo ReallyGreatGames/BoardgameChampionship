@@ -1,37 +1,75 @@
+import { useTheme } from "@/lib/bootstrap/ThemeProvider";
+import {
+  ImportRowStatus,
+  importTeam,
+  prefetchExisting,
+} from "@/lib/import/player-import-service";
+import { readTextFile } from "@/lib/import/read-text-file";
+import { ParsedRow, parseTsv } from "@/lib/import/tsv-parser";
+import {
+  deleteItems,
+  listPlayersWipePlan,
+  WipeGroup,
+  WipeItemStatus,
+} from "@/lib/import/wipe-service";
+import { inset, space } from "@/lib/theme/spacing";
+import { type } from "@/lib/theme/typography";
 import * as DocumentPicker from "expo-document-picker";
-import { File } from "expo-file-system";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { useTheme } from "@/lib/bootstrap/ThemeProvider";
-import {
-  importTeam,
-  ImportRowStatus,
-  prefetchExisting,
-} from "@/lib/import/player-import-service";
-import { parseTsv, ParsedRow } from "@/lib/import/tsv-parser";
-import { inset, space } from "@/lib/theme/spacing";
-import { type } from "@/lib/theme/typography";
+import { useDialog } from "@/lib/components/ui/Dialog";
+import { useImportActivity } from "@/lib/components/admin/ImportActivityContext";
+import { ImportProgressBar } from "./ImportProgressBar";
 
-type Phase = "pick" | "preview" | "importing" | "done";
+type Phase = "pick" | "preview" | "deleting" | "importing" | "done";
+
+type WipeStatusMap = Record<string, Record<string, WipeItemStatus>>;
+
+function initWipeStatuses(groups: WipeGroup[]): WipeStatusMap {
+  const next: WipeStatusMap = {};
+  for (const g of groups) {
+    next[g.key] = {};
+    for (const item of g.items) {
+      next[g.key][item.id] = { state: "pending" };
+    }
+  }
+  return next;
+}
+
+function allWipeItemsSucceeded(
+  statuses: WipeStatusMap,
+  groups: WipeGroup[],
+): boolean {
+  return groups.every((g) =>
+    g.items.every((item) => statuses[g.key]?.[item.id]?.state === "success"),
+  );
+}
 
 export function ImportPlayers() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { confirm } = useDialog();
+  const { setBusy } = useImportActivity();
 
   const [phase, setPhase] = useState<Phase>("pick");
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [statuses, setStatuses] = useState<ImportRowStatus[]>([]);
   const [pickError, setPickError] = useState<string | null>(null);
 
+  const [wipeGroups, setWipeGroups] = useState<WipeGroup[]>([]);
+  const [wipeStatuses, setWipeStatuses] = useState<WipeStatusMap>({});
+  const [activeWipeGroup, setActiveWipeGroup] = useState<string | null>(null);
+
   const mountedRef = useRef(true);
+  const cancelRequestedRef = useRef(false);
+
   useEffect(
     () => () => {
       mountedRef.current = false;
@@ -39,13 +77,21 @@ export function ImportPlayers() {
     [],
   );
 
+  // Block leaving the import tabs while a delete/import run is active — the
+  // user must cancel or let it finish, since unmounting mid-run silently
+  // aborts it.
+  useEffect(() => {
+    setBusy(phase === "deleting" || phase === "importing");
+    return () => setBusy(false);
+  }, [phase, setBusy]);
+
   const hasErrors = rows.some((r) => r.errors.length > 0);
 
   async function handlePickFile() {
     setPickError(null);
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: [".tsv"],
+        type: [".tsv", ".txt", ".csv"],
         copyToCacheDirectory: true,
       });
 
@@ -54,17 +100,7 @@ export function ImportPlayers() {
       }
 
       const asset = result.assets[0];
-      let text: string;
-
-      if (Platform.OS === "web") {
-        const response = await fetch(asset.uri);
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        text = await response.text();
-      } else {
-        text = await new File(asset.uri).text();
-      }
+      const text = await readTextFile(asset.uri);
 
       const parsed = parseTsv(text);
       setRows(parsed);
@@ -75,14 +111,59 @@ export function ImportPlayers() {
     }
   }
 
-  async function handleImport() {
-    setPhase("importing");
+  async function runWipeGroup(group: WipeGroup, local: WipeStatusMap) {
+    setActiveWipeGroup(group.key);
+    await deleteItems(
+      group.tableId,
+      group.items,
+      (itemId, status) => {
+        local[group.key] = { ...local[group.key], [itemId]: status };
+        setWipeStatuses({ ...local });
+      },
+      () => mountedRef.current && !cancelRequestedRef.current,
+    );
+  }
 
+  function cancelDeleting() {
+    cancelRequestedRef.current = true;
+    setWipeStatuses((prev) => {
+      const next: WipeStatusMap = {};
+      for (const g of wipeGroups) {
+        next[g.key] = { ...prev[g.key] };
+        for (const item of g.items) {
+          if (next[g.key][item.id]?.state === "pending") {
+            next[g.key][item.id] = { state: "error", message: "Cancelled" };
+          }
+        }
+      }
+      return next;
+    });
+  }
+
+  function cancelImporting() {
+    cancelRequestedRef.current = true;
+    setStatuses((prev) =>
+      prev.map((s) =>
+        s.state === "pending" ? { state: "error", message: "Cancelled" } : s,
+      ),
+    );
+    setPhase("done");
+  }
+
+  async function runImport() {
+    cancelRequestedRef.current = false;
+    setPhase("importing");
     const { teamsByCode, playersByTeamAndNumber } = await prefetchExisting();
+    if (!mountedRef.current) {
+      return;
+    }
 
     for (let i = 0; i < rows.length; i++) {
       if (!mountedRef.current) {
         return;
+      }
+      if (cancelRequestedRef.current) {
+        break;
       }
       await importTeam(
         rows[i].team,
@@ -103,11 +184,127 @@ export function ImportPlayers() {
     }
   }
 
+  async function retryFailedImports() {
+    const failedIndexes = rows
+      .map((_, i) => i)
+      .filter((i) => statuses[i]?.state === "error");
+    if (failedIndexes.length === 0) {
+      return;
+    }
+
+    cancelRequestedRef.current = false;
+    setPhase("importing");
+    const { teamsByCode, playersByTeamAndNumber } = await prefetchExisting();
+    if (!mountedRef.current) {
+      return;
+    }
+
+    for (const i of failedIndexes) {
+      if (!mountedRef.current) {
+        return;
+      }
+      if (cancelRequestedRef.current) {
+        break;
+      }
+      await importTeam(
+        rows[i].team,
+        teamsByCode,
+        playersByTeamAndNumber,
+        (status) => {
+          setStatuses((prev) => {
+            const next = [...prev];
+            next[i] = status;
+            return next;
+          });
+        },
+      );
+    }
+
+    if (mountedRef.current) {
+      setPhase("done");
+    }
+  }
+
+  async function handleImportClick() {
+    const ok = await confirm({
+      title: "Replace all teams & players?",
+      message:
+        `This will permanently delete all existing teams, players, table ` +
+        `seatings, and timers, then import ${rows.length} team(s) from this ` +
+        `file. This cannot be undone.`,
+      confirmLabel: "Delete & Import",
+      destructive: true,
+    });
+    if (!ok) {
+      return;
+    }
+
+    cancelRequestedRef.current = false;
+    const groups = await listPlayersWipePlan();
+    if (!mountedRef.current) {
+      return;
+    }
+    setWipeGroups(groups);
+    const local = initWipeStatuses(groups);
+    setWipeStatuses(local);
+    setPhase("deleting");
+
+    for (const group of groups) {
+      if (!mountedRef.current) {
+        return;
+      }
+      if (cancelRequestedRef.current) {
+        break;
+      }
+      await runWipeGroup(group, local);
+    }
+    setActiveWipeGroup(null);
+    if (!mountedRef.current) {
+      return;
+    }
+
+    if (allWipeItemsSucceeded(local, groups)) {
+      await runImport();
+    }
+  }
+
+  async function retryWipeGroup(groupKey: string) {
+    const group = wipeGroups.find((g) => g.key === groupKey);
+    if (!group) {
+      return;
+    }
+    const failedItems = group.items.filter(
+      (item) => wipeStatuses[groupKey]?.[item.id]?.state === "error",
+    );
+    if (failedItems.length === 0) {
+      return;
+    }
+
+    cancelRequestedRef.current = false;
+    const local: WipeStatusMap = { ...wipeStatuses };
+    await runWipeGroup({ ...group, items: failedItems }, local);
+    setActiveWipeGroup(null);
+    if (!mountedRef.current) {
+      return;
+    }
+
+    if (allWipeItemsSucceeded(local, wipeGroups)) {
+      await runImport();
+    }
+  }
+
+  async function handleImportAnyway() {
+    await runImport();
+  }
+
   function handleReset() {
     setPhase("pick");
     setRows([]);
     setStatuses([]);
     setPickError(null);
+    setWipeGroups([]);
+    setWipeStatuses({});
+    setActiveWipeGroup(null);
   }
 
   if (phase === "pick") {
@@ -115,13 +312,77 @@ export function ImportPlayers() {
       <View style={styles.centered}>
         <Text style={styles.pickTitle}>Import teams & players</Text>
         <Text style={styles.pickSubtitle}>
-          Select a TSV file with 8 columns: team name, country, player 1–4, team
-          code, country code
+          Select a tab-separated file (.tsv, .txt, .csv) with: team name,
+          country, player 1–4, team code, and optionally a 2-letter country
+          code (defaults to &quot;DE&quot; if left out)
         </Text>
         <Pressable style={styles.pickButton} onPress={handlePickFile}>
-          <Text style={styles.pickButtonText}>Pick TSV file</Text>
+          <Text style={styles.pickButtonText}>Pick file</Text>
         </Pressable>
         {pickError && <Text style={styles.pickError}>{pickError}</Text>}
+      </View>
+    );
+  }
+
+  if (phase === "deleting") {
+    const wipeIdle = activeWipeGroup === null;
+    const hasWipeFailures = wipeGroups.some((g) =>
+      Object.values(wipeStatuses[g.key] ?? {}).some((s) => s.state === "error"),
+    );
+
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Deleting existing data…</Text>
+          <View style={styles.headerActions}>
+            {wipeIdle && hasWipeFailures && (
+              <Pressable
+                style={styles.bypassButton}
+                onPress={handleImportAnyway}
+              >
+                <Text style={styles.bypassButtonText}>
+                  Skip failed deletions & import anyway
+                </Text>
+              </Pressable>
+            )}
+            <Pressable style={styles.cancelButton} onPress={cancelDeleting}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+        <ScrollView
+          style={styles.tableScroll}
+          contentContainerStyle={styles.wipeList}
+          showsVerticalScrollIndicator={false}
+        >
+          {wipeGroups.map((group) => {
+            const groupStatuses = wipeStatuses[group.key] ?? {};
+            const succeeded = Object.values(groupStatuses).filter(
+              (s) => s.state === "success",
+            ).length;
+            const failedItems = group.items.flatMap((item) => {
+              const status = groupStatuses[item.id];
+              return status?.state === "error"
+                ? [{ id: item.id, label: item.label, message: status.message }]
+                : [];
+            });
+            return (
+              <ImportProgressBar
+                key={group.key}
+                label={group.label}
+                total={group.items.length}
+                succeeded={succeeded}
+                failedItems={failedItems}
+                active={activeWipeGroup === group.key}
+                onRetry={
+                  failedItems.length > 0
+                    ? () => retryWipeGroup(group.key)
+                    : undefined
+                }
+              />
+            );
+          })}
+        </ScrollView>
       </View>
     );
   }
@@ -151,7 +412,7 @@ export function ImportPlayers() {
                   styles.importButton,
                   hasErrors && styles.importButtonDisabled,
                 ]}
-                onPress={handleImport}
+                onPress={handleImportClick}
                 disabled={hasErrors}
               >
                 <Text style={styles.importButtonText}>
@@ -162,6 +423,11 @@ export function ImportPlayers() {
               </Pressable>
             </>
           )}
+          {phase === "importing" && (
+            <Pressable style={styles.cancelButton} onPress={cancelImporting}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </Pressable>
+          )}
           {phase === "done" && (
             <Pressable style={styles.secondaryButton} onPress={handleReset}>
               <Text style={styles.secondaryButtonText}>
@@ -171,6 +437,24 @@ export function ImportPlayers() {
           )}
         </View>
       </View>
+
+      {(phase === "importing" || phase === "done") && (
+        <View style={styles.wipeList}>
+          <ImportProgressBar
+            label="Teams"
+            total={rows.length}
+            succeeded={successCount}
+            failedItems={rows.flatMap((row, i) => {
+              const status = statuses[i];
+              return status?.state === "error"
+                ? [{ id: String(row.line), label: row.team.name, message: status.message }]
+                : [];
+            })}
+            active={phase === "importing"}
+            onRetry={errorCount > 0 ? retryFailedImports : undefined}
+          />
+        </View>
+      )}
 
       <ScrollView
         style={styles.tableScroll}
@@ -357,8 +641,37 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       ...type.bodySmall,
       color: colors.onAccent,
     },
+    bypassButton: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingVertical: space[2],
+      paddingHorizontal: space[4],
+    },
+    bypassButtonText: {
+      ...type.bodySmall,
+      color: colors.textSecondary,
+      fontWeight: "600",
+    },
+    cancelButton: {
+      borderWidth: 1,
+      borderColor: colors.error,
+      borderRadius: 8,
+      paddingVertical: space[2],
+      paddingHorizontal: space[4],
+    },
+    cancelButtonText: {
+      ...type.bodySmall,
+      color: colors.error,
+      fontWeight: "600",
+    },
     tableScroll: {
       flex: 1,
+    },
+    wipeList: {
+      gap: space[4],
+      paddingVertical: space[2],
     },
     tableHeader: {
       flexDirection: "row",

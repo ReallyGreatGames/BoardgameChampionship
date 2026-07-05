@@ -1,5 +1,5 @@
 import NetInfo from "@react-native-community/netinfo";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { AppState, AppStateStatus } from "react-native";
 import { useAuth } from "../auth";
 import { useTableBellNotifications } from "../notifications/useTableBellNotifications";
@@ -13,7 +13,8 @@ import { useTableStore } from "../stores/appwrite/table-store";
 import { useTeamStore } from "../stores/appwrite/team-store";
 import { useTimerSettingsStore } from "../stores/appwrite/timer-settings-store";
 import { useTimerStore } from "../stores/appwrite/timer-store";
-import { clearAllSubscriptions } from "../stores/real-time-store";
+import { useTournamentStore } from "../stores/appwrite/tournament-store";
+import { subscribeTier } from "../stores/real-time-store";
 
 /**
  * Initializes realtime store subscriptions after authentication.
@@ -22,9 +23,15 @@ import { clearAllSubscriptions } from "../stores/real-time-store";
  *   globalInits — runs immediately, no auth required
  *   userInits   — runs once when any authenticated user (PIN or admin) is ready
  *   adminInits  — runs once when an admin session is ready
+ *
+ * Each tier's stores fetch their own initial data independently (their own
+ * init()), but share a single realtime subscription per tier — Appwrite
+ * multiplexes every subscription onto one shared WebSocket regardless, and
+ * subscribing once per tier (instead of once per store) avoids the socket
+ * being torn down and rebuilt once per collection on every reconnect.
  */
 
-const globalInits = [useFeatureFlagStore];
+const globalInits = [useFeatureFlagStore, useTournamentStore];
 
 const userInits = [
   useScheduleStore,
@@ -40,44 +47,74 @@ const userInits = [
 
 const adminInits: any[] = [];
 
+type Tier = "global" | "user" | "admin";
+
+function tierEntries(stores: any[]) {
+  return stores.map((store) => {
+    const state = store.getState();
+    return { key: state.key, set: state.realtimeSet };
+  });
+}
+
+async function loadTier(stores: any[]) {
+  await Promise.all(stores.map((store) => store.getState().init()));
+}
+
 export function RealTimeStoreProvider() {
   const { isAdmin, isPinVerified, loading } = useAuth();
   const isAuthenticated = isAdmin || isPinVerified;
 
   useTableBellNotifications(isAdmin);
 
+  const tierUnsubscribes = useRef<Record<Tier, (() => void) | null>>({
+    global: null,
+    user: null,
+    admin: null,
+  });
+
+  const openTier = useCallback(async (tier: Tier, stores: any[]) => {
+    tierUnsubscribes.current[tier]?.();
+    tierUnsubscribes.current[tier] = null;
+    await loadTier(stores);
+    tierUnsubscribes.current[tier] = subscribeTier(tierEntries(stores));
+  }, []);
+
   const reconnectAll = useCallback(
     (reason: string) => {
       console.debug(`[realtime] ${reason} — reconnecting all subscriptions`);
-      clearAllSubscriptions();
-      globalInits.forEach((store) => store.getState().init());
+      tierUnsubscribes.current.global?.();
+      tierUnsubscribes.current.user?.();
+      tierUnsubscribes.current.admin?.();
+      tierUnsubscribes.current = { global: null, user: null, admin: null };
+
+      openTier("global", globalInits);
       if (isAuthenticated) {
-        userInits.forEach((store) => store.getState().init());
+        openTier("user", userInits);
       }
       if (isAdmin) {
-        adminInits.forEach((store) => store.getState().init());
+        openTier("admin", adminInits);
       }
     },
-    [isAuthenticated, isAdmin],
+    [isAuthenticated, isAdmin, openTier],
   );
 
   useEffect(() => {
-    globalInits.forEach((store) => store.getState().init());
-  }, []);
+    openTier("global", globalInits);
+  }, [openTier]);
 
   useEffect(() => {
     if (loading || !isAuthenticated) {
       return;
     }
-    userInits.forEach((store) => store.getState().init());
-  }, [loading, isAuthenticated]);
+    openTier("user", userInits);
+  }, [loading, isAuthenticated, openTier]);
 
   useEffect(() => {
     if (loading || !isAdmin) {
       return;
     }
-    adminInits.forEach((store) => store.getState().init());
-  }, [loading, isAdmin]);
+    openTier("admin", adminInits);
+  }, [loading, isAdmin, openTier]);
 
   useEffect(() => {
     const wasConnected = { current: true };

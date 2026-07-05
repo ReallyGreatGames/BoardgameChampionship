@@ -3,7 +3,7 @@ import { Models } from "react-native-appwrite";
 import { create } from "zustand";
 import {
   addToCollection,
-  initCollection,
+  fetchCollection,
   Key,
   RealtimeCollectionStore,
   removeFromCollection,
@@ -20,13 +20,14 @@ interface RuleState extends RealtimeCollectionStore<Rule> {
 }
 
 export const useRuleStore = create<RuleState>((set) => {
-  let unsubscribe: (() => void) | null = null;
   const key: Key = "rules";
 
   return {
     collection: [],
+    key,
+    realtimeSet: set,
     init: async () => {
-      unsubscribe = await initCollection<Rule, RuleState>(key, set, unsubscribe);
+      await fetchCollection<Rule, RuleState>(key, set);
     },
 
     add: async (data: Omit<Rule, keyof Models.Document>) =>

@@ -19,6 +19,7 @@ const translations = {
     goToGame: "Go to Game",
     startsAt: "Starts at {{time}}",
     noSchedule: "No active schedule item",
+    eventNotActive: "The event is not currently running.",
   },
   login: {
     login: "Log in",
@@ -27,6 +28,8 @@ const translations = {
     pinHint: "Find your PIN on the projector screen.",
     welcome: "Welcome",
     password: "Password",
+    eventInactiveHint: "Login is disabled because there's no active event right now.",
+    eventInactiveFaqLink: "Have questions? View FAQ",
   },
   menu: {
     title: "Boardgame Championship",
@@ -272,10 +275,6 @@ const translations = {
     warnMissingSignature: "At least one signature is missing.",
     warnScoreConflict: "Scores do not match the placements.",
     warnPlacementInvalid: "Invalid placement combination.",
-    colPlayer: "Player",
-    colScore: "Score",
-    colPlacement: "Place",
-    colSig: "Sig.",
   },
   rankings: {
     noGames: "No games found",

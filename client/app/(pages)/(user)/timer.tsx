@@ -3,6 +3,7 @@ import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { TimerCell } from "@/lib/components/timer/TimerCell";
 import { TimerMenu } from "@/lib/components/timer/TimerMenu";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
+import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
 import { useTimerState } from "@/lib/hooks/useTimerState";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
@@ -16,6 +17,7 @@ import { Pressable, StatusBar, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 
 export default function TimerPage() {
+  useRequireAuth();
   const { colors } = useTheme();
   const { t } = useTranslation(["timer"]);
   const { forceOrientation, unlockOrientation } = useScreenOrientation();

@@ -20,7 +20,7 @@ interface Props {
 export function WelcomeScreen({ onLoginPress, onFaqPress }: Props) {
   const { colors } = useTheme();
   const { t } = useTranslation(["home"]);
-  const { type: tournamentType } = useTournament();
+  const { type: tournamentType, active: eventActive } = useTournament();
 
   const logo = tournamentType ? LOGOS[tournamentType] : undefined;
 
@@ -68,6 +68,18 @@ export function WelcomeScreen({ onLoginPress, onFaqPress }: Props) {
           color: colors.textMuted,
           marginTop: space[4],
         },
+        eventInactiveBanner: {
+          backgroundColor: colors.surface,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: 8,
+          padding: inset.card,
+          marginBottom: space[6],
+        },
+        eventInactiveText: {
+          ...type.bodySmall,
+          color: colors.textSecondary,
+        },
       }),
     [colors],
   );
@@ -77,6 +89,11 @@ export function WelcomeScreen({ onLoginPress, onFaqPress }: Props) {
       {logo && <Image source={logo} style={styles.logo} />}
       <Text style={styles.welcomeText}>{t("welcome")}</Text>
       <Text style={styles.description}>{t("welcomeDescription")}</Text>
+      {!eventActive && (
+        <View style={styles.eventInactiveBanner}>
+          <Text style={styles.eventInactiveText}>{t("eventNotActive")}</Text>
+        </View>
+      )}
       <Pressable style={styles.loginButton} onPress={onLoginPress}>
         <Text style={styles.loginButtonText}>{t("login")}</Text>
         <Ionicons name="arrow-forward" size={16} color={colors.onAccent} />

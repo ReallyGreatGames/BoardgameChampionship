@@ -1,4 +1,8 @@
 import { FeatureFlags } from "@/lib/components/admin/FeatureFlags";
+import {
+  ImportActivityProvider,
+  useImportActivity,
+} from "@/lib/components/admin/ImportActivityContext";
 import { ImportTab } from "@/lib/components/admin/ImportTab";
 import { RankingsTab } from "@/lib/components/admin/RankingsTab";
 import { ResultsAdminTab } from "@/lib/components/results/ResultsAdminTab";
@@ -21,10 +25,19 @@ const TABS: { key: Tab }[] = [
 ];
 
 export default function AdminDashboard() {
+  return (
+    <ImportActivityProvider>
+      <AdminDashboardContent />
+    </ImportActivityProvider>
+  );
+}
+
+function AdminDashboardContent() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useTranslation(["adminDashboard", "components"]);
   const [activeTab, setActiveTab] = useState<Tab>("results");
+  const { busy } = useImportActivity();
 
   return (
     <View style={styles.container}>
@@ -35,22 +48,30 @@ export default function AdminDashboard() {
           contentContainerStyle={styles.tabBar}
           bounces={false}
         >
-          {TABS.map((tab) => (
-            <Pressable
-              key={tab.key}
-              style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-              onPress={() => setActiveTab(tab.key)}
-            >
-              <Text
+          {TABS.map((tab) => {
+            const disabled = busy && activeTab !== tab.key;
+            return (
+              <Pressable
+                key={tab.key}
                 style={[
-                  styles.tabLabel,
-                  activeTab === tab.key && styles.tabLabelActive,
+                  styles.tab,
+                  activeTab === tab.key && styles.tabActive,
+                  disabled && styles.tabDisabled,
                 ]}
+                onPress={() => setActiveTab(tab.key)}
+                disabled={disabled}
               >
-                {t(`tabs.${tab.key}`)}
-              </Text>
-            </Pressable>
-          ))}
+                <Text
+                  style={[
+                    styles.tabLabel,
+                    activeTab === tab.key && styles.tabLabelActive,
+                  ]}
+                >
+                  {t(`tabs.${tab.key}`)}
+                </Text>
+              </Pressable>
+            );
+          })}
         </ScrollView>
       </View>
 
@@ -105,6 +126,9 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     tabActive: {
       borderBottomColor: colors.primary,
+    },
+    tabDisabled: {
+      opacity: 0.35,
     },
     tabLabel: {
       fontSize: 14,

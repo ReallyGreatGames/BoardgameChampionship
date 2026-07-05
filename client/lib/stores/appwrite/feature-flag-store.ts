@@ -1,7 +1,7 @@
 import { FeatureFlagSlugs } from "@/lib/feature-flags/feature-flag-slugs";
 import { FeatureFlag } from "@/lib/models/feature-flag";
 import { create } from "zustand";
-import { initCollection, RealtimeCollectionStore, Set } from "../real-time-store";
+import { fetchCollection, RealtimeCollectionStore, Set } from "../real-time-store";
 
 const COLLECTION_ID = "feature_flags";
 const ALL_SLUGS = Object.values(FeatureFlagSlugs) as string[];
@@ -22,8 +22,6 @@ interface FeatureFlagState extends RealtimeCollectionStore<FeatureFlag> {
 }
 
 export const useFeatureFlagStore = create<FeatureFlagState>((set) => {
-  let unsubscribe: (() => void) | null = null;
-
   const setWithFlags: Set<FeatureFlag, FeatureFlagState> = (partialOrFn) => {
     if (typeof partialOrFn === "function") {
       set((state) => {
@@ -42,14 +40,12 @@ export const useFeatureFlagStore = create<FeatureFlagState>((set) => {
 
   return {
     collection: [],
+    key: COLLECTION_ID,
+    realtimeSet: setWithFlags,
     flags: buildFlags([]),
 
     init: async () => {
-      unsubscribe = await initCollection<FeatureFlag, FeatureFlagState>(
-        COLLECTION_ID,
-        setWithFlags,
-        unsubscribe,
-      );
+      await fetchCollection<FeatureFlag, FeatureFlagState>(COLLECTION_ID, setWithFlags);
     },
   };
 });

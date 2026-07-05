@@ -5,6 +5,7 @@ import { space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { ImportPlayers } from "@/lib/components/admin/ImportPlayers";
 import { ImportTables } from "@/lib/components/admin/ImportTables";
+import { useImportActivity } from "@/lib/components/admin/ImportActivityContext";
 
 type SubTab = "players" | "tables";
 
@@ -17,26 +18,35 @@ export function ImportTab() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [active, setActive] = useState<SubTab>("players");
+  const { busy } = useImportActivity();
 
   return (
     <View style={styles.container}>
       <View style={styles.subTabBar}>
-        {SUB_TABS.map((tab) => (
-          <Pressable
-            key={tab.key}
-            style={[styles.subTab, active === tab.key && styles.subTabActive]}
-            onPress={() => setActive(tab.key)}
-          >
-            <Text
+        {SUB_TABS.map((tab) => {
+          const disabled = busy && active !== tab.key;
+          return (
+            <Pressable
+              key={tab.key}
               style={[
-                styles.subTabLabel,
-                active === tab.key && styles.subTabLabelActive,
+                styles.subTab,
+                active === tab.key && styles.subTabActive,
+                disabled && styles.subTabDisabled,
               ]}
+              onPress={() => setActive(tab.key)}
+              disabled={disabled}
             >
-              {tab.label}
-            </Text>
-          </Pressable>
-        ))}
+              <Text
+                style={[
+                  styles.subTabLabel,
+                  active === tab.key && styles.subTabLabelActive,
+                ]}
+              >
+                {tab.label}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
 
       <View style={styles.content}>
@@ -68,6 +78,9 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     subTabActive: {
       backgroundColor: colors.primary,
       borderColor: colors.primary,
+    },
+    subTabDisabled: {
+      opacity: 0.35,
     },
     subTabLabel: {
       ...type.bodySmall,

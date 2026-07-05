@@ -3,7 +3,7 @@ import { Models } from "react-native-appwrite";
 import { create } from "zustand";
 import {
   addToCollection,
-  initCollection,
+  fetchCollection,
   Key,
   RealtimeCollectionStore,
   updateInCollection,
@@ -18,13 +18,14 @@ interface ResultState extends RealtimeCollectionStore<Result> {
 }
 
 export const useResultStore = create<ResultState>((set) => {
-  let unsubscribe: (() => void) | null = null;
   const key: Key = "results";
 
   return {
     collection: [],
+    key,
+    realtimeSet: set,
     init: async () => {
-      unsubscribe = await initCollection<Result, ResultState>(key, set, unsubscribe);
+      await fetchCollection<Result, ResultState>(key, set);
     },
 
     add: async (data) => await addToCollection(key, data),

@@ -14,19 +14,12 @@ import {
 import { Query } from "react-native-appwrite";
 import { DATABASE_ID, tablesDB } from "@/lib/appwrite";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
+import { Tournament } from "@/lib/models/tournament";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { Combobox } from "@/lib/components/ui/Combobox";
 
 const TABLE_ID = "tournament";
-
-type TournamentRow = {
-  $id: string;
-  locale: "de" | "en";
-  active: boolean;
-  pin: string;
-  type: "dmmib" | "europemasters";
-};
 
 const TOURNAMENT_TYPE_OPTIONS: { value: "dmmib" | "europemasters"; label: string }[] = [
   { value: "dmmib", label: "DMMiB" },
@@ -34,7 +27,7 @@ const TOURNAMENT_TYPE_OPTIONS: { value: "dmmib" | "europemasters"; label: string
 ];
 
 type TournamentCardProps = {
-  row: TournamentRow;
+  row: Tournament;
   onSaved: () => void;
 };
 
@@ -144,7 +137,7 @@ export function TournamentSettings() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useTranslation(["components"]);
 
-  const { data, isLoading, error, refetch } = useQuery<TournamentRow[]>({
+  const { data, isLoading, error, refetch } = useQuery<Tournament[]>({
     queryKey: ["admin-tournaments"],
     queryFn: async () => {
       const res = await tablesDB.listRows({
@@ -152,7 +145,7 @@ export function TournamentSettings() {
         tableId: TABLE_ID,
         queries: [Query.orderDesc("$createdAt"), Query.limit(25)],
       });
-      return res.rows as unknown as TournamentRow[];
+      return res.rows as unknown as Tournament[];
     },
   });
 

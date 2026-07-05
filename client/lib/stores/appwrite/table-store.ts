@@ -2,7 +2,7 @@ import { Table } from "@/lib/models/table";
 import { Query } from "react-native-appwrite";
 import { create } from "zustand";
 import {
-  initCollection,
+  fetchCollection,
   Key,
   RealtimeCollectionStore,
 } from "../real-time-store";
@@ -12,13 +12,14 @@ interface TableState extends RealtimeCollectionStore<Table> {
 }
 
 export const useTableStore = create<TableState>((set) => {
-  let unsubscribe: (() => void) | null = null;
   const key: Key = "tables";
 
   return {
     collection: [],
+    key,
+    realtimeSet: set as any,
     init: async () => {
-      unsubscribe = await initCollection<Table>(key, set as any, unsubscribe, [
+      await fetchCollection<Table>(key, set as any, [
         Query.select(["*", "players.*", "players.team.*", "game.*"]),
       ]);
     },

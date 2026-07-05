@@ -5,11 +5,13 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
+import { ui } from "@/lib/theme/ui";
 
 const PLACEMENTS = ["1", "2", "3", "4"] as const;
 
@@ -78,6 +80,8 @@ export const PlayerResultRow = forwardRef<PlayerResultRowHandle, Props>(
   ) {
     const { colors } = useTheme();
     const styles = useMemo(() => makeStyles(colors), [colors]);
+    const { width: screenWidth } = useWindowDimensions();
+    const isCompact = screenWidth < ui.breakpointTablet;
 
     const scoreInputRef = useRef<TextInput>(null);
     const chipRowRef = useRef<View>(null);
@@ -149,73 +153,91 @@ export const PlayerResultRow = forwardRef<PlayerResultRowHandle, Props>(
       : {};
 
     return (
-      <View style={[styles.row, disabled && styles.rowDisabled]}>
-        {/* Player info */}
-        <View style={styles.playerInfo}>
-          <Text style={styles.playerName} numberOfLines={1}>
-            {playerName}
-          </Text>
-          {playerTeam ? (
-            <Text style={styles.playerTeam} numberOfLines={1}>
-              {playerTeam}
+      <View style={[styles.container, disabled && styles.rowDisabled]}>
+        {/* Player info — own row above on small screens (name left, team right) */}
+        {isCompact && (
+          <View style={styles.nameRow}>
+            <Text style={styles.playerName} numberOfLines={1}>
+              {playerName}
             </Text>
-          ) : null}
-        </View>
+            {playerTeam ? (
+              <Text style={styles.playerTeam} numberOfLines={1}>
+                {playerTeam}
+              </Text>
+            ) : null}
+          </View>
+        )}
 
-        {/* Score input */}
-        <TextInput
-          ref={scoreInputRef}
-          style={[styles.scoreInput, disabled && styles.inputDisabled]}
-          value={score}
-          onChangeText={(v) => {
-            const filtered = v.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1");
-            onSetScore(filtered);
-          }}
-          placeholder="–"
-          placeholderTextColor={colors.textMuted}
-          keyboardType="decimal-pad"
-          returnKeyType="next"
-          blurOnSubmit={false}
-          onSubmitEditing={onScoreSubmitEditing}
-          editable={!disabled}
-          selectTextOnFocus
-        />
-
-        {/* Placement chips — focusable container on web; individual chips excluded from tab */}
-        <View ref={chipRowRef} style={styles.chipsRow} {...chipRowWebProps}>
-          {PLACEMENTS.map((p) => {
-            const active = placement === p;
-            return (
-              <TouchableOpacity
-                key={p}
-                style={[
-                  styles.chip,
-                  active && styles.chipActive,
-                  placementError && active && styles.chipError,
-                  disabled && styles.chipDisabled,
-                ]}
-                onPress={() => !disabled && onSetPlacement(active ? "" : p)}
-                activeOpacity={disabled ? 1 : 0.7}
-                hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
-                // @ts-expect-error — tabIndex is web-only; -1 removes chips from natural tab order
-                tabIndex={Platform.OS === "web" ? -1 : undefined}
-              >
-                <Text
-                  style={[
-                    styles.chipLabel,
-                    active && styles.chipLabelActive,
-                    placementError && active && styles.chipLabelError,
-                  ]}
-                >
-                  {p}
+        <View style={styles.row}>
+          {/* Player info — inline on wider screens */}
+          {!isCompact && (
+            <View style={styles.playerInfo}>
+              <Text style={styles.playerName} numberOfLines={1}>
+                {playerName}
+              </Text>
+              {playerTeam ? (
+                <Text style={styles.playerTeam} numberOfLines={1}>
+                  {playerTeam}
                 </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+              ) : null}
+            </View>
+          )}
 
-        {/* Signature slot — caller owns this */}
-        {signatureSlot}
+          {/* Score input */}
+          <TextInput
+            ref={scoreInputRef}
+            style={[styles.scoreInput, disabled && styles.inputDisabled]}
+            value={score}
+            onChangeText={(v) => {
+              const filtered = v.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1");
+              onSetScore(filtered);
+            }}
+            placeholder="–"
+            placeholderTextColor={colors.textMuted}
+            keyboardType="decimal-pad"
+            returnKeyType="next"
+            blurOnSubmit={false}
+            onSubmitEditing={onScoreSubmitEditing}
+            editable={!disabled}
+            selectTextOnFocus
+          />
+
+          {/* Placement chips — focusable container on web; individual chips excluded from tab */}
+          <View ref={chipRowRef} style={styles.chipsRow} {...chipRowWebProps}>
+            {PLACEMENTS.map((p) => {
+              const active = placement === p;
+              return (
+                <TouchableOpacity
+                  key={p}
+                  style={[
+                    styles.chip,
+                    active && styles.chipActive,
+                    placementError && active && styles.chipError,
+                    disabled && styles.chipDisabled,
+                  ]}
+                  onPress={() => !disabled && onSetPlacement(active ? "" : p)}
+                  activeOpacity={disabled ? 1 : 0.7}
+                  hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+                  // @ts-expect-error — tabIndex is web-only; -1 removes chips from natural tab order
+                  tabIndex={Platform.OS === "web" ? -1 : undefined}
+                >
+                  <Text
+                    style={[
+                      styles.chipLabel,
+                      active && styles.chipLabelActive,
+                      placementError && active && styles.chipLabelError,
+                    ]}
+                  >
+                    {p}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Signature slot — caller owns this */}
+          {signatureSlot}
+        </View>
       </View>
     );
   },
@@ -223,16 +245,25 @@ export const PlayerResultRow = forwardRef<PlayerResultRowHandle, Props>(
 
 function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
   return StyleSheet.create({
-    row: {
-      flexDirection: "row",
-      alignItems: "center",
+    container: {
       paddingVertical: space[2],
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: colors.divider,
-      gap: space[2],
+      gap: 4,
     },
     rowDisabled: {
       opacity: 0.55,
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: space[2],
+    },
+    nameRow: {
+      flexDirection: "row",
+      alignItems: "baseline",
+      justifyContent: "space-between",
+      gap: space[2],
     },
     playerInfo: {
       flex: 1,
@@ -242,6 +273,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       ...type.bodySmall,
       color: colors.text,
       fontWeight: "600",
+      flexShrink: 1,
     },
     playerTeam: {
       ...type.caption,

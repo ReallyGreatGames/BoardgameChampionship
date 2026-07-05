@@ -6,4 +6,6 @@ export const ui = {
   sheetRadius: 20,
   inputRadius: 10,
   buttonRadius: 10,
+  /** Window width at/above which we treat the device as tablet+ rather than phone */
+  breakpointTablet: 600,
 } as const;

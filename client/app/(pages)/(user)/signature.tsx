@@ -2,6 +2,7 @@ import { ID, SIGNATURES_BUCKET_ID, storage } from "@/lib/appwrite";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BackButton } from "@/lib/components/ui/BackButton";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
+import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { useResultStore } from "@/lib/stores/appwrite/result-store";
 import { inset } from "@/lib/theme/spacing";
 import { ui } from "@/lib/theme/ui";
@@ -49,6 +50,7 @@ function buildSvgContent(
 }
 
 export default function SignaturePage() {
+  useRequireAuth();
   const { gameId, place } = useLocalSearchParams<{
     gameId: string;
     place: string;

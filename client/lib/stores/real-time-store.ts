@@ -16,17 +16,17 @@ export type Set<
   ...args: any[]
 ) => void;
 
+/** Loosely typed on purpose — each store's concrete `set` is typed against its own state shape, which isn't structurally assignable to a shared field type without variance issues. */
+export type RealtimeSetter = (partialState: any) => void;
+
 export interface RealtimeCollectionStore<T extends Models.Document> {
   collection: T[];
+  key: Key;
+  /** Setter realtime updates are relayed through — usually the store's raw zustand `set`, but may wrap it (e.g. to derive extra state). */
+  realtimeSet: RealtimeSetter;
   init: () => void | Promise<void>;
 }
 
-type SubscriptionRecord = {
-  unsubscribe: (() => void) | null;
-  sid: string;
-};
-
-const subscriptions = new Map<Key, SubscriptionRecord>();
 const recentEvents = new Map<string, number>();
 
 export function updateRealtimeCollection<T extends Models.Document>(
@@ -122,15 +122,10 @@ export async function removeFromCollection<T>(
   }
 }
 
-export async function initCollection<
+export async function fetchCollection<
   T extends Models.Document,
   S extends RealtimeCollectionStore<T> = RealtimeCollectionStore<T>,
->(
-  key: Key,
-  set: Set<T, S>,
-  previousUnsubscribe: (() => void) | null = null,
-  queries?: string[],
-): Promise<(() => void) | null> {
+>(key: Key, set: Set<T, S>, queries?: string[]): Promise<void> {
   try {
     const result = await tablesDB.listRows({
       databaseId: DATABASE_ID,
@@ -142,64 +137,62 @@ export async function initCollection<
   } catch (e: any) {
     Alert.alert("Error", e?.message ?? `Failed to load ${key}.`);
   }
+}
 
-  // If there's already a subscription for this key, reuse it
-  if (subscriptions.has(key)) {
-    const existing = subscriptions.get(key)!;
-    console.debug(
-      `[realtime] subscription for ${key} already exists sid=${existing.sid}`,
+type TierEntry = { key: Key; set: RealtimeSetter };
+
+/**
+ * Opens a single realtime subscription covering every collection in
+ * `entries`, relaying each incoming event to the matching store's setter.
+ * Appwrite's SDK multiplexes all subscriptions onto one shared WebSocket
+ * regardless — but every independent `client.subscribe()` call forces that
+ * socket to be torn down and recreated, since its URL is derived from *all*
+ * currently subscribed channels. Subscribing once per tier (instead of once
+ * per store) keeps that churn to one reconnect per tier transition, instead
+ * of one per collection.
+ */
+export function subscribeTier(entries: TierEntry[]): () => void {
+  if (entries.length === 0) {
+    return () => {};
+  }
+
+  const channelForKey = (key: Key) =>
+    `databases.${DATABASE_ID}.collections.${key}.documents`;
+
+  const entryByChannel = new Map(
+    entries.map((entry) => [channelForKey(entry.key), entry]),
+  );
+  const channels = Array.from(entryByChannel.keys());
+
+  console.debug(`[realtime] subscribing tier`, channels);
+
+  const clientUnsubscribe = client.subscribe<any>(channels, (response) => {
+    const matchedChannel = response.channels.find((ch) =>
+      entryByChannel.has(ch),
     );
-
-    if (previousUnsubscribe && previousUnsubscribe !== existing.unsubscribe) {
-      console.debug(
-        `[realtime] calling previousUnsubscribe (extra) for ${key}`,
-      );
-      previousUnsubscribe();
+    if (!matchedChannel) {
+      return;
     }
 
-    return existing.unsubscribe;
-  }
+    const entry = entryByChannel.get(matchedChannel)!;
+    try {
+      entry.set((state: any) => ({
+        ...state,
+        collection: updateRealtimeCollection(
+          entry.key,
+          [...state.collection],
+          response,
+        ),
+      }));
+    } catch (e) {
+      console.error(`[realtime] ${entry.key} callback error`, e);
+    }
+  });
 
-  if (previousUnsubscribe) {
-    console.debug(`[realtime] calling previous unsubscribe for ${key}`);
-    previousUnsubscribe();
-    previousUnsubscribe = null;
-  }
-
-  const sid = Math.random().toString(36).slice(2, 9);
-  console.debug(`[realtime] subscribing ${key} sid=${sid}`);
-
-  const clientUnsubscribe = client.subscribe<T>(
-    `databases.${DATABASE_ID}.collections.${key}.documents`,
-    (response) => {
-      console.debug(`[realtime] ${key} sid=${sid}`);
-      try {
-        set(
-          (state: S) =>
-            ({
-              ...state,
-              collection: updateRealtimeCollection(
-                key,
-                [...state.collection],
-                response,
-              ),
-            }) as S,
-        );
-      } catch (e) {
-        console.error(`[realtime] ${key} callback error`, e);
-      }
-    },
-  );
-
-  const newUnsubscribe = () => {
-    console.debug(`[realtime] unsubscribing ${key} sid=${sid}`);
+  return () => {
+    console.debug(`[realtime] unsubscribing tier`, channels);
     clientUnsubscribe();
-    subscriptions.delete(key);
   };
-
-  subscriptions.set(key, { unsubscribe: newUnsubscribe, sid });
-
-  return newUnsubscribe;
 }
 
 function updateRealtimeCollectionCreate<T extends Models.Document>(
@@ -283,15 +276,6 @@ function updateRealtimeCollectionDelete<T extends Models.Document>(
   collection = collection.filter((item) => item.$id !== payload.$id);
 
   return collection;
-}
-
-export function clearAllSubscriptions(): void {
-  subscriptions.forEach(({ unsubscribe }) => {
-    try {
-      unsubscribe?.();
-    } catch {}
-  });
-  subscriptions.clear();
 }
 
 function isNewUpdate(key: string, payload: any, eventType: string): boolean {

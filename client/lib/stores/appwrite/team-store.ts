@@ -1,6 +1,6 @@
 import { Team } from "@/lib/models/team";
 import { create } from "zustand";
-import { initCollection, Key, RealtimeCollectionStore } from "../real-time-store";
+import { fetchCollection, Key, RealtimeCollectionStore } from "../real-time-store";
 
 interface TeamState extends RealtimeCollectionStore<Team> {
   initialized: boolean;
@@ -8,14 +8,15 @@ interface TeamState extends RealtimeCollectionStore<Team> {
 }
 
 export const useTeamStore = create<TeamState>((set) => {
-  let unsubscribe: (() => void) | null = null;
   const key: Key = "teams";
 
   return {
     collection: [],
+    key,
+    realtimeSet: set as any,
     initialized: false,
     init: async () => {
-      unsubscribe = await initCollection<Team>(key, set as any, unsubscribe);
+      await fetchCollection<Team>(key, set as any);
       set((s) => ({ ...s, initialized: true }));
     },
   };
