@@ -38,6 +38,7 @@ export default function LoginScreen() {
 
   const tapCount = useRef(0);
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const passwordRef = useRef<TextInput>(null);
   const buttonScale = useRef(new Animated.Value(1)).current;
   const badgeAnim = useRef(new Animated.Value(0)).current;
   const { user } = useAuth();
@@ -173,14 +174,20 @@ export default function LoginScreen() {
                   keyboardType="email-address"
                   value={email}
                   onChangeText={setEmail}
+                  returnKeyType="next"
+                  submitBehavior="submit"
+                  onSubmitEditing={() => passwordRef.current?.focus()}
                 />
                 <TextInput
+                  ref={passwordRef}
                   style={styles.input}
                   placeholder={t("password")}
                   placeholderTextColor={colors.textPlaceholder}
                   secureTextEntry
                   value={password}
                   onChangeText={setPassword}
+                  returnKeyType="go"
+                  onSubmitEditing={handleLogin}
                 />
               </>
             ) : (
