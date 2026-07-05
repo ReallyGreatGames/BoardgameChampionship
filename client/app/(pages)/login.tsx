@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Keyboard,
   KeyboardAvoidingView,
@@ -17,6 +16,8 @@ import {
 } from "react-native";
 import { useAuth } from "../../lib/auth";
 import { useTheme } from "../../lib/bootstrap/ThemeProvider";
+import { useTournament } from "../../lib/bootstrap/TournamentProvider";
+import { useDialog } from "@/lib/components/ui/Dialog";
 import { type } from "../../lib/theme/typography";
 import { inset } from "../../lib/theme/spacing";
 import { useRouter } from "@/lib/routing/useRouter";
@@ -26,6 +27,7 @@ const SECRET_TAPS = 7;
 export default function LoginScreen() {
   const { t } = useTranslation(["login"]);
   const { login, loginWithPin } = useAuth();
+  const { confirm } = useDialog();
   const { colors } = useTheme();
   const [pin, setPin] = useState("");
   const [email, setEmail] = useState("");
@@ -40,6 +42,8 @@ export default function LoginScreen() {
   const badgeAnim = useRef(new Animated.Value(0)).current;
   const { user } = useAuth();
   const { navigate } = useRouter();
+  const { active: eventActive } = useTournament();
+  const eventInactive = !adminMode && !eventActive;
 
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -81,7 +85,11 @@ export default function LoginScreen() {
   async function handleLogin() {
     if (adminMode) {
       if (!email || !password) {
-        Alert.alert("Error", "Email and password required.");
+        await confirm({
+          title: "Error",
+          message: "Email and password required.",
+          cancelLabel: null,
+        });
         return;
       }
       setLoading(true);
@@ -89,13 +97,24 @@ export default function LoginScreen() {
         await login(email, password);
         router.replace("/admin");
       } catch (e: any) {
-        Alert.alert("Login failed", e?.message ?? "Unknown error");
+        await confirm({
+          title: "Login failed",
+          message: e?.message ?? "Unknown error",
+          cancelLabel: null,
+        });
       } finally {
         setLoading(false);
       }
     } else {
+      if (eventInactive) {
+        return;
+      }
       if (!pin) {
-        Alert.alert("Error", "PIN required.");
+        await confirm({
+          title: "Error",
+          message: "PIN required.",
+          cancelLabel: null,
+        });
         return;
       }
       setLoading(true);
@@ -103,7 +122,11 @@ export default function LoginScreen() {
         await loginWithPin(pin);
         router.replace("/");
       } catch (e: any) {
-        Alert.alert("Invalid PIN", e?.message ?? "Unknown error");
+        await confirm({
+          title: "Invalid PIN",
+          message: e?.message ?? "Unknown error",
+          cancelLabel: null,
+        });
       } finally {
         setLoading(false);
       }
@@ -169,6 +192,7 @@ export default function LoginScreen() {
                     styles.input,
                     styles.pinInput,
                     pinFocused && styles.pinInputFocused,
+                    eventInactive && styles.inputDisabled,
                   ]}
                   placeholder="••••"
                   placeholderTextColor={colors.textPlaceholder}
@@ -178,9 +202,22 @@ export default function LoginScreen() {
                   value={pin}
                   onChangeText={setPin}
                   textAlign="center"
+                  editable={!eventInactive}
                   onFocus={() => setPinFocused(true)}
                   onBlur={() => setPinFocused(false)}
                 />
+                {eventInactive && (
+                  <View style={styles.eventInactiveHint}>
+                    <Text style={styles.eventInactiveHintText}>
+                      {t("eventInactiveHint")}
+                    </Text>
+                    <Pressable onPress={() => navigate("/(pages)/info")}>
+                      <Text style={styles.eventInactiveFaqLink}>
+                        {t("eventInactiveFaqLink")}
+                      </Text>
+                    </Pressable>
+                  </View>
+                )}
               </View>
             )}
           </View>
@@ -192,8 +229,9 @@ export default function LoginScreen() {
             ) : (
               <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
                 <Pressable
-                  style={styles.button}
+                  style={[styles.button, eventInactive && styles.buttonDisabled]}
                   onPress={handleLogin}
+                  disabled={eventInactive}
                   onPressIn={() =>
                     Animated.spring(buttonScale, {
                       toValue: 0.96,
@@ -279,6 +317,22 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       borderColor: colors.primary,
       backgroundColor: colors.surfaceHigh,
     },
+    inputDisabled: {
+      opacity: 0.4,
+    },
+    eventInactiveHint: {
+      marginTop: inset.tight,
+      gap: 4,
+    },
+    eventInactiveHintText: {
+      ...type.caption,
+      color: colors.error,
+    },
+    eventInactiveFaqLink: {
+      ...type.caption,
+      color: colors.accent,
+      textDecorationLine: "underline",
+    },
     actionZone: {
       marginTop: inset.section,
     },
@@ -287,6 +341,9 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       borderRadius: 8,
       padding: inset.card,
       alignItems: "center",
+    },
+    buttonDisabled: {
+      opacity: 0.4,
     },
     buttonText: {
       ...type.button,

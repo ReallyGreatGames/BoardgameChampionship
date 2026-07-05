@@ -19,6 +19,7 @@ const translations = {
     goToGame: "Zum Spiel",
     startsAt: "Beginnt um {{time}}",
     noSchedule: "Kein aktiver Zeitplaneintrag",
+    eventNotActive: "Die Veranstaltung läuft derzeit nicht.",
   },
   login: {
     login: "Einloggen",
@@ -27,6 +28,8 @@ const translations = {
     pinHint: "Deine PIN steht auf der Leinwand.",
     welcome: "Willkommen",
     password: "Passwort",
+    eventInactiveHint: "Der Login ist deaktiviert, da derzeit keine Veranstaltung aktiv ist.",
+    eventInactiveFaqLink: "Fragen? FAQ ansehen",
   },
   menu: {
     title: "Brettspielmeisterschaft",

@@ -1,4 +1,3 @@
-import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BackButton } from "@/lib/components/ui/BackButton";
 import { PlayerColorSetupModal } from "@/lib/components/onboarding/PlayerColorSetupModal";
@@ -7,6 +6,7 @@ import { Table } from "@/lib/components/game/Table";
 import { FeatureFlagSlugs } from "@/lib/feature-flags/feature-flag-slugs";
 import { useFeatureFlags } from "@/lib/feature-flags/useFeatureFlags";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
+import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
 import { getItemAsync, setItemAsync } from "@/lib/secureStorage";
 import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
@@ -84,7 +84,7 @@ export default function GamePage() {
     gameId: string;
     from: string;
   }>();
-  const { user, loading } = useAuth();
+  const { user, loading } = useRequireAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useTranslation(["game"]);

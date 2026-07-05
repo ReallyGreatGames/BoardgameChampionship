@@ -13,6 +13,7 @@ import { useTableStore } from "../stores/appwrite/table-store";
 import { useTeamStore } from "../stores/appwrite/team-store";
 import { useTimerSettingsStore } from "../stores/appwrite/timer-settings-store";
 import { useTimerStore } from "../stores/appwrite/timer-store";
+import { useTournamentStore } from "../stores/appwrite/tournament-store";
 import { clearAllSubscriptions } from "../stores/real-time-store";
 
 /**
@@ -24,7 +25,7 @@ import { clearAllSubscriptions } from "../stores/real-time-store";
  *   adminInits  — runs once when an admin session is ready
  */
 
-const globalInits = [useFeatureFlagStore];
+const globalInits = [useFeatureFlagStore, useTournamentStore];
 
 const userInits = [
   useScheduleStore,

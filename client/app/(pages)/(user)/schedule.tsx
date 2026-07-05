@@ -1,24 +1,14 @@
-import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { ScheduleList } from "@/lib/components/schedule/Schedule";
+import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { inset } from "@/lib/theme/spacing";
-import { router } from "expo-router";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 
 export default function ScheduleScreen() {
+  useRequireAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { user, loading, isAdmin, isPinVerified } = useAuth();
-
-  useEffect(() => {
-    if (loading) {
-      return;
-    }
-    if (!isPinVerified && !isAdmin) {
-      router.replace("/(pages)/login");
-    }
-  }, [user, loading, isAdmin, isPinVerified]);
 
   return (
     <View style={styles.container}>

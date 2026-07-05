@@ -1,64 +1,50 @@
-import { useQuery } from "@tanstack/react-query";
-import { createContext, FC, PropsWithChildren, useContext } from "react";
+import {
+  createContext,
+  FC,
+  PropsWithChildren,
+  useContext,
+  useEffect,
+  useMemo,
+} from "react";
 import { useTranslation } from "react-i18next";
-import { Query } from "react-native-appwrite";
-import { DATABASE_ID, tablesDB } from "../appwrite";
-import { EMPTY } from "../utils";
+import { useTournamentStore } from "../stores/appwrite/tournament-store";
 
-export type Tournament = {
+export type ActiveTournamentInfo = {
   locale: "en" | "de";
   active: boolean;
   type: "dmmib" | "europemasters";
 };
 
-export const tournamentContext = createContext<Tournament>({
+const DEFAULT_TOURNAMENT_INFO: ActiveTournamentInfo = {
   locale: "en",
-  active: true,
+  active: false,
   type: "dmmib",
-});
+};
+
+export const tournamentContext = createContext<ActiveTournamentInfo>(
+  DEFAULT_TOURNAMENT_INFO,
+);
 
 export const TournamentProvider: FC<PropsWithChildren> = ({ children }) => {
   const { i18n } = useTranslation();
-  const query = useQuery<typeof EMPTY | Tournament>({
-    queryKey: ["tournament"],
-    initialData: EMPTY,
-    refetchInterval: 60 * 60 * 1_000, // hourly
-    queryFn: async () => {
-      const res = await tablesDB.listRows({
-        databaseId: DATABASE_ID,
-        tableId: "tournament",
-        queries: [
-          Query.equal("active", true),
-          Query.orderDesc("$createdAt"),
-          Query.limit(1),
-        ],
-      });
+  const collection = useTournamentStore((s) => s.collection);
 
-      if (res.total === 0) {
-        return EMPTY;
-      }
+  const info = useMemo<ActiveTournamentInfo>(() => {
+    const activeRow = collection.find((t) => t.active);
+    if (!activeRow) {
+      return DEFAULT_TOURNAMENT_INFO;
+    }
+    return { active: true, locale: activeRow.locale, type: activeRow.type };
+  }, [collection]);
 
-      const data = res.rows[0]!;
-      const activeTournament: Tournament = {
-        active: true,
-        locale: data.locale,
-        type: data.type,
-      };
-
-      i18n.changeLanguage(activeTournament.locale);
-
-      return activeTournament;
-    },
-  });
+  useEffect(() => {
+    if (info.active) {
+      i18n.changeLanguage(info.locale);
+    }
+  }, [info.active, info.locale, i18n]);
 
   return (
-    <tournamentContext.Provider
-      value={
-        query.data === EMPTY
-          ? { active: true, locale: "en", type: "dmmib" }
-          : query.data
-      }
-    >
+    <tournamentContext.Provider value={info}>
       {children}
     </tournamentContext.Provider>
   );
