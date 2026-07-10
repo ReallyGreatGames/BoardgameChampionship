@@ -5,6 +5,7 @@ import {
 } from "@/lib/components/admin/ImportActivityContext";
 import { ImportTab } from "@/lib/components/admin/ImportTab";
 import { RankingsTab } from "@/lib/components/admin/RankingsTab";
+import { StatisticsTab } from "@/lib/components/admin/StatisticsTab";
 import { ResultsAdminTab } from "@/lib/components/results/ResultsAdminTab";
 import { ScheduleList } from "@/lib/components/schedule/Schedule";
 import { useMemo, useState } from "react";
@@ -14,11 +15,12 @@ import { useTheme } from "../../../../lib/bootstrap/ThemeProvider";
 import { TournamentSettings } from "@/lib/components/admin/TournamentSettings";
 import { inset, space } from "../../../../lib/theme/spacing";
 
-type Tab = "results" | "rankings" | "schedule" | "tournamentSettings" | "import";
+type Tab = "results" | "rankings" | "statistics" | "schedule" | "tournamentSettings" | "import";
 
 const TABS: { key: Tab }[] = [
   { key: "results" },
   { key: "rankings" },
+  { key: "statistics" },
   { key: "schedule" },
   { key: "tournamentSettings" },
   { key: "import" },
@@ -78,6 +80,7 @@ function AdminDashboardContent() {
       <View style={styles.content}>
         {activeTab === "results" && <ResultsAdminTab />}
         {activeTab === "rankings" && <RankingsTab />}
+        {activeTab === "statistics" && <StatisticsTab />}
         {activeTab === "schedule" && <ScheduleList />}
         {activeTab === "tournamentSettings" && (
           <ScrollView
