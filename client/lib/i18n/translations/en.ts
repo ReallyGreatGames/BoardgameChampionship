@@ -3,6 +3,7 @@ const translations = {
     tabs: {
       results: "Results",
       rankings: "Rankings",
+      statistics: "Statistics",
       schedule: "Schedule",
       tournamentSettings: "Settings",
       import: "Import",
@@ -285,6 +286,29 @@ const translations = {
     colPoints: "Points",
     colAvg: "Ø",
     playerName: "Player",
+  },
+  statistics: {
+    noGames: "No games found",
+    noData: "No results yet",
+    infoSeatDetails:
+      "Win rate: share of matches this seat finished in 1st place. A tie for 1st counts as a win for every tied seat.\n\nPlacement distribution: the % of matches this seat finished in each place, 1st through 4th.\n\nScore stats: the minimum, average, median, maximum, and standard deviation of this seat's raw scores across every match — shows how consistent or spread out results from this seat tend to be.",
+    infoTeamPerformance:
+      "Actual Ø: this team's average placement across every match they played in this game.\n\nSeat Ø: the average placement everyone else got from the same seat(s) this team sat in.\n\nDelta: Seat Ø minus Actual Ø. Positive (green) means the team placed better than their seating would predict; negative (red) means they placed worse.",
+    matchesCount: "{{count}} matches",
+    detailHeading: "Game details",
+    seatLabel: "Seat {{n}}",
+    winRate: "Win rate",
+    placeShort: "{{n}}.",
+    scoreMin: "Min",
+    scoreAvg: "Avg",
+    scoreMedian: "Median",
+    scoreMax: "Max",
+    scoreStdDev: "Std dev",
+    teamPerformanceHeading: "Team performance vs. seat",
+    colTeam: "Team",
+    colActualPlacement: "Actual Ø",
+    colExpectedPlacement: "Seat Ø",
+    colDelta: "Delta",
   },
   tableOverview: {
     noActiveSchedule: "No active schedule item",

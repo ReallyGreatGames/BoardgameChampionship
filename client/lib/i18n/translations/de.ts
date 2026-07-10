@@ -3,6 +3,7 @@ const translations = {
     tabs: {
       results: "Ergebnisse",
       rankings: "Rangliste",
+      statistics: "Statistik",
       schedule: "Zeitplan",
       tournamentSettings: "Einstellungen",
       import: "Import",
@@ -287,6 +288,29 @@ const translations = {
     colPoints: "Punkte",
     colAvg: "Ø",
     playerName: "Spieler:in",
+  },
+  statistics: {
+    noGames: "Keine Spiele gefunden",
+    noData: "Noch keine Ergebnisse vorhanden",
+    infoSeatDetails:
+      "Siege: Anteil der Partien, die dieser Sitzplatz auf dem 1. Platz beendet hat. Ein geteilter 1. Platz zählt für jeden beteiligten Sitzplatz als Sieg.\n\nPlatzierungsverteilung: der Anteil der Partien, die dieser Sitzplatz auf jedem Platz (1. bis 4.) beendet hat.\n\nPunktestatistik: Minimum, Durchschnitt, Median, Maximum und Standardabweichung der Rohpunktzahlen dieses Sitzplatzes über alle Partien – zeigt, wie konsistent oder schwankend die Ergebnisse von diesem Platz ausfallen.",
+    infoTeamPerformance:
+      "Tatsächlich Ø: die durchschnittliche Platzierung dieses Teams über alle Partien dieses Spiels.\n\nSitzplatz Ø: die durchschnittliche Platzierung, die alle anderen von den gleichen Sitzplätzen erzielt haben, an denen dieses Team saß.\n\nDelta: Sitzplatz Ø minus Tatsächlich Ø. Positiv (grün) bedeutet, das Team hat besser platziert, als die Sitzordnung erwarten ließe; negativ (rot) bedeutet schlechter.",
+    matchesCount: "{{count}} Partien",
+    detailHeading: "Spieldetails",
+    seatLabel: "Sitzplatz {{n}}",
+    winRate: "Siege",
+    placeShort: "{{n}}.",
+    scoreMin: "Min",
+    scoreAvg: "Ø",
+    scoreMedian: "Median",
+    scoreMax: "Max",
+    scoreStdDev: "Std.abw.",
+    teamPerformanceHeading: "Team-Leistung vs. Sitzplatz",
+    colTeam: "Mannschaft",
+    colActualPlacement: "Tatsächlich Ø",
+    colExpectedPlacement: "Sitzplatz Ø",
+    colDelta: "Delta",
   },
   tableOverview: {
     noActiveSchedule: "Kein aktiver Zeitplaneintrag",
