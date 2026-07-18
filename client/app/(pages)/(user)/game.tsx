@@ -9,11 +9,13 @@ import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
 import { getItemAsync, setItemAsync } from "@/lib/secureStorage";
+import { useLotteryStore } from "@/lib/stores/appwrite/lottery-store";
 import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { useTableStore } from "@/lib/stores/appwrite/table-store";
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
 import { resolveGameId } from "@/lib/utils";
+import { getLotteryPhotosForGame } from "@/lib/utils/lottery";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { Ionicons } from "@expo/vector-icons";
@@ -44,7 +46,7 @@ const ACTION_BUTTONS: ActionButton[] = [
     icon: "shuffle",
     labelKey: "actions.lottery",
     featureFlag: FeatureFlagSlugs.LOTTERY,
-    onPress: (_gameId) => {},
+    onPress: (gameId) => router.push(`/(pages)/(user)/lottery?gameId=${gameId}`),
   },
   {
     key: "rules",
@@ -97,6 +99,12 @@ export default function GamePage() {
   const tableNumber = usePlayerTable(gameId);
   const tableStore = useTableStore();
   const timerStore = useTimerStore();
+  const lotteryCollection = useLotteryStore((s) => s.collection);
+
+  const lotteryCount = useMemo(
+    () => getLotteryPhotosForGame(lotteryCollection, gameId).length,
+    [lotteryCollection, gameId],
+  );
 
   const currentTable = useMemo(
     () =>
@@ -249,7 +257,7 @@ export default function GamePage() {
               featureFlag,
             }) => {
               const disabled =
-                (tableNumber === null && key !== "rules") ||
+                (tableNumber === null && key !== "rules" && key !== "lottery") ||
                 (requiresActiveGame && !isActiveGame) ||
                 (featureFlag !== undefined && !isFeatureEnabled(featureFlag));
               const press =
@@ -265,11 +273,20 @@ export default function GamePage() {
                   onPress={press}
                   disabled={disabled}
                 >
-                  <Ionicons
-                    name={icon}
-                    size={28}
-                    color={disabled ? colors.textSecondary : colors.primary}
-                  />
+                  <View style={styles.actionIconWrap}>
+                    <Ionicons
+                      name={icon}
+                      size={28}
+                      color={disabled ? colors.textSecondary : colors.primary}
+                    />
+                    {key === "lottery" && lotteryCount > 0 && (
+                      <View style={styles.actionBadge}>
+                        <Text style={styles.actionBadgeText}>
+                          {lotteryCount > 99 ? "99+" : lotteryCount}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                   <Text
                     style={[
                       styles.actionLabel,
@@ -381,6 +398,27 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       justifyContent: "center",
       alignItems: "center",
       gap: inset.tight,
+    },
+    actionIconWrap: {
+      position: "relative",
+    },
+    actionBadge: {
+      position: "absolute",
+      top: -6,
+      right: -10,
+      minWidth: 18,
+      height: 18,
+      borderRadius: 9,
+      paddingHorizontal: 4,
+      backgroundColor: colors.accent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    actionBadgeText: {
+      ...type.caption,
+      color: colors.onAccent,
+      fontSize: 10,
+      fontWeight: "700",
     },
     bellBtn: {
       width: "100%",

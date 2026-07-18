@@ -19,11 +19,20 @@ export type Set<
 /** Loosely typed on purpose — each store's concrete `set` is typed against its own state shape, which isn't structurally assignable to a shared field type without variance issues. */
 export type RealtimeSetter = (partialState: any) => void;
 
-export interface RealtimeCollectionStore<T extends Models.Document> {
+/** Minimal shape the realtime dedupe/merge logic actually needs — satisfied by both Models.Document and Models.File. */
+export type RealtimeEntity = {
+  $id: string;
+  $updatedAt?: string;
+  $createdAt?: string;
+};
+
+export interface RealtimeCollectionStore<T extends RealtimeEntity> {
   collection: T[];
   key: Key;
   /** Setter realtime updates are relayed through — usually the store's raw zustand `set`, but may wrap it (e.g. to derive extra state). */
   realtimeSet: RealtimeSetter;
+  /** Overrides the default `databases.*.collections.*.documents` channel — for non-document resources (e.g. a storage bucket's file events). */
+  channel?: string;
   init: () => void | Promise<void>;
 }
 
@@ -139,7 +148,12 @@ export async function fetchCollection<
   }
 }
 
-type TierEntry = { key: Key; set: RealtimeSetter };
+type TierEntry = {
+  key: Key;
+  set: RealtimeSetter;
+  /** Overrides the default `databases.*.collections.*.documents` channel — for non-document resources (e.g. a storage bucket's file events). */
+  channel?: string;
+};
 
 /**
  * Opens a single realtime subscription covering every collection in
@@ -156,11 +170,11 @@ export function subscribeTier(entries: TierEntry[]): () => void {
     return () => {};
   }
 
-  const channelForKey = (key: Key) =>
-    `databases.${DATABASE_ID}.collections.${key}.documents`;
+  const channelForEntry = (entry: TierEntry) =>
+    entry.channel ?? `databases.${DATABASE_ID}.collections.${entry.key}.documents`;
 
   const entryByChannel = new Map(
-    entries.map((entry) => [channelForKey(entry.key), entry]),
+    entries.map((entry) => [channelForEntry(entry), entry]),
   );
   const channels = Array.from(entryByChannel.keys());
 

@@ -47,6 +47,7 @@ const translations = {
       timer: "Timer",
       results: "Ergebnisse",
       signature: "Unterschrift",
+      lottery: "Auslosung",
       legal: "Impressum & Datenschutz",
     },
     dmmib: "DMMiB",
@@ -370,6 +371,23 @@ const translations = {
     placeholder: "Hier unterschreiben…",
     clear: "Löschen",
     save: "Unterschrift speichern",
+  },
+  lottery: {
+    title: "Auslosung",
+    empty: "Noch keine Auslosungsfotos",
+    takePhoto: "Foto aufnehmen",
+    addPhoto: "Foto hinzufügen",
+    chooseFromLibrary: "Aus Galerie",
+    uploading: "Wird hochgeladen…",
+    confirmDelete: {
+      title: "Auslosungsfoto löschen",
+      message: "Dieses Auslosungsfoto entfernen? Das kann nicht rückgängig gemacht werden.",
+      confirm: "Löschen",
+      cancel: "Abbrechen",
+    },
+    notificationTitle: "Neues Auslosungsfoto",
+    notificationBody: "Ein neues Auslosungsfoto wurde für {{game}} hochgeladen.",
+    notificationBodyGeneric: "Ein neues Auslosungsfoto wurde hochgeladen.",
   },
   components: {
     schedule: {

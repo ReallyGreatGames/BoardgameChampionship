@@ -130,6 +130,15 @@ function AppNavigator() {
         }}
       />
       <Drawer.Screen
+        name="(pages)/(user)/lottery"
+        options={{
+          title: t("entries.lottery"),
+          drawerItemStyle: { display: "none" },
+          headerShown: true,
+          swipeEnabled: false,
+        }}
+      />
+      <Drawer.Screen
         name="(pages)/legal"
         options={{
           title: t("entries.legal"),
