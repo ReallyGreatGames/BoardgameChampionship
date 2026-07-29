@@ -2,7 +2,7 @@
   "expo": {
     "name": "DMMiB",
     "slug": "boardgame-championship",
-    "version": "0.0.3",
+    "version": "0.1.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "boardgamechampionship",
@@ -48,6 +48,14 @@
         "expo-screen-orientation",
         {
           "initialOrientation": "PORTRAIT"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow access to the camera roll in order to upload images.",
+          "cameraPermission": "Allow access to the camera in order to upload images directly.",
+          "microphonePermission": false
         }
       ],
       "expo-localization"
