@@ -11,6 +11,7 @@ const storage = new Storage(client);
 
 export const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
 export const SIGNATURES_BUCKET_ID = "signatures";
+export const LOTTERY_BUCKET_ID = "lottery";
 
 export { account, client, ID, storage, tablesDB };
 

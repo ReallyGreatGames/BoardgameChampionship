@@ -47,6 +47,7 @@ const translations = {
       timer: "Timer",
       results: "Results",
       signature: "Signature",
+      lottery: "Lottery",
       legal: "Imprint & Privacy",
     },
     dmmib: "DMMiB",
@@ -368,6 +369,23 @@ const translations = {
     placeholder: "Sign here…",
     clear: "Clear",
     save: "Save Signature",
+  },
+  lottery: {
+    title: "Lottery",
+    empty: "No lottery photos yet",
+    takePhoto: "Take Photo",
+    addPhoto: "Add Photo",
+    chooseFromLibrary: "From Library",
+    uploading: "Uploading…",
+    confirmDelete: {
+      title: "Delete lottery photo",
+      message: "Remove this lottery photo? This can't be undone.",
+      confirm: "Delete",
+      cancel: "Cancel",
+    },
+    notificationTitle: "New Lottery Photo",
+    notificationBody: "A new lottery photo was uploaded for {{game}}.",
+    notificationBodyGeneric: "A new lottery photo was uploaded.",
   },
   components: {
     schedule: {

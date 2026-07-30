@@ -2,8 +2,10 @@ import NetInfo from "@react-native-community/netinfo";
 import { useCallback, useEffect, useRef } from "react";
 import { AppState, AppStateStatus } from "react-native";
 import { useAuth } from "../auth";
+import { useLotteryNotifications } from "../notifications/useLotteryNotifications";
 import { useTableBellNotifications } from "../notifications/useTableBellNotifications";
 import { useFeatureFlagStore } from "../stores/appwrite/feature-flag-store";
+import { useLotteryStore } from "../stores/appwrite/lottery-store";
 import { usePlayerStore } from "../stores/appwrite/player-store";
 import { useResultStore } from "../stores/appwrite/result-store";
 import { useRuleStore } from "../stores/appwrite/rule-store";
@@ -43,6 +45,7 @@ const userInits = [
   useTableStore,
   useTeamStore,
   usePlayerStore,
+  useLotteryStore,
 ];
 
 const adminInits: any[] = [];
@@ -52,7 +55,7 @@ type Tier = "global" | "user" | "admin";
 function tierEntries(stores: any[]) {
   return stores.map((store) => {
     const state = store.getState();
-    return { key: state.key, set: state.realtimeSet };
+    return { key: state.key, set: state.realtimeSet, channel: state.channel };
   });
 }
 
@@ -65,6 +68,7 @@ export function RealTimeStoreProvider() {
   const isAuthenticated = isAdmin || isPinVerified;
 
   useTableBellNotifications(isAdmin);
+  useLotteryNotifications(isAdmin);
 
   const tierUnsubscribes = useRef<Record<Tier, (() => void) | null>>({
     global: null,
