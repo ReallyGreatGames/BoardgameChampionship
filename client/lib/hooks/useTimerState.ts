@@ -3,7 +3,12 @@ import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-store";
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
 import { buildPlayerColor, PLAYER_COLORS } from "@/lib/utils/timerColors";
-import { resolveGameId, toBooleanArray, toNumberArray } from "@/lib/utils";
+import {
+  applyElapsedCorrection,
+  resolveGameId,
+  toBooleanArray,
+  toNumberArray,
+} from "@/lib/utils";
 import { getItemAsync } from "@/lib/secureStorage";
 import { Animated, LayoutChangeEvent, useWindowDimensions } from "react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -117,10 +122,22 @@ export function useTimerState({
   directionRef.current = direction;
   const bellFiredRef = useRef(new Set<number>());
 
+  // Syncs from the persisted timer doc when one exists for this table, or
+  // resets to defaults otherwise. Kept as a single effect — splitting the
+  // "sync" and "reset to defaults" branches into separate effects lets the
+  // reset branch win the race on mount (it ran second and had no way to know
+  // a persisted timer had just been loaded), wiping out another viewer's
+  // in-progress timer with a fresh default instead of syncing to it.
   useEffect(() => {
     if (!existingTimer) {
+      if (timerStartedRef.current) {
+        return;
+      }
+      setTimes(Array(PLAYER_COUNT).fill(totalSeconds));
+      depleteAnims.current.forEach((anim) => anim.setValue(0));
       return;
     }
+
     timerDocIdRef.current = existingTimer.$id;
     setActiveIdx(existingTimer.activePlayerTimer ?? null);
     setPaused(existingTimer.paused ?? false);
@@ -129,7 +146,17 @@ export function useTimerState({
     if (remoteTimes.length !== PLAYER_COUNT) {
       return;
     }
-    setTimes(remoteTimes);
+    // Saves only happen on press/pause/reset, not every tick, so the active
+    // player's stored time can be stale by however long their turn has run —
+    // correct for that the same way the results dashboard does.
+    const correctedTimes = applyElapsedCorrection(
+      remoteTimes,
+      existingTimer.activePlayerTimer ?? null,
+      existingTimer.paused ?? false,
+      existingTimer.$updatedAt,
+      Date.now(),
+    );
+    setTimes(correctedTimes);
 
     const remoteOvertime = toBooleanArray(
       (existingTimer as any).playersInOvertime,
@@ -138,14 +165,16 @@ export function useTimerState({
       setPlayersInOvertime(remoteOvertime);
     }
 
-    remoteTimes.forEach((remoteTime, i) => {
+    correctedTimes.forEach((correctedTime, i) => {
       if (direction === "up") {
         depleteAnims.current[i].setValue(
-          Math.min(1, 1 - remoteTime / totalSeconds),
+          Math.min(1, 1 - correctedTime / totalSeconds),
         );
       } else {
         const base = remoteOvertime[i] ? OVERTIME_SECONDS : totalSeconds;
-        depleteAnims.current[i].setValue(1 - Math.min(remoteTime, base) / base);
+        depleteAnims.current[i].setValue(
+          1 - Math.min(correctedTime, base) / base,
+        );
       }
     });
   }, [existingTimer, totalSeconds, direction]);
@@ -213,14 +242,6 @@ export function useTimerState({
     },
     [timerStore, gameId, tableNumber],
   );
-
-  useEffect(() => {
-    if (timerStartedRef.current) {
-      return;
-    }
-    setTimes(Array(PLAYER_COUNT).fill(totalSeconds));
-    depleteAnims.current.forEach((anim) => anim.setValue(0));
-  }, [totalSeconds]);
 
   useEffect(() => {
     if (activeIdx === null || paused) {

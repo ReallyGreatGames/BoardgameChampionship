@@ -21,6 +21,7 @@ import { useResultStore } from "@/lib/stores/appwrite/result-store";
 import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { useTableStore } from "@/lib/stores/appwrite/table-store";
+import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-store";
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
 import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
@@ -51,6 +52,7 @@ export type TimerFilter = "any" | "running" | "noTimer";
 export type SortOrder = "table" | "totalTimer" | "minTimer" | "resultStatus" | "bellFirst" | "sigsFirst";
 
 const PLAYER_COUNT = 4;
+const DEFAULT_TIMER_SECONDS = 10 * 60;
 
 export function ResultsAdminTab() {
   const { colors } = useTheme();
@@ -62,6 +64,7 @@ export function ResultsAdminTab() {
   const { collection: results } = useResultStore();
   const tables = useTableStore((s) => s.collection);
   const { collection: timers } = useTimerStore();
+  const { collection: timerSettingsCollection } = useTimerSettingsStore();
   const bells = useTableBellStore((s) => s.collection);
   const resultStore = useResultStore();
   const bellActions = useTableBellActions();
@@ -173,6 +176,11 @@ export function ResultsAdminTab() {
     setSortOrder("table");
   }, []);
 
+  const gameTimerSettings = useMemo(
+    () => timerSettingsCollection.find((g) => g.$id === selectedGameId),
+    [timerSettingsCollection, selectedGameId],
+  );
+
   // Build TableEntry list (for overview mode)
   const tableEntries = useMemo<TableEntry[]>(() => {
     if (!selectedGameId) return [];
@@ -182,6 +190,8 @@ export function ResultsAdminTab() {
       );
       const result = resultForTable(t.tableNumber);
       const bell = bells.find((b) => b.table === t.tableNumber);
+      const effectiveDuration =
+        timer?.durationMinutesTotal ?? gameTimerSettings?.durationMinutesTotal;
       return {
         id: t.tableNumber,
         players: t.players,
@@ -193,9 +203,13 @@ export function ResultsAdminTab() {
         isRunning: !!timer,
         isSubmitted: result?.submitted ?? false,
         hasNote: !!result?.note,
+        timerDirection: timer?.direction ?? gameTimerSettings?.direction ?? "down",
+        timerTotalSeconds: effectiveDuration
+          ? (effectiveDuration * 60) / PLAYER_COUNT
+          : DEFAULT_TIMER_SECONDS,
       };
     });
-  }, [gameTables, timers, results, bells, selectedGameId, resultForTable]);
+  }, [gameTables, timers, results, bells, selectedGameId, resultForTable, gameTimerSettings]);
 
   const filteredEntries = useMemo<TableEntry[]>(() => {
     const q = search.trim().toLowerCase();
