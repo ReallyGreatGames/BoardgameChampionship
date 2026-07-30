@@ -51,6 +51,14 @@ export default function LotteryScreen() {
     [collection, gameId],
   );
 
+  const handleBack = () => {
+    if (gameId) {
+      router.replace(`/game?gameId=${gameId}`);
+    } else {
+      router.replace("/");
+    }
+  };
+
   const handleDelete = async (fileId: string) => {
     await actions.remove(fileId, {
       title: t("confirmDelete.title"),
@@ -63,7 +71,7 @@ export default function LotteryScreen() {
 
   return (
     <View style={styles.container}>
-      <BackButton onPress={() => router.back()} />
+      <BackButton onPress={handleBack} />
       <Text style={styles.title}>{t("title")}</Text>
 
       {isAdmin && (
