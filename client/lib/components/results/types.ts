@@ -14,4 +14,8 @@ export type TableEntry = {
   isRunning: boolean;
   isSubmitted: boolean;
   hasNote: boolean;
+  /** Effective timer direction, resolved from the timer doc or the game's timer settings. */
+  timerDirection: "up" | "down";
+  /** Effective per-player total seconds, resolved from the timer doc or the game's timer settings. */
+  timerTotalSeconds: number;
 };

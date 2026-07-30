@@ -11,7 +11,13 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
-import { formatElapsed, formatTime, teamName, toNumberArray } from "@/lib/utils";
+import {
+  applyElapsedCorrection,
+  formatElapsed,
+  formatTime,
+  teamName,
+  toNumberArray,
+} from "@/lib/utils";
 import type { TableEntry } from "@/lib/components/results/types";
 import { SignatureStatusIcon } from "@/lib/components/results/SignatureStatusIcon";
 import { StateBadge } from "@/lib/components/results/StateBadge";
@@ -48,17 +54,18 @@ export function TableCard({
 
   const playerTimes = useMemo(() => {
     const timer = entry.timer;
-    if (!timer || entry.isSubmitted || timer.paused) return storedTimes;
-    const activeIdx = timer.activePlayerTimer;
-    if (activeIdx === null) return storedTimes;
-    const elapsed = Math.floor(
-      (now - new Date(timer.$updatedAt).getTime()) / 1000,
+    if (!timer || entry.isSubmitted) return storedTimes;
+    return applyElapsedCorrection(
+      storedTimes,
+      timer.activePlayerTimer,
+      timer.paused ?? false,
+      timer.$updatedAt,
+      now,
     );
-    if (elapsed <= 0) return storedTimes;
-    const live = [...storedTimes];
-    live[activeIdx] = storedTimes[activeIdx] - elapsed;
-    return live;
   }, [storedTimes, entry.timer, entry.isSubmitted, now]);
+
+  const displayTime = (seconds: number) =>
+    entry.timerDirection === "up" ? entry.timerTotalSeconds - seconds : seconds;
 
   const placements = entry.result?.placements ?? [];
   const scores = entry.result?.scores ?? [];
@@ -173,7 +180,7 @@ export function TableCard({
                 isActive ? (
                   <View style={styles.activeTimerBadge}>
                     <Text style={styles.playerTimeActive}>
-                      {formatTime(playerTimes[i] ?? 0)}
+                      {formatTime(displayTime(playerTimes[i] ?? 0))}
                     </Text>
                     {entry.timer.paused && (
                       <Ionicons name="pause" size={14} color="#000000" />
@@ -181,7 +188,7 @@ export function TableCard({
                   </View>
                 ) : (
                   <Text style={styles.playerTime}>
-                    {formatTime(playerTimes[i] ?? 0)}
+                    {formatTime(displayTime(playerTimes[i] ?? 0))}
                   </Text>
                 )
                 ) : placement !== undefined ? (

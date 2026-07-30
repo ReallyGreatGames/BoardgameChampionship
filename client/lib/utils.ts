@@ -64,6 +64,23 @@ export function formatElapsedSeconds(seconds: number) {
   return `${m}:${s}`;
 }
 
+/** Corrects the active player's stored time for elapsed real time since the
+ *  timer doc was last saved — saves only happen on press/pause/reset, not every tick. */
+export function applyElapsedCorrection(
+  times: number[],
+  activeIdx: number | null,
+  paused: boolean,
+  updatedAt: string,
+  now: number,
+): number[] {
+  if (activeIdx === null || paused) {return times;}
+  const elapsed = Math.floor((now - new Date(updatedAt).getTime()) / 1000);
+  if (elapsed <= 0) {return times;}
+  const corrected = [...times];
+  corrected[activeIdx] = times[activeIdx] - elapsed;
+  return corrected;
+}
+
 /** Normalizes playerTimes — real-time payloads may serialize arrays as JSON strings */
 export function toNumberArray(value: unknown): number[] {
   if (Array.isArray(value)) {return value as number[];}
