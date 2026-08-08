@@ -24,6 +24,13 @@ const PLAYER_COUNT = 4;
 /** A seat resumed within this many ms of its own pause keeps its round time —
  *  prevents "reset my round time" abuse via quick pause/unpause. */
 const ROUND_RESET_GRACE_MS = 3000;
+/** How far apart two `roundLastPausedAt` readings are allowed to be and
+ *  still count as "the same write" for own-echo detection (see
+ *  roundLastPausedRoughlyEqual) — covers Appwrite's datetime storage
+ *  reformatting (dropped milliseconds) round-tripping our OWN write, while
+ *  staying far tighter than any two independently-acting devices' clocks
+ *  could plausibly land by coincidence. */
+const OWN_ECHO_TIMESTAMP_TOLERANCE_MS = 1500;
 
 type TickState = {
   /** Pool seconds remaining per seat. Ticks down uniformly regardless of
@@ -55,6 +62,38 @@ function makeAnimatedValueArray(): Animated.Value[] {
 
 function parseIso(iso: string | null): number | null {
   return iso ? new Date(iso).getTime() : null;
+}
+
+/** Tolerant per-seat equality for `roundLastPausedAt` arrays — used only to
+ *  decide whether an incoming update is this device's OWN echo. Two
+ *  INDEPENDENT devices pausing/resuming the same seat, even seconds apart in
+ *  the same manual test, still land far outside `toleranceMs`; deliberately
+ *  not exact-string equality (see the isOwnEcho comment on why that's
+ *  fragile against Appwrite's datetime storage reformatting our own value). */
+function roundLastPausedRoughlyEqual(
+  a: (string | null)[],
+  b: (string | null)[],
+  toleranceMs: number,
+): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  for (let i = 0; i < a.length; i++) {
+    const av = a[i];
+    const bv = b[i];
+    if (av === null || bv === null) {
+      if (av !== bv) {
+        return false;
+      }
+      continue;
+    }
+    const at = parseIso(av);
+    const bt = parseIso(bv);
+    if (at === null || bt === null || Math.abs(at - bt) > toleranceMs) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function parsePlayerColors(raw: string): string[] | null {
@@ -228,6 +267,30 @@ export function useTimerState({
   const lastSyncedGraceRef = useRef<(string | null)[]>(
     Array(PLAYER_COUNT).fill(undefined as unknown as string | null),
   );
+  // The raw (uncorrected) `roundLastPausedAt` value last seen per seat from
+  // the remote doc — used only to detect whether a seat's pause moment
+  // genuinely changed since the previous sync (see the sync effect's
+  // clock-skew correction below).
+  const rawLastPausedAtRef = useRef<(string | null)[]>(
+    Array(PLAYER_COUNT).fill(undefined as unknown as string | null),
+  );
+  // Server-anchored (`$updatedAt`-substituted) equivalent of
+  // `roundLastPausedAtRef`, used ONLY by `resumeRoundState`'s grace check —
+  // deliberately NOT what feeds the grace-bar animation or what gets
+  // persisted back. See the sync effect for why these two need to diverge:
+  // this app's realtime delivery can lag by multiple real seconds (see
+  // hydratedDocIdRef's comment), which the animation tolerates fine (it's
+  // cosmetic — a late-discovered pause just animates less), but which turns
+  // the FUNCTIONAL round-reset decision unusable if it's ALSO forced through
+  // the exact same substitution: a cross-device resume would then read as
+  // "outside grace" almost every time purely from delivery lag. Kept
+  // separate so only the "is this seat's clock-skew-prone raw timestamp
+  // trustworthy for a security-relevant decision" question uses the
+  // server-anchored value; the animation keeps using the original, more
+  // forgiving raw value.
+  const correctedLastPausedAtRef = useRef<(string | null)[]>(
+    Array(PLAYER_COUNT).fill(null),
+  );
   // The exact times/round/pause arrays this device last wrote — lets the
   // sync effect recognize its own realtime echo and trust local state
   // entirely instead of re-deriving anything from it (see the sync effect
@@ -311,9 +374,23 @@ export function useTimerState({
     // (dropped milliseconds, timezone notation) — re-parsing our OWN
     // just-written timestamp back off the echo risks misreading it, which
     // the grace-bar timing is very sensitive to (a misread of even a couple
-    // seconds reads as "grace already expired"). Deliberately not comparing
-    // roundLastPausedAt itself for this check — everything else matching is
-    // signal enough, and it's the one field we most want to leave untouched.
+    // seconds reads as "grace already expired").
+    //
+    // `roundLastPausedAt` IS still checked, but tolerantly (see
+    // roundLastPausedRoughlyEqual) rather than by exact string equality —
+    // exact equality would reject genuine echoes over the reformatting risk
+    // above, but SKIPPING the field entirely turned out worse: two devices
+    // that each did their own quick pause/unpause on a freshly-reset timer
+    // can produce byte-identical playerTimes/playersPaused/roundTimesLeft/
+    // roundExpired purely by coincidence (nothing had ticked yet to tell
+    // them apart), which made one device mistake the OTHER's genuinely new
+    // update for its own echo and silently skip processing it — including
+    // the grace-bar animation. `roundLastPausedAtRef.current` (read here,
+    // before this effect reassigns it below) is this device's own most
+    // recent per-seat pause timestamp, checked against the incoming value
+    // within a tolerance — comfortably wider than storage reformatting,
+    // comfortably narrower than two independently-acting devices' timestamps
+    // could plausibly coincide.
     const written = lastWrittenTickRef.current;
     const isOwnEcho =
       remoteTimes.length === PLAYER_COUNT &&
@@ -321,12 +398,60 @@ export function useTimerState({
       arraysEqual(written.playerTimes, remoteTimes) &&
       arraysEqual(written.playersPaused, paused) &&
       arraysEqual(written.roundTimesLeft, roundTimesLeftFallback) &&
-      arraysEqual(written.roundExpired, roundExpiredFallback);
+      arraysEqual(written.roundExpired, roundExpiredFallback) &&
+      roundLastPausedRoughlyEqual(
+        roundLastPausedAtRef.current,
+        remoteLastPausedArr,
+        OWN_ECHO_TIMESTAMP_TOLERANCE_MS,
+      );
     if (isOwnEcho) {
       return;
     }
 
+    // Only the very first sync of a given doc (mount, or switching table/
+    // game) fast-forwards for elapsed real time since it was last saved —
+    // see hydratedDocIdRef above for why every later live update trusts the
+    // incoming values as-is instead. Read here (rather than only further
+    // below, where this check used to live) because the clock-skew
+    // correction right after it needs the same distinction — but the actual
+    // hydratedDocIdRef WRITE stays at its original spot, gated on remoteTimes
+    // being valid, so a malformed/missing playerTimes on this sync doesn't
+    // burn the one legitimate "first hydration" catch-up for this doc.
+    const isFirstHydration = hydratedDocIdRef.current !== existingTimer.$id;
+
+    // `roundLastPausedAt` entries are authored by whichever device paused
+    // that seat, using ITS OWN clock — feeds both the grace-bar animation
+    // AND (via resumeRoundState) the actual round-reset decision. Kept raw
+    // here for the animation: this app's realtime delivery can itself lag by
+    // multiple real seconds (see hydratedDocIdRef's comment above), and the
+    // animation is cosmetic enough that a late-discovered pause just
+    // animating less is preferable to a "corrected" version that reads as
+    // already-expired on almost every remote sync regardless of clock skew.
     roundLastPausedAtRef.current = remoteLastPausedArr;
+
+    // Server-anchored variant, kept ONLY for resumeRoundState's grace check
+    // (see correctedLastPausedAtRef above for why it must stay separate from
+    // the raw value the animation uses). Substituting `existingTimer.
+    // $updatedAt` for the acting device's self-reported timestamp removes
+    // that device's clock skew from THIS decision specifically — the one
+    // place a skewed clock could otherwise let round-time survive a resume
+    // it shouldn't, or force a reset on one that was legitimately quick.
+    // Doc-level, so only trustworthy exactly when a seat's raw timestamp
+    // just changed on a live (non-first-hydration) sync; untouched seats
+    // keep their previously-frozen correction, and first hydration falls
+    // back to the raw value (a stale pause is stale by minutes, not
+    // milliseconds, so the imprecision there is harmless).
+    const docUpdatedAtIso = existingTimer.$updatedAt;
+    correctedLastPausedAtRef.current = remoteLastPausedArr.map((iso, i) => {
+      if (iso === rawLastPausedAtRef.current[i]) {
+        return correctedLastPausedAtRef.current[i];
+      }
+      rawLastPausedAtRef.current[i] = iso;
+      if (iso === null || isFirstHydration) {
+        return iso;
+      }
+      return docUpdatedAtIso;
+    });
 
     // The local pause action already starts each seat's grace animation
     // immediately (see handlePress/toggleAllPause/handlePause) using this
@@ -349,11 +474,9 @@ export function useTimerState({
       return;
     }
 
-    // Only the very first sync of a given doc (mount, or switching table/
-    // game) fast-forwards for elapsed real time since it was last saved —
-    // see hydratedDocIdRef above for why every later live update trusts the
-    // incoming values as-is instead.
-    const isFirstHydration = hydratedDocIdRef.current !== existingTimer.$id;
+    // isFirstHydration was already read above (the clock-skew correction
+    // needs the same distinction) — the ref write happens here, same spot as
+    // before this fix, once we know remoteTimes is actually usable.
     hydratedDocIdRef.current = existingTimer.$id;
 
     const reconciled = isFirstHydration
@@ -583,9 +706,20 @@ export function useTimerState({
   // piece of "what does pausing a seat do" logic, shared by every path that
   // can pause a seat (press, pause-all, auto-mode preemption, force-pause on
   // screen exit) so none of them can drift from the others.
+  // `nextCorrectedLastPaused` mirrors `nextLastPaused` for this same seat —
+  // a LOCAL pause needs no cross-device clock correction (same clock through
+  // both the pause and any later resume on this device), so both arrays get
+  // the identical timestamp. See correctedLastPausedAtRef for why the two
+  // arrays exist at all.
   const pauseSeatLocally = useCallback(
-    (i: number, now: number, nextLastPaused: (string | null)[]) => {
+    (
+      i: number,
+      now: number,
+      nextLastPaused: (string | null)[],
+      nextCorrectedLastPaused: (string | null)[],
+    ) => {
       nextLastPaused[i] = new Date(now).toISOString();
+      nextCorrectedLastPaused[i] = nextLastPaused[i];
       depleteAnims.current[i].stopAnimation();
       syncGraceAnimation(graceAnims.current[i], true, nextLastPaused[i], now);
       lastSyncedGraceRef.current[i] = nextLastPaused[i];
@@ -607,6 +741,8 @@ export function useTimerState({
     setTickState(fresh);
     setPlayersPaused(freshPaused);
     roundLastPausedAtRef.current = freshLastPaused;
+    rawLastPausedAtRef.current = freshLastPaused;
+    correctedLastPausedAtRef.current = freshLastPaused;
     depleteAnims.current.forEach((anim) => anim.setValue(0));
     graceAnims.current.forEach((anim) => anim.setValue(0));
     lastSyncedGraceRef.current = Array(PLAYER_COUNT).fill(null);
@@ -622,6 +758,7 @@ export function useTimerState({
     let nextRoundTimesLeft = tickState.roundTimesLeft;
     let nextRoundExpired = tickState.roundExpired;
     const nextLastPaused = [...roundLastPausedAtRef.current];
+    const nextCorrectedLastPaused = [...correctedLastPausedAtRef.current];
 
     if (pauseMode === "auto" && wasPaused) {
       // Activating a seat stops every other running seat — the classic
@@ -630,7 +767,7 @@ export function useTimerState({
       for (let i = 0; i < PLAYER_COUNT; i++) {
         if (i !== idx && !nextPaused[i]) {
           nextPaused[i] = true;
-          pauseSeatLocally(i, now, nextLastPaused);
+          pauseSeatLocally(i, now, nextLastPaused, nextCorrectedLastPaused);
         }
       }
     }
@@ -638,12 +775,12 @@ export function useTimerState({
     nextPaused[idx] = !wasPaused;
 
     if (nextPaused[idx]) {
-      pauseSeatLocally(idx, now, nextLastPaused);
+      pauseSeatLocally(idx, now, nextLastPaused, nextCorrectedLastPaused);
     } else {
       const resumed = resumeRoundState(
         idx,
         now,
-        nextLastPaused[idx],
+        correctedLastPausedAtRef.current[idx],
         roundSecondsTotal,
         nextRoundTimesLeft,
         nextRoundExpired,
@@ -657,6 +794,11 @@ export function useTimerState({
     setPlayersPaused(nextPaused);
     setTickState((prev) => ({ ...prev, roundTimesLeft: nextRoundTimesLeft, roundExpired: nextRoundExpired }));
     roundLastPausedAtRef.current = nextLastPaused;
+    correctedLastPausedAtRef.current = nextCorrectedLastPaused;
+    // This device authored every entry in `nextLastPaused` itself (no cross-
+    // device skew involved) — mark it as already-raw so the next remote sync
+    // recognizes its own echo unchanged instead of "correcting" it again.
+    rawLastPausedAtRef.current = nextLastPaused;
 
     persistPatch({
       playerTimes: tickState.times,
@@ -676,6 +818,7 @@ export function useTimerState({
   const toggleAllPause = useCallback(() => {
     const now = Date.now();
     const nextLastPaused = [...roundLastPausedAtRef.current];
+    const nextCorrectedLastPaused = [...correctedLastPausedAtRef.current];
     const nextPaused = Array(PLAYER_COUNT).fill(!allPaused);
     let nextRoundTimesLeft = tickState.roundTimesLeft;
     let nextRoundExpired = tickState.roundExpired;
@@ -686,7 +829,7 @@ export function useTimerState({
         const resumed = resumeRoundState(
           i,
           now,
-          nextLastPaused[i],
+          correctedLastPausedAtRef.current[i],
           roundSecondsTotal,
           nextRoundTimesLeft,
           nextRoundExpired,
@@ -701,13 +844,15 @@ export function useTimerState({
         if (paused) {
           return;
         }
-        pauseSeatLocally(i, now, nextLastPaused);
+        pauseSeatLocally(i, now, nextLastPaused, nextCorrectedLastPaused);
       });
     }
 
     setPlayersPaused(nextPaused);
     setTickState((prev) => ({ ...prev, roundTimesLeft: nextRoundTimesLeft, roundExpired: nextRoundExpired }));
     roundLastPausedAtRef.current = nextLastPaused;
+    correctedLastPausedAtRef.current = nextCorrectedLastPaused;
+    rawLastPausedAtRef.current = nextLastPaused;
 
     persistPatch({
       playerTimes: tickState.times,
@@ -837,15 +982,18 @@ export function useTimerState({
     }
     const now = Date.now();
     const nextLastPaused = [...roundLastPausedAtRef.current];
+    const nextCorrectedLastPaused = [...correctedLastPausedAtRef.current];
     playersPaused.forEach((paused, i) => {
       if (paused) {
         return;
       }
-      pauseSeatLocally(i, now, nextLastPaused);
+      pauseSeatLocally(i, now, nextLastPaused, nextCorrectedLastPaused);
     });
     const nextPaused = Array(PLAYER_COUNT).fill(true);
     setPlayersPaused(nextPaused);
     roundLastPausedAtRef.current = nextLastPaused;
+    correctedLastPausedAtRef.current = nextCorrectedLastPaused;
+    rawLastPausedAtRef.current = nextLastPaused;
     persistPatch({
       playerTimes: tickState.times,
       playersPaused: nextPaused,
