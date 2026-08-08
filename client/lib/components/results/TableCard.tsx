@@ -23,6 +23,8 @@ import type { TableEntry } from "@/lib/components/results/types";
 import { SignatureStatusIcon } from "@/lib/components/results/SignatureStatusIcon";
 import { StateBadge } from "@/lib/components/results/StateBadge";
 
+const PLAYER_COUNT = 4;
+
 type Props = {
   entry: TableEntry;
   cardWidth: number;
@@ -49,27 +51,38 @@ export function TableCard({
   const bell = entry.bell;
   const bellColor = bell?.acknowledgeTime ? colors.success : colors.accent;
   const sigIds: string[] = entry.result?.signatureIds ?? [];
-  const storedTimes = toNumberArray(entry.timer?.playerTimes);
   const missingSig =
     !!entry.result && sigIds.length > 0 && sigIds.some((id) => !id);
 
-  // Seats with no valid playersPaused/round data yet (timer doc just created,
-  // not touched) default to "paused"/"fresh round" — matches
-  // useTimerState.ts's own defaults.
-  const rawPaused = toBooleanArray(entry.timer?.playersPaused);
-  const pausedFlags =
-    rawPaused.length === storedTimes.length ? rawPaused : storedTimes.map(() => true);
-  const rawRoundTimes = toNumberArray(entry.timer?.roundTimesLeft);
-  const roundTimesLeft =
-    rawRoundTimes.length === storedTimes.length
-      ? rawRoundTimes
-      : storedTimes.map(() => entry.timerRoundSecondsTotal);
-  const rawRoundExpired = toBooleanArray(entry.timer?.roundExpired);
-  const roundExpired =
-    rawRoundExpired.length === storedTimes.length
-      ? rawRoundExpired
-      : storedTimes.map(() => false);
-  const overtimeFlags = toBooleanArray(entry.timer?.playersInOvertime);
+  // Seats with no valid playerTimes/playersPaused/round data yet (timer doc
+  // just created, not touched) default to "full pool"/"paused"/"fresh
+  // round" — matches useTimerState.ts's own defaults. Compared against the
+  // fixed seat count, not against each other's length — a doc created with
+  // empty arrays (see game.tsx) would otherwise make every fallback compare
+  // 0 === 0 and vacuously "pass" as valid, real data. Memoized off the raw
+  // stored fields so identity stays stable across the once-a-second re-
+  // renders driven by `now`, which is what lets the `playerTimes` memo below
+  // actually skip recomputing `reconcileRoundAndPool` most ticks.
+  const storedTimes = useMemo(() => {
+    const raw = toNumberArray(entry.timer?.playerTimes);
+    return raw.length === PLAYER_COUNT ? raw : Array(PLAYER_COUNT).fill(entry.timerTotalSeconds);
+  }, [entry.timer?.playerTimes, entry.timerTotalSeconds]);
+  const pausedFlags = useMemo(() => {
+    const raw = toBooleanArray(entry.timer?.playersPaused);
+    return raw.length === PLAYER_COUNT ? raw : Array(PLAYER_COUNT).fill(true);
+  }, [entry.timer?.playersPaused]);
+  const roundTimesLeft = useMemo(() => {
+    const raw = toNumberArray(entry.timer?.roundTimesLeft);
+    return raw.length === PLAYER_COUNT ? raw : Array(PLAYER_COUNT).fill(entry.timerRoundSecondsTotal);
+  }, [entry.timer?.roundTimesLeft, entry.timerRoundSecondsTotal]);
+  const roundExpired = useMemo(() => {
+    const raw = toBooleanArray(entry.timer?.roundExpired);
+    return raw.length === PLAYER_COUNT ? raw : Array(PLAYER_COUNT).fill(false);
+  }, [entry.timer?.roundExpired]);
+  const overtimeFlags = useMemo(
+    () => toBooleanArray(entry.timer?.playersInOvertime),
+    [entry.timer?.playersInOvertime],
+  );
 
   // Pool time must not appear to drain while a seat is still in its
   // round-time phase — reconcile both together, same as the live timer, and
@@ -205,13 +218,18 @@ export function TableCard({
       <View style={styles.playersRow}>
         {entry.players.map((player, i) => {
           const isRunning = entry.timer ? !pausedFlags[i] : false;
+          // While a round is active, its pool hasn't actually run out yet
+          // from the player's perspective — matches TimerCell.tsx, which
+          // ignores pool-overtime entirely for the same seat/round state.
+          const roundActive = entry.timerRoundSecondsTotal > 0 && !roundExpired[i];
           // The persisted flag only updates on the next explicit action
           // (press/pause), not continuously as the pool depletes — for
           // direction "down" that's masked by the display freezing at 00:00
           // anyway, but "up" would otherwise just keep counting past the
           // total with no visual cue. Derive it live from the already-
           // reconciled pool time too, same as useTimerState.ts does.
-          const isOvertime = (overtimeFlags[i] ?? false) || (playerTimes[i] ?? 0) <= 0;
+          const isOvertime =
+            !roundActive && ((overtimeFlags[i] ?? false) || (playerTimes[i] ?? 0) <= 0);
           const placement = placements[i];
           const score = scores[i];
 

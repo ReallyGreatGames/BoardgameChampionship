@@ -30,7 +30,7 @@ import {
   hasScorePlacementConflict,
   isValidPlacementCombo,
 } from "@/lib/utils/placements";
-import { resolveGameId, teamName, toNumberArray } from "@/lib/utils";
+import { resolveEffectiveTimer, resolveGameId, teamName, toNumberArray } from "@/lib/utils";
 import { ChipGroup } from "@/lib/components/ui/ChipGroup";
 import { Combobox } from "@/lib/components/ui/Combobox";
 import { useDialog } from "@/lib/components/ui/Dialog";
@@ -190,18 +190,13 @@ export function ResultsAdminTab() {
       );
       const result = resultForTable(t.tableNumber);
       const bell = bells.find((b) => b.table === t.tableNumber);
-      // `hasCustomTimer` is the authoritative signal for whether this table
-      // has a deliberate per-table override — see useTimerState.ts for why
-      // that can't be inferred from durationMinutesTotal/roundSecondsTotal
-      // themselves (both are numbers Appwrite defaults to `0` when unset,
-      // indistinguishable from a deliberately-chosen `0`).
-      const hasCustomTimer = !!timer?.hasCustomTimer;
-      const effectiveDuration = hasCustomTimer
-        ? timer?.durationMinutesTotal || gameTimerSettings?.durationMinutesTotal
-        : gameTimerSettings?.durationMinutesTotal;
-      const effectiveRoundSeconds = hasCustomTimer
-        ? timer?.roundSecondsTotal ?? 0
-        : gameTimerSettings?.roundSecondsTotal || 0;
+      // Shared with useTimerState.ts so the live timer and this read-only
+      // dashboard can't resolve a table's effective duration/round-time/
+      // direction differently — see resolveEffectiveTimer for why
+      // `hasCustomTimer` (not durationMinutesTotal/roundSecondsTotal
+      // themselves) is the authoritative signal for a deliberate override.
+      const { effectiveDuration, roundSecondsTotal: effectiveRoundSeconds, direction: timerDirection } =
+        resolveEffectiveTimer(timer, gameTimerSettings);
       return {
         id: t.tableNumber,
         players: t.players,
@@ -213,9 +208,7 @@ export function ResultsAdminTab() {
         isRunning: !!timer,
         isSubmitted: result?.submitted ?? false,
         hasNote: !!result?.note,
-        timerDirection: hasCustomTimer
-          ? timer?.direction ?? gameTimerSettings?.direction ?? "down"
-          : gameTimerSettings?.direction ?? "down",
+        timerDirection,
         timerTotalSeconds: effectiveDuration
           ? (effectiveDuration * 60) / PLAYER_COUNT
           : DEFAULT_TIMER_SECONDS,

@@ -15,6 +15,7 @@ import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-stor
 import { PLAYER_COLORS } from "@/lib/utils/timerColors";
 import { BottomSheet, makeSheetStyles } from "@/lib/components/ui/BottomSheet";
 import { TimerDurationFields } from "@/lib/components/timer/TimerDurationFields";
+import { useDurationRoundFields } from "@/lib/hooks/useDurationRoundFields";
 
 const DEFAULT_COLORS = PLAYER_COLORS.map((c) => c.active);
 
@@ -42,40 +43,46 @@ export function TimerSettingsModal({
     [collection, gameId],
   );
 
-  const [duration, setDuration] = useState("");
-  const [roundSeconds, setRoundSeconds] = useState("");
-  const [direction, setDirection] = useState<"up" | "down">("down");
   const [playerColors, setPlayerColors] = useState<string[]>(DEFAULT_COLORS);
   const [expandedPlayer, setExpandedPlayer] = useState<number | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [durBlurred, setDurBlurred] = useState(false);
+
+  const {
+    duration,
+    roundSeconds,
+    direction,
+    saving,
+    durNum,
+    roundSecondsNum,
+    isValid,
+    durationInvalid,
+    roundSecondsInvalid,
+    setDuration,
+    setRoundSeconds,
+    setDirection,
+    setSaving,
+    onDurationBlur,
+    reset,
+  } = useDurationRoundFields();
 
   useEffect(() => {
     if (!visible) {
       return;
     }
     if (existing) {
-      setDuration(String(Math.round(existing.durationMinutesTotal / 4)));
-      setRoundSeconds(existing.roundSecondsTotal ? String(existing.roundSecondsTotal) : "");
-      setDirection(existing.direction);
+      reset({
+        duration: Math.round(existing.durationMinutesTotal / 4),
+        roundSeconds: existing.roundSecondsTotal,
+        direction: existing.direction,
+      });
       setPlayerColors(
         existing.colors?.length === 4 ? existing.colors : DEFAULT_COLORS,
       );
     } else {
-      setDuration("");
-      setRoundSeconds("");
-      setDirection("down");
+      reset();
       setPlayerColors(DEFAULT_COLORS);
     }
-    setSaving(false);
-    setDurBlurred(false);
     setExpandedPlayer(null);
-  }, [visible, existing]);
-
-  const durNum = parseInt(duration, 10);
-  const durValid = !isNaN(durNum) && durNum > 0;
-  const roundSecondsNum = roundSeconds.trim() === "" ? 0 : parseInt(roundSeconds, 10);
-  const roundSecondsValid = !isNaN(roundSecondsNum) && roundSecondsNum >= 0;
+  }, [visible, existing, reset]);
 
   function setColor(playerIdx: number, hex: string) {
     setPlayerColors((prev) => {
@@ -86,7 +93,7 @@ export function TimerSettingsModal({
   }
 
   async function handleSave() {
-    if (!durValid || !roundSecondsValid || saving) {
+    if (!isValid || saving) {
       return;
     }
     setSaving(true);
@@ -128,12 +135,9 @@ export function TimerSettingsModal({
       }
       footer={
         <Pressable
-          style={[
-            styles.saveBtn,
-            (!durValid || !roundSecondsValid || saving) && styles.saveBtnDisabled,
-          ]}
+          style={[styles.saveBtn, (!isValid || saving) && styles.saveBtnDisabled]}
           onPress={handleSave}
-          disabled={!durValid || !roundSecondsValid || saving}
+          disabled={!isValid || saving}
         >
           {saving ? (
             <ActivityIndicator size="small" color={colors.onAccent} />
@@ -147,24 +151,16 @@ export function TimerSettingsModal({
     >
       <TimerDurationFields
         duration={duration}
-        onDurationChange={(v) => {
-          setDuration(v);
-          if (durBlurred) {
-            const n = parseInt(v, 10);
-            if (!isNaN(n) && n > 0) {
-              setDurBlurred(false);
-            }
-          }
-        }}
-        onDurationBlur={() => setDurBlurred(true)}
+        onDurationChange={setDuration}
+        onDurationBlur={onDurationBlur}
         durationLabel={t("timerSettingsModal.durationField")}
         durationPlaceholder={t("timerSettingsModal.durationPlaceholder")}
-        durationInvalid={durBlurred && duration !== "" && !durValid}
+        durationInvalid={durationInvalid}
         roundSeconds={roundSeconds}
         onRoundSecondsChange={setRoundSeconds}
         roundSecondsLabel={t("timerSettingsModal.roundSecondsField")}
         roundSecondsPlaceholder={t("timerSettingsModal.roundSecondsPlaceholder")}
-        roundSecondsInvalid={roundSeconds !== "" && !roundSecondsValid}
+        roundSecondsInvalid={roundSecondsInvalid}
         direction={direction}
         onDirectionChange={setDirection}
         directionLabel={t("timerSettingsModal.directionField")}

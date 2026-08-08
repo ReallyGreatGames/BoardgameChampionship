@@ -4,12 +4,14 @@ import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-stor
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
 import { buildPlayerColor, PLAYER_COLORS } from "@/lib/utils/timerColors";
 import {
+  arraysEqual,
   reconcileRoundAndPool,
+  resolveEffectiveTimer,
   resolveGameId,
   toBooleanArray,
   toNumberArray,
 } from "@/lib/utils";
-import { getItemAsync } from "@/lib/secureStorage";
+import { useSecureStoragePerGame } from "@/lib/hooks/useSecureStoragePerGame";
 import { Animated, LayoutChangeEvent, useWindowDimensions } from "react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -47,6 +49,23 @@ function makeDefaultTickState(totalSeconds: number, roundSecondsTotal: number): 
   };
 }
 
+function makeAnimatedValueArray(): Animated.Value[] {
+  return Array.from({ length: PLAYER_COUNT }, () => new Animated.Value(0));
+}
+
+function parseIso(iso: string | null): number | null {
+  return iso ? new Date(iso).getTime() : null;
+}
+
+function parsePlayerColors(raw: string): string[] | null {
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Whether resuming a seat paused at `lastPausedAtIso` should keep its
  *  current round-time progress (grace window) or start a fresh round. Pure
  *  so it's shared between a single-seat press and the pause/unpause-all
@@ -59,7 +78,7 @@ function resumeRoundState(
   roundTimesLeft: number[],
   roundExpired: boolean[],
 ): { roundTimesLeft: number[]; roundExpired: boolean[] } {
-  const lastPausedAt = lastPausedAtIso ? new Date(lastPausedAtIso).getTime() : null;
+  const lastPausedAt = parseIso(lastPausedAtIso);
   const withinGrace = lastPausedAt !== null && now - lastPausedAt < ROUND_RESET_GRACE_MS;
   if (withinGrace) {
     return { roundTimesLeft, roundExpired };
@@ -89,7 +108,7 @@ function syncGraceAnimation(
     anim.setValue(0);
     return;
   }
-  const lastPausedAt = lastPausedAtIso ? new Date(lastPausedAtIso).getTime() : null;
+  const lastPausedAt = parseIso(lastPausedAtIso);
   const elapsed = lastPausedAt !== null ? now - lastPausedAt : ROUND_RESET_GRACE_MS;
   if (elapsed >= ROUND_RESET_GRACE_MS) {
     anim.setValue(1);
@@ -138,28 +157,14 @@ export function useTimerState({
     [timerStore.collection, gameId, tableNumber],
   );
 
-  const [storedHexColors, setStoredHexColors] = useState<string[] | null>(null);
-
-  useEffect(() => {
-    if (!gameId) {
-      setStoredHexColors(null);
-      return;
-    }
-    getItemAsync(`playerColors_${gameId}`).then((raw) => {
-      if (!raw) {
-        setStoredHexColors(null);
-        return;
-      }
-      try {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          setStoredHexColors(parsed);
-        }
-      } catch {
-        setStoredHexColors(null);
-      }
-    });
-  }, [gameId]);
+  // Mirrors the player-color pattern used by game.tsx's own write side —
+  // see useSecureStoragePerGame.
+  const [storedHexColors] = useSecureStoragePerGame<string[] | null>(
+    "playerColors",
+    gameId,
+    null,
+    parsePlayerColors,
+  );
 
   const playerColors = useMemo(() => {
     const saved = storedHexColors ?? timerSettings?.colors;
@@ -171,30 +176,13 @@ export function useTimerState({
     });
   }, [storedHexColors, timerSettings?.colors]);
 
-  // `durationMinutesTotal`/`roundSecondsTotal` are numbers Appwrite fills
-  // with a schema default of `0` when never explicitly set — indistinguish-
-  // able from a deliberately-chosen `0` (e.g. round timer disabled on
-  // purpose for this table). `hasCustomTimer` is the authoritative,
-  // unambiguous signal instead: explicitly true/false, set only by
-  // handleSaveCustomTimer/handleUseDefaultTimer. Deriving it from
-  // `durationMinutesTotal > 0` instead (as before) broke tables with a
-  // pre-existing custom *duration* only (saved before `roundSecondsTotal`
-  // existed) — their round timer got silently disabled by that same `0`
-  // default, since a custom duration alone doesn't mean roundSeconds was
-  // ever deliberately touched.
-  const hasCustomTimer = !!existingTimer?.hasCustomTimer;
-  const effectiveDuration = hasCustomTimer
-    ? existingTimer?.durationMinutesTotal || timerSettings?.durationMinutesTotal
-    : timerSettings?.durationMinutesTotal;
+  const { effectiveDuration, roundSecondsTotal, direction } = resolveEffectiveTimer(
+    existingTimer,
+    timerSettings,
+  );
   const totalSeconds = effectiveDuration
     ? (effectiveDuration * 60) / PLAYER_COUNT
     : DEFAULT_SECONDS;
-  const roundSecondsTotal = hasCustomTimer
-    ? existingTimer?.roundSecondsTotal ?? 0
-    : timerSettings?.roundSecondsTotal || 0;
-  const direction = hasCustomTimer
-    ? existingTimer?.direction ?? timerSettings?.direction ?? "down"
-    : timerSettings?.direction ?? "down";
 
   const [tickState, setTickState] = useState<TickState>(() =>
     makeDefaultTickState(totalSeconds, roundSecondsTotal),
@@ -213,13 +201,12 @@ export function useTimerState({
   const roundLastPausedAtRef = useRef<(string | null)[]>(
     Array(PLAYER_COUNT).fill(null),
   );
-  const bellFiredRef = useRef(false);
-  const depleteAnims = useRef(
-    Array.from({ length: PLAYER_COUNT }, () => new Animated.Value(0)),
-  );
-  const graceAnims = useRef(
-    Array.from({ length: PLAYER_COUNT }, () => new Animated.Value(0)),
-  );
+  // Per seat — Manual mode allows several seats to run (and time out)
+  // independently, so one seat's already-acknowledged bell must not
+  // silently swallow a DIFFERENT seat's fresh timeout (see the bell effect).
+  const bellFiredRef = useRef<boolean[]>(Array(PLAYER_COUNT).fill(false));
+  const depleteAnims = useRef(makeAnimatedValueArray());
+  const graceAnims = useRef(makeAnimatedValueArray());
   // Tracks which `roundLastPausedAt` timestamp each seat's grace animation
   // was last (re)started from — lets the sync effect below skip redundant
   // restarts when a seat's own pause moment hasn't changed.
@@ -316,10 +303,10 @@ export function useTimerState({
     const isOwnEcho =
       remoteTimes.length === PLAYER_COUNT &&
       written !== null &&
-      JSON.stringify(written.playerTimes) === JSON.stringify(remoteTimes) &&
-      JSON.stringify(written.playersPaused) === JSON.stringify(paused) &&
-      JSON.stringify(written.roundTimesLeft) === JSON.stringify(roundTimesLeftFallback) &&
-      JSON.stringify(written.roundExpired) === JSON.stringify(roundExpiredFallback);
+      arraysEqual(written.playerTimes, remoteTimes) &&
+      arraysEqual(written.playersPaused, paused) &&
+      arraysEqual(written.roundTimesLeft, roundTimesLeftFallback) &&
+      arraysEqual(written.roundExpired, roundExpiredFallback);
     if (isOwnEcho) {
       return;
     }
@@ -392,13 +379,9 @@ export function useTimerState({
     if (tableNumber === null) {
       return null;
     }
-    const inCollection = timerStore.collection.find(
-      (tm) =>
-        tm.table === tableNumber && resolveGameId(tm.games) === (gameId ?? null),
-    );
-    if (inCollection) {
-      timerDocIdRef.current = inCollection.$id;
-      return inCollection.$id;
+    if (existingTimer) {
+      timerDocIdRef.current = existingTimer.$id;
+      return existingTimer.$id;
     }
     const defaults = makeDefaultTickState(totalSeconds, roundSecondsTotal);
     const doc = await timerStore.add({
@@ -416,7 +399,7 @@ export function useTimerState({
       timerDocIdRef.current = doc.$id;
     }
     return doc?.$id ?? null;
-  }, [timerStore, gameId, tableNumber, totalSeconds, roundSecondsTotal]);
+  }, [timerStore, gameId, tableNumber, totalSeconds, roundSecondsTotal, existingTimer]);
 
   const persistPatch = useCallback(
     async (
@@ -431,14 +414,11 @@ export function useTimerState({
           | "roundLastPausedAt"
           | "playerPositions"
           | "hasCustomTimer"
+          | "durationMinutesTotal"
+          | "roundSecondsTotal"
+          | "direction"
         >
-      > & {
-        // `null` (not just omitted/undefined) clears a per-table override so
-        // the game's default takes over again — see handleUseDefaultTimer.
-        durationMinutesTotal?: number | null;
-        roundSecondsTotal?: number | null;
-        direction?: Timer["direction"] | null;
-      },
+      >,
     ) => {
       const id = await getOrCreateTimerId();
       if (!id) {
@@ -452,7 +432,20 @@ export function useTimerState({
           roundExpired: patch.roundExpired,
         };
       }
-      await timerStore.update({ $id: id, ...patch } as any, true);
+      const ok = await timerStore.update({ $id: id, ...patch }, true);
+      if (ok) {
+        return;
+      }
+      // The cached doc id may be stale (doc deleted/recreated server-side) —
+      // drop it and resolve/create again, then retry once, so a transient
+      // or stale-id failure doesn't leave this device silently diverged from
+      // the backend until an app restart (parity with the pre-rework
+      // saveState, which had the same self-heal).
+      timerDocIdRef.current = null;
+      const retryId = await getOrCreateTimerId();
+      if (retryId) {
+        await timerStore.update({ $id: retryId, ...patch }, true);
+      }
     },
     [timerStore, getOrCreateTimerId],
   );
@@ -487,13 +480,15 @@ export function useTimerState({
             if (times[i] <= 0) {
               playersInOvertime[i] = true;
             }
+            // Only the pool actually changed this tick — restarting this
+            // animation while a seat is still in its round-time phase would
+            // just re-target the exact value it's already resting at.
+            Animated.timing(depleteAnims.current[i], {
+              toValue: Math.min(1, Math.max(0, 1 - times[i] / totalSeconds)),
+              duration: 950,
+              useNativeDriver: false,
+            }).start();
           }
-
-          Animated.timing(depleteAnims.current[i], {
-            toValue: Math.min(1, Math.max(0, 1 - times[i] / totalSeconds)),
-            duration: 950,
-            useNativeDriver: false,
-          }).start();
         }
 
         return { times, roundTimesLeft, roundExpired, playersInOvertime };
@@ -502,34 +497,47 @@ export function useTimerState({
     return () => clearInterval(interval);
   }, [playersPaused, totalSeconds]);
 
-  // Auto-rings the table bell once a seat's pool is exhausted, same as
-  // before — the deterministic bell id (table-bell-store.ts) is what keeps
-  // this from creating duplicate bells when multiple devices race to notice
-  // the same timeout at the same moment.
+  // Auto-rings the table bell once a seat's pool is exhausted. Tracked per
+  // seat (not as one shared flag) — Manual mode allows multiple seats to run
+  // (and time out) independently, so a bell already acknowledged for an
+  // earlier seat's timeout must not silently swallow a LATER, different
+  // seat's fresh timeout. The deterministic bell id (table-bell-store.ts) is
+  // what keeps this from creating duplicate bells when multiple devices race
+  // to notice the same timeout at the same moment.
   useEffect(() => {
     if (tableNumber === null) {
       return;
     }
-    const anyOvertime = tickState.playersInOvertime.some(Boolean);
-    // Only reset the guard once overtime is actually resolved (reset, custom
-    // timer, or a fresh round) — NOT just because the bell was dismissed or
-    // acknowledged. Otherwise dismissing a bell while the pool is still
-    // exhausted immediately re-creates it, since the underlying condition
-    // never went away.
-    if (!anyOvertime) {
-      bellFiredRef.current = false;
+    const overtime = tickState.playersInOvertime;
+    let hasFreshTimeout = false;
+    overtime.forEach((isOver, i) => {
+      if (!isOver) {
+        // Only reset a seat's own guard once ITS overtime is actually
+        // resolved (reset, custom timer, fresh round) — not just because
+        // the bell was dismissed/acknowledged, and not because of some
+        // OTHER seat's state.
+        bellFiredRef.current[i] = false;
+        return;
+      }
+      if (!bellFiredRef.current[i]) {
+        hasFreshTimeout = true;
+      }
+    });
+    if (!hasFreshTimeout) {
       return;
     }
+    overtime.forEach((isOver, i) => {
+      if (isOver) {
+        bellFiredRef.current[i] = true;
+      }
+    });
     // A still-unacknowledged bell already covers this table — don't
-    // duplicate it. An already-acknowledged bell was for an earlier, now
-    // resolved concern (e.g. a previous overtime episode) and shouldn't
-    // silently block alerting staff to a fresh timeout.
-    const blockingBell = bell && !bell.acknowledgeTime;
-    if (bellFiredRef.current || blockingBell) {
-      bellFiredRef.current = true;
+    // duplicate it. An already-acknowledged bell was for an earlier, now-
+    // resolved (or different-seat) concern and shouldn't silently block
+    // alerting staff to this fresh timeout.
+    if (bell && !bell.acknowledgeTime) {
       return;
     }
-    bellFiredRef.current = true;
     if (bell) {
       // Re-ring the same (already-acknowledged) bell rather than creating a
       // second row — the deterministic id only allows one per table anyway.
@@ -555,6 +563,42 @@ export function useTimerState({
     setCellSize({ w, h });
   };
 
+  // Pauses seat `i` locally: freezes its deplete animation, records the
+  // pause moment, and (re)starts its grace-bar animation from it. The one
+  // piece of "what does pausing a seat do" logic, shared by every path that
+  // can pause a seat (press, pause-all, auto-mode preemption, force-pause on
+  // screen exit) so none of them can drift from the others.
+  const pauseSeatLocally = useCallback(
+    (i: number, now: number, nextLastPaused: (string | null)[]) => {
+      nextLastPaused[i] = new Date(now).toISOString();
+      depleteAnims.current[i].stopAnimation();
+      syncGraceAnimation(graceAnims.current[i], true, nextLastPaused[i], now);
+      lastSyncedGraceRef.current[i] = nextLastPaused[i];
+    },
+    [],
+  );
+
+  // Resets every seat to a fresh timer state (local state + anims), for a
+  // given pool/round-time budget. Shared by handleReset, handleSaveCustomTimer
+  // and handleUseDefaultTimer — the only thing that differs between them is
+  // which budget to reset to and which extra fields (if any) to persist.
+  const resetTimerLocally = useCallback((newTotalSeconds: number, newRoundSeconds: number) => {
+    timerStartedRef.current = false;
+    bellFiredRef.current = Array(PLAYER_COUNT).fill(false);
+    const fresh = makeDefaultTickState(newTotalSeconds, newRoundSeconds);
+    const freshPaused = Array(PLAYER_COUNT).fill(true);
+    const freshLastPaused: (string | null)[] = Array(PLAYER_COUNT).fill(null);
+
+    setTickState(fresh);
+    setPlayersPaused(freshPaused);
+    roundLastPausedAtRef.current = freshLastPaused;
+    depleteAnims.current.forEach((anim) => anim.setValue(0));
+    graceAnims.current.forEach((anim) => anim.setValue(0));
+    lastSyncedGraceRef.current = Array(PLAYER_COUNT).fill(null);
+
+    return { fresh, freshPaused, freshLastPaused };
+  }, []);
+
   const handlePress = (idx: number) => {
     const now = Date.now();
     const wasPaused = playersPaused[idx];
@@ -571,10 +615,7 @@ export function useTimerState({
       for (let i = 0; i < PLAYER_COUNT; i++) {
         if (i !== idx && !nextPaused[i]) {
           nextPaused[i] = true;
-          nextLastPaused[i] = new Date(now).toISOString();
-          depleteAnims.current[i].stopAnimation();
-          syncGraceAnimation(graceAnims.current[i], true, nextLastPaused[i], now);
-          lastSyncedGraceRef.current[i] = nextLastPaused[i];
+          pauseSeatLocally(i, now, nextLastPaused);
         }
       }
     }
@@ -582,9 +623,7 @@ export function useTimerState({
     nextPaused[idx] = !wasPaused;
 
     if (nextPaused[idx]) {
-      nextLastPaused[idx] = new Date(now).toISOString();
-      syncGraceAnimation(graceAnims.current[idx], true, nextLastPaused[idx], now);
-      lastSyncedGraceRef.current[idx] = nextLastPaused[idx];
+      pauseSeatLocally(idx, now, nextLastPaused);
     } else {
       const resumed = resumeRoundState(
         idx,
@@ -647,10 +686,7 @@ export function useTimerState({
         if (paused) {
           return;
         }
-        nextLastPaused[i] = new Date(now).toISOString();
-        depleteAnims.current[i].stopAnimation();
-        syncGraceAnimation(graceAnims.current[i], true, nextLastPaused[i], now);
-        lastSyncedGraceRef.current[i] = nextLastPaused[i];
+        pauseSeatLocally(i, now, nextLastPaused);
       });
     }
 
@@ -666,7 +702,30 @@ export function useTimerState({
       roundExpired: nextRoundExpired,
       roundLastPausedAt: nextLastPaused,
     });
-  }, [allPaused, playersPaused, tickState, roundSecondsTotal, persistPatch]);
+  }, [allPaused, playersPaused, tickState, roundSecondsTotal, persistPatch, pauseSeatLocally]);
+
+  // Manual mode allows multiple seats to run concurrently; Auto mode's whole
+  // premise (single active-pip highlighting, "starting one stops the
+  // others") assumes at most one. Switching Manual → Auto while more than
+  // one seat is still running would otherwise silently violate that
+  // invariant until the user happens to press one of them — force-pause
+  // everyone instead, the same "stop first, let the user pick" concept as
+  // the auto-mode preemption in handlePress. Reacts only to the mode
+  // actually CHANGING (via prevPauseModeRef), not to every render where
+  // several seats happen to be running — the explicit "resume all" button
+  // must still be able to run every seat at once regardless of mode.
+  const prevPauseModeRef = useRef(pauseMode);
+  useEffect(() => {
+    const prev = prevPauseModeRef.current;
+    prevPauseModeRef.current = pauseMode;
+    if (prev === pauseMode || pauseMode !== "auto") {
+      return;
+    }
+    if (playersPausedRef.current.filter((p) => !p).length <= 1) {
+      return;
+    }
+    toggleAllPause();
+  }, [pauseMode, toggleAllPause]);
 
   const handleReset = async (): Promise<boolean> => {
     const ok = await confirm({
@@ -680,18 +739,7 @@ export function useTimerState({
       return false;
     }
 
-    timerStartedRef.current = false;
-    bellFiredRef.current = false;
-    const fresh = makeDefaultTickState(totalSeconds, roundSecondsTotal);
-    const freshPaused = Array(PLAYER_COUNT).fill(true);
-    const freshLastPaused = Array(PLAYER_COUNT).fill(null);
-
-    setTickState(fresh);
-    setPlayersPaused(freshPaused);
-    roundLastPausedAtRef.current = freshLastPaused;
-    depleteAnims.current.forEach((anim) => anim.setValue(0));
-    graceAnims.current.forEach((anim) => anim.setValue(0));
-    lastSyncedGraceRef.current = Array(PLAYER_COUNT).fill(null);
+    const { fresh, freshPaused, freshLastPaused } = resetTimerLocally(totalSeconds, roundSecondsTotal);
 
     persistPatch({
       playerTimes: fresh.times,
@@ -707,18 +755,7 @@ export function useTimerState({
   const handleSaveCustomTimer = useCallback(
     async (durationMinutes: number, dir: "up" | "down", newRoundSeconds: number) => {
       const newTotalSeconds = (durationMinutes * 60) / PLAYER_COUNT;
-      const fresh = makeDefaultTickState(newTotalSeconds, newRoundSeconds);
-      const freshPaused = Array(PLAYER_COUNT).fill(true);
-      const freshLastPaused = Array(PLAYER_COUNT).fill(null);
-
-      timerStartedRef.current = false;
-      bellFiredRef.current = false;
-      setTickState(fresh);
-      setPlayersPaused(freshPaused);
-      roundLastPausedAtRef.current = freshLastPaused;
-      depleteAnims.current.forEach((anim) => anim.setValue(0));
-      graceAnims.current.forEach((anim) => anim.setValue(0));
-      lastSyncedGraceRef.current = Array(PLAYER_COUNT).fill(null);
+      const { fresh, freshPaused, freshLastPaused } = resetTimerLocally(newTotalSeconds, newRoundSeconds);
 
       await persistPatch({
         durationMinutesTotal: durationMinutes,
@@ -733,13 +770,16 @@ export function useTimerState({
         roundLastPausedAt: freshLastPaused,
       });
     },
-    [persistPatch],
+    [persistPatch, resetTimerLocally],
   );
 
   // Discards the per-table custom timer override (if any) and reverts to
   // the game's default timer settings — same reset semantics as
-  // handleReset, but also clears durationMinutesTotal/roundSecondsTotal/
-  // direction on the Timer doc so those fall back to `timerSettings` again.
+  // handleReset. Only `hasCustomTimer: false` is persisted (not null'd-out
+  // duration/round/direction values) — resolveEffectiveTimer already ignores
+  // those fields entirely once `hasCustomTimer` is false, and Appwrite's
+  // acceptance of an explicit `null` write for a non-nullable numeric/string
+  // attribute isn't guaranteed, so there's nothing to gain from writing it.
   const handleUseDefaultTimer = useCallback(async (): Promise<boolean> => {
     const ok = await confirm({
       title: t("confirmUseDefaultTimer.title"),
@@ -757,23 +797,12 @@ export function useTimerState({
     const defaultTotalSeconds = defaultDuration
       ? (defaultDuration * 60) / PLAYER_COUNT
       : DEFAULT_SECONDS;
-    const fresh = makeDefaultTickState(defaultTotalSeconds, defaultRoundSeconds);
-    const freshPaused = Array(PLAYER_COUNT).fill(true);
-    const freshLastPaused = Array(PLAYER_COUNT).fill(null);
-
-    timerStartedRef.current = false;
-    bellFiredRef.current = false;
-    setTickState(fresh);
-    setPlayersPaused(freshPaused);
-    roundLastPausedAtRef.current = freshLastPaused;
-    depleteAnims.current.forEach((anim) => anim.setValue(0));
-    graceAnims.current.forEach((anim) => anim.setValue(0));
-    lastSyncedGraceRef.current = Array(PLAYER_COUNT).fill(null);
+    const { fresh, freshPaused, freshLastPaused } = resetTimerLocally(
+      defaultTotalSeconds,
+      defaultRoundSeconds,
+    );
 
     await persistPatch({
-      durationMinutesTotal: null,
-      roundSecondsTotal: null,
-      direction: null,
       hasCustomTimer: false,
       playerTimes: fresh.times,
       playersPaused: freshPaused,
@@ -783,7 +812,7 @@ export function useTimerState({
       roundLastPausedAt: freshLastPaused,
     });
     return true;
-  }, [confirm, t, timerSettings, persistPatch]);
+  }, [confirm, t, timerSettings, persistPatch, resetTimerLocally]);
 
   // Force-pauses every running seat — used when leaving the timer screen so
   // no seat keeps ticking unattended once nobody's looking at this device.
@@ -797,10 +826,7 @@ export function useTimerState({
       if (paused) {
         return;
       }
-      nextLastPaused[i] = new Date(now).toISOString();
-      depleteAnims.current[i].stopAnimation();
-      syncGraceAnimation(graceAnims.current[i], true, nextLastPaused[i], now);
-      lastSyncedGraceRef.current[i] = nextLastPaused[i];
+      pauseSeatLocally(i, now, nextLastPaused);
     });
     const nextPaused = Array(PLAYER_COUNT).fill(true);
     setPlayersPaused(nextPaused);
@@ -813,7 +839,7 @@ export function useTimerState({
       roundExpired: tickState.roundExpired,
       roundLastPausedAt: nextLastPaused,
     });
-  }, [playersPaused, tickState, persistPatch]);
+  }, [playersPaused, tickState, persistPatch, pauseSeatLocally]);
 
   return {
     times: tickState.times,

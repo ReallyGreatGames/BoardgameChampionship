@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, Text } from "react-native";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BottomSheet, makeSheetStyles } from "@/lib/components/ui/BottomSheet";
 import { TimerDurationFields } from "@/lib/components/timer/TimerDurationFields";
+import { useDurationRoundFields } from "@/lib/hooks/useDurationRoundFields";
 
 type Props = {
   visible: boolean;
@@ -26,30 +27,37 @@ export function CustomTimerModal({
   const styles = useMemo(() => makeSheetStyles(colors), [colors]);
   const { t } = useTranslation(["timer"]);
 
-  const [duration, setDuration] = useState("");
-  const [roundSeconds, setRoundSeconds] = useState("");
-  const [direction, setDirection] = useState<"up" | "down">("down");
-  const [saving, setSaving] = useState(false);
-  const [durBlurred, setDurBlurred] = useState(false);
+  const {
+    duration,
+    roundSeconds,
+    direction,
+    saving,
+    durNum,
+    roundSecondsNum,
+    isValid,
+    durationInvalid,
+    roundSecondsInvalid,
+    setDuration,
+    setRoundSeconds,
+    setDirection,
+    setSaving,
+    onDurationBlur,
+    reset,
+  } = useDurationRoundFields();
 
   useEffect(() => {
     if (!visible) {
       return;
     }
-    setDuration(initialDuration != null ? String(Math.round(initialDuration / 4)) : "");
-    setRoundSeconds(initialRoundSeconds ? String(initialRoundSeconds) : "");
-    setDirection(initialDirection ?? "down");
-    setSaving(false);
-    setDurBlurred(false);
-  }, [visible, initialDuration, initialDirection, initialRoundSeconds]);
-
-  const durNum = parseInt(duration, 10);
-  const durValid = !isNaN(durNum) && durNum > 0;
-  const roundSecondsNum = roundSeconds.trim() === "" ? 0 : parseInt(roundSeconds, 10);
-  const roundSecondsValid = !isNaN(roundSecondsNum) && roundSecondsNum >= 0;
+    reset({
+      duration: initialDuration != null ? Math.round(initialDuration / 4) : undefined,
+      roundSeconds: initialRoundSeconds,
+      direction: initialDirection,
+    });
+  }, [visible, initialDuration, initialDirection, initialRoundSeconds, reset]);
 
   async function handleSave() {
-    if (!durValid || !roundSecondsValid || saving) {
+    if (!isValid || saving) {
       return;
     }
     setSaving(true);
@@ -68,12 +76,9 @@ export function CustomTimerModal({
       title={t("customTimerModal.title")}
       footer={
         <Pressable
-          style={[
-            styles.saveBtn,
-            (!durValid || !roundSecondsValid || saving) && styles.saveBtnDisabled,
-          ]}
+          style={[styles.saveBtn, (!isValid || saving) && styles.saveBtnDisabled]}
           onPress={handleSave}
-          disabled={!durValid || !roundSecondsValid || saving}
+          disabled={!isValid || saving}
         >
           {saving ? (
             <ActivityIndicator size="small" color={colors.onAccent} />
@@ -85,24 +90,16 @@ export function CustomTimerModal({
     >
       <TimerDurationFields
         duration={duration}
-        onDurationChange={(v) => {
-          setDuration(v);
-          if (durBlurred) {
-            const n = parseInt(v, 10);
-            if (!isNaN(n) && n > 0) {
-              setDurBlurred(false);
-            }
-          }
-        }}
-        onDurationBlur={() => setDurBlurred(true)}
+        onDurationChange={setDuration}
+        onDurationBlur={onDurationBlur}
         durationLabel={t("customTimerModal.durationField")}
         durationPlaceholder={t("customTimerModal.durationPlaceholder")}
-        durationInvalid={durBlurred && duration !== "" && !durValid}
+        durationInvalid={durationInvalid}
         roundSeconds={roundSeconds}
         onRoundSecondsChange={setRoundSeconds}
         roundSecondsLabel={t("customTimerModal.roundSecondsField")}
         roundSecondsPlaceholder={t("customTimerModal.roundSecondsPlaceholder")}
-        roundSecondsInvalid={roundSeconds !== "" && !roundSecondsValid}
+        roundSecondsInvalid={roundSecondsInvalid}
         direction={direction}
         onDirectionChange={setDirection}
         directionLabel={t("customTimerModal.directionField")}

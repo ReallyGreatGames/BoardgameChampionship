@@ -146,7 +146,13 @@ export function TimerCell({
       ? { top: 0, bottom: 0, [overlayAnchor]: 0, width: overlaySize }
       : { left: 0, right: 0, [overlayAnchor]: 0, height: overlaySize };
 
-  const bgColor = isDepleted
+  // While a round is active, the "overtime" look (both background and time
+  // text) is ignored entirely — the round itself hasn't run out, so showing
+  // it in red would be misleading even if this seat's pool is already
+  // negative from an earlier round.
+  const showOvertimeLook = isDepleted && !roundActive;
+
+  const bgColor = showOvertimeLook
     ? colors.error + "30"
     : direction === "up"
       ? isRunning
@@ -156,16 +162,8 @@ export function TimerCell({
         ? playerColor.active + "cc"
         : playerColor.muted + "55";
 
-  // While a round is active its color ignores pool-overtime entirely — the
-  // round itself hasn't run out, so showing it in red would be misleading
-  // even if this seat's pool is already negative from an earlier round.
-  const timeColor = roundActive
-    ? isRunning ? "#ffffff" : playerColor.active
-    : isDepleted
-      ? colors.error
-      : isRunning
-        ? "#ffffff"
-        : playerColor.active;
+  const runningColor = isRunning ? "#ffffff" : playerColor.active;
+  const timeColor = showOvertimeLook ? colors.error : runningColor;
 
   // `timeLeft` always ticks down uniformly regardless of direction and can go
   // negative once the pool is exhausted (see useTimerState.ts) — the base

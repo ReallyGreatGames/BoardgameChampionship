@@ -1,4 +1,5 @@
 import type { Player } from "./models/player";
+import type { Timer } from "./models/timer";
 
 export const EMPTY = Symbol("empty");
 
@@ -129,6 +130,64 @@ export function toBooleanArray(value: unknown): boolean[] {
     try { return JSON.parse(value) as boolean[]; } catch { return []; }
   }
   return [];
+}
+
+/** Value-equality for flat arrays of primitives — cheaper than a
+ *  `JSON.stringify` comparison and used on hot paths (e.g. detecting a
+ *  realtime update that's just the echo of this device's own write). */
+export function arraysEqual<T>(a: T[], b: T[]): boolean {
+  if (a.length !== b.length) {return false;}
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) {return false;}
+  }
+  return true;
+}
+
+export type EffectiveTimerSettings = {
+  /** Whether this table has a deliberate per-table override — see below. */
+  hasCustomTimer: boolean;
+  effectiveDuration: number | undefined;
+  roundSecondsTotal: number;
+  direction: NonNullable<Timer["direction"]>;
+};
+
+/** Resolves the timer settings that actually apply to a table: its own
+ *  deliberate override, or the game's default. `hasCustomTimer` is the
+ *  authoritative signal for "this table was customized" — durationMinutesTotal/
+ *  roundSecondsTotal are numbers Appwrite defaults to `0` when never
+ *  explicitly set, indistinguishable from a deliberately-chosen `0` (e.g.
+ *  round timer disabled on purpose) without it.
+ *
+ *  Timer docs saved before `hasCustomTimer` existed have the field as
+ *  `undefined` but may still carry a genuine custom duration from back then
+ *  — inferred from that instead of silently losing the override on rollout.
+ *  A table explicitly reverted via "use default timer" has `hasCustomTimer
+ *  === false` set deliberately, which must NOT fall into that legacy
+ *  inference (checked via `=== undefined`, not just falsy).
+ *
+ *  Shared by the live timer (useTimerState.ts) and the read-only results
+ *  dashboard (ResultsAdminTab.tsx) so the two can't drift apart. */
+export function resolveEffectiveTimer(
+  timer:
+    | Pick<Timer, "hasCustomTimer" | "durationMinutesTotal" | "roundSecondsTotal" | "direction">
+    | undefined,
+  gameSettings:
+    | { durationMinutesTotal?: number; roundSecondsTotal?: number; direction?: Timer["direction"] }
+    | undefined,
+): EffectiveTimerSettings {
+  const hasCustomTimer =
+    timer?.hasCustomTimer === true ||
+    (timer?.hasCustomTimer === undefined && !!timer?.durationMinutesTotal);
+  const effectiveDuration = hasCustomTimer
+    ? timer?.durationMinutesTotal || gameSettings?.durationMinutesTotal
+    : gameSettings?.durationMinutesTotal;
+  const roundSecondsTotal = hasCustomTimer
+    ? timer?.roundSecondsTotal ?? 0
+    : gameSettings?.roundSecondsTotal || 0;
+  const direction = hasCustomTimer
+    ? timer?.direction ?? gameSettings?.direction ?? "down"
+    : gameSettings?.direction ?? "down";
+  return { hasCustomTimer, effectiveDuration, roundSecondsTotal, direction };
 }
 
 /** Handles Appwrite returning team as hydrated Team object OR bare string $id */
