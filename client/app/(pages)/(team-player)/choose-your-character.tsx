@@ -18,7 +18,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 type Language = "en" | "de";
 const LANGUAGES: Language[] = ["en", "de"];
-const SCHEMES: ColorScheme[] = ["light", "dark", "highContrast"];
+const SCHEMES: ColorScheme[] = ["light", "dark", "oled", "highContrast"];
 
 export default function ChooseYourCharacter() {
   const { assignPlayer, player } = usePlayer();
