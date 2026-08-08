@@ -109,7 +109,18 @@ function syncGraceAnimation(
     return;
   }
   const lastPausedAt = parseIso(lastPausedAtIso);
-  const elapsed = lastPausedAt !== null ? now - lastPausedAt : ROUND_RESET_GRACE_MS;
+  if (lastPausedAt === null) {
+    // Paused but never actually paused-with-a-timestamp yet (fresh seat,
+    // still on its very first round) — grace doesn't apply. Treating this
+    // as "already fully elapsed" (as if resuming would forfeit progress)
+    // made TimerCell hide the round badge for a round that hadn't even
+    // started: the first-ever sync of a brand new Timer doc sends every
+    // untouched seat through here with `lastPausedAtIso === null`, and the
+    // resulting anim=1 read as `graceExpired` a moment later.
+    anim.setValue(0);
+    return;
+  }
+  const elapsed = now - lastPausedAt;
   if (elapsed >= ROUND_RESET_GRACE_MS) {
     anim.setValue(1);
     return;
@@ -157,11 +168,15 @@ export function useTimerState({
     [timerStore.collection, gameId, tableNumber],
   );
 
-  // Mirrors the player-color pattern used by game.tsx's own write side —
-  // see useSecureStoragePerGame.
+  // Keyed by (gameId, tableNumber) — matches game.tsx's write side exactly
+  // (see useSecureStoragePerGame and the comment on playerColorsKey there).
+  // A game can have several tables; each needs its own setup, so this can't
+  // be keyed by gameId alone.
+  const playerColorsScope =
+    gameId && tableNumber !== null ? `${gameId}_${tableNumber}` : undefined;
   const [storedHexColors] = useSecureStoragePerGame<string[] | null>(
     "playerColors",
-    gameId,
+    playerColorsScope,
     null,
     parsePlayerColors,
   );
