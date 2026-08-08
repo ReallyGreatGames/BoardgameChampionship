@@ -66,18 +66,42 @@ export function updateRealtimeCollection<T extends Models.Document>(
 export async function addToCollection<T>(
   key: Key,
   data: Omit<T, keyof Models.Document>,
+  options?: {
+    /** Use a stable id instead of `ID.unique()` — see `silentOnConflict`. */
+    rowId?: string;
+    /** When the `rowId` already exists (another device created it a moment
+     *  earlier), fetch and return that row instead of showing an error. This
+     *  is what makes a deterministic `rowId` safe: concurrent creators
+     *  converge on the same document rather than each creating their own. */
+    silentOnConflict?: boolean;
+  },
 ): Promise<T | null> {
+  const rowId = options?.rowId ?? ID.unique();
   console.debug("add to collection", key, data);
 
   try {
     const row = await tablesDB.createRow({
       databaseId: DATABASE_ID,
       tableId: key,
-      rowId: ID.unique(),
+      rowId,
       data: data as Record<string, unknown>,
     });
     return row as unknown as T;
   } catch (e: any) {
+    const isConflict = e?.code === 409 || e?.type === "document_already_exists";
+    if (isConflict && options?.silentOnConflict) {
+      try {
+        const existing = await tablesDB.getRow({
+          databaseId: DATABASE_ID,
+          tableId: key,
+          rowId,
+        });
+        return existing as unknown as T;
+      } catch (getErr: any) {
+        Alert.alert("Error", getErr?.message ?? "Failed to load item.");
+        return null;
+      }
+    }
     Alert.alert("Error", e?.message ?? "Failed to add item.");
     return null;
   }

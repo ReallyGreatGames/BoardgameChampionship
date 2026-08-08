@@ -190,8 +190,18 @@ export function ResultsAdminTab() {
       );
       const result = resultForTable(t.tableNumber);
       const bell = bells.find((b) => b.table === t.tableNumber);
-      const effectiveDuration =
-        timer?.durationMinutesTotal ?? gameTimerSettings?.durationMinutesTotal;
+      // `hasCustomTimer` is the authoritative signal for whether this table
+      // has a deliberate per-table override — see useTimerState.ts for why
+      // that can't be inferred from durationMinutesTotal/roundSecondsTotal
+      // themselves (both are numbers Appwrite defaults to `0` when unset,
+      // indistinguishable from a deliberately-chosen `0`).
+      const hasCustomTimer = !!timer?.hasCustomTimer;
+      const effectiveDuration = hasCustomTimer
+        ? timer?.durationMinutesTotal || gameTimerSettings?.durationMinutesTotal
+        : gameTimerSettings?.durationMinutesTotal;
+      const effectiveRoundSeconds = hasCustomTimer
+        ? timer?.roundSecondsTotal ?? 0
+        : gameTimerSettings?.roundSecondsTotal || 0;
       return {
         id: t.tableNumber,
         players: t.players,
@@ -203,10 +213,13 @@ export function ResultsAdminTab() {
         isRunning: !!timer,
         isSubmitted: result?.submitted ?? false,
         hasNote: !!result?.note,
-        timerDirection: timer?.direction ?? gameTimerSettings?.direction ?? "down",
+        timerDirection: hasCustomTimer
+          ? timer?.direction ?? gameTimerSettings?.direction ?? "down"
+          : gameTimerSettings?.direction ?? "down",
         timerTotalSeconds: effectiveDuration
           ? (effectiveDuration * 60) / PLAYER_COUNT
           : DEFAULT_TIMER_SECONDS,
+        timerRoundSecondsTotal: effectiveRoundSeconds,
       };
     });
   }, [gameTables, timers, results, bells, selectedGameId, resultForTable, gameTimerSettings]);

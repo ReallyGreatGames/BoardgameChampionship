@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Pressable, Text, TextInput } from "react-native";
+import { ActivityIndicator, Pressable, Text } from "react-native";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BottomSheet, makeSheetStyles } from "@/lib/components/ui/BottomSheet";
-import { DirectionPicker } from "@/lib/components/ui/DirectionPicker";
-import { FormField } from "@/lib/components/ui/FormField";
+import { TimerDurationFields } from "@/lib/components/timer/TimerDurationFields";
 
 type Props = {
   visible: boolean;
   onClose: () => void;
   initialDuration?: number;
   initialDirection?: "up" | "down";
-  onSave: (duration: number, direction: "up" | "down") => Promise<void>;
+  initialRoundSeconds?: number;
+  onSave: (duration: number, direction: "up" | "down", roundSeconds: number) => Promise<void>;
 };
 
 export function CustomTimerModal({
@@ -19,6 +19,7 @@ export function CustomTimerModal({
   onClose,
   initialDuration,
   initialDirection,
+  initialRoundSeconds,
   onSave,
 }: Props) {
   const { colors } = useTheme();
@@ -26,6 +27,7 @@ export function CustomTimerModal({
   const { t } = useTranslation(["timer"]);
 
   const [duration, setDuration] = useState("");
+  const [roundSeconds, setRoundSeconds] = useState("");
   const [direction, setDirection] = useState<"up" | "down">("down");
   const [saving, setSaving] = useState(false);
   const [durBlurred, setDurBlurred] = useState(false);
@@ -35,21 +37,24 @@ export function CustomTimerModal({
       return;
     }
     setDuration(initialDuration != null ? String(Math.round(initialDuration / 4)) : "");
+    setRoundSeconds(initialRoundSeconds ? String(initialRoundSeconds) : "");
     setDirection(initialDirection ?? "down");
     setSaving(false);
     setDurBlurred(false);
-  }, [visible, initialDuration, initialDirection]);
+  }, [visible, initialDuration, initialDirection, initialRoundSeconds]);
 
   const durNum = parseInt(duration, 10);
   const durValid = !isNaN(durNum) && durNum > 0;
+  const roundSecondsNum = roundSeconds.trim() === "" ? 0 : parseInt(roundSeconds, 10);
+  const roundSecondsValid = !isNaN(roundSecondsNum) && roundSecondsNum >= 0;
 
   async function handleSave() {
-    if (!durValid || saving) {
+    if (!durValid || !roundSecondsValid || saving) {
       return;
     }
     setSaving(true);
     try {
-      await onSave(durNum * 4, direction);
+      await onSave(durNum * 4, direction, roundSecondsNum);
       onClose();
     } finally {
       setSaving(false);
@@ -65,10 +70,10 @@ export function CustomTimerModal({
         <Pressable
           style={[
             styles.saveBtn,
-            (!durValid || saving) && styles.saveBtnDisabled,
+            (!durValid || !roundSecondsValid || saving) && styles.saveBtnDisabled,
           ]}
           onPress={handleSave}
-          disabled={!durValid || saving}
+          disabled={!durValid || !roundSecondsValid || saving}
         >
           {saving ? (
             <ActivityIndicator size="small" color={colors.onAccent} />
@@ -78,43 +83,32 @@ export function CustomTimerModal({
         </Pressable>
       }
     >
-      <FormField
-        icon="hourglass-outline"
-        label={t("customTimerModal.durationField")}
-      >
-        <TextInput
-          style={[
-            styles.input,
-            durBlurred && duration !== "" && !durValid && styles.inputError,
-          ]}
-          value={duration}
-          onChangeText={(v) => {
-            setDuration(v);
-            if (durBlurred) {
-              const n = parseInt(v, 10);
-              if (!isNaN(n) && n > 0) {
-                setDurBlurred(false);
-              }
+      <TimerDurationFields
+        duration={duration}
+        onDurationChange={(v) => {
+          setDuration(v);
+          if (durBlurred) {
+            const n = parseInt(v, 10);
+            if (!isNaN(n) && n > 0) {
+              setDurBlurred(false);
             }
-          }}
-          onBlur={() => setDurBlurred(true)}
-          placeholder={t("customTimerModal.durationPlaceholder")}
-          placeholderTextColor={colors.textPlaceholder}
-          keyboardType="number-pad"
-        />
-      </FormField>
-
-      <FormField
-        icon="swap-vertical-outline"
-        label={t("customTimerModal.directionField")}
-      >
-        <DirectionPicker
-          value={direction}
-          onChange={setDirection}
-          labelDown={t("customTimerModal.directionDown")}
-          labelUp={t("customTimerModal.directionUp")}
-        />
-      </FormField>
+          }
+        }}
+        onDurationBlur={() => setDurBlurred(true)}
+        durationLabel={t("customTimerModal.durationField")}
+        durationPlaceholder={t("customTimerModal.durationPlaceholder")}
+        durationInvalid={durBlurred && duration !== "" && !durValid}
+        roundSeconds={roundSeconds}
+        onRoundSecondsChange={setRoundSeconds}
+        roundSecondsLabel={t("customTimerModal.roundSecondsField")}
+        roundSecondsPlaceholder={t("customTimerModal.roundSecondsPlaceholder")}
+        roundSecondsInvalid={roundSeconds !== "" && !roundSecondsValid}
+        direction={direction}
+        onDirectionChange={setDirection}
+        directionLabel={t("customTimerModal.directionField")}
+        directionDownLabel={t("customTimerModal.directionDown")}
+        directionUpLabel={t("customTimerModal.directionUp")}
+      />
     </BottomSheet>
   );
 }

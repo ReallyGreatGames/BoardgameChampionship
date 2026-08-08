@@ -6,7 +6,6 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -15,8 +14,7 @@ import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-store";
 import { PLAYER_COLORS } from "@/lib/utils/timerColors";
 import { BottomSheet, makeSheetStyles } from "@/lib/components/ui/BottomSheet";
-import { DirectionPicker } from "@/lib/components/ui/DirectionPicker";
-import { FormField } from "@/lib/components/ui/FormField";
+import { TimerDurationFields } from "@/lib/components/timer/TimerDurationFields";
 
 const DEFAULT_COLORS = PLAYER_COLORS.map((c) => c.active);
 
@@ -45,6 +43,7 @@ export function TimerSettingsModal({
   );
 
   const [duration, setDuration] = useState("");
+  const [roundSeconds, setRoundSeconds] = useState("");
   const [direction, setDirection] = useState<"up" | "down">("down");
   const [playerColors, setPlayerColors] = useState<string[]>(DEFAULT_COLORS);
   const [expandedPlayer, setExpandedPlayer] = useState<number | null>(null);
@@ -57,12 +56,14 @@ export function TimerSettingsModal({
     }
     if (existing) {
       setDuration(String(Math.round(existing.durationMinutesTotal / 4)));
+      setRoundSeconds(existing.roundSecondsTotal ? String(existing.roundSecondsTotal) : "");
       setDirection(existing.direction);
       setPlayerColors(
         existing.colors?.length === 4 ? existing.colors : DEFAULT_COLORS,
       );
     } else {
       setDuration("");
+      setRoundSeconds("");
       setDirection("down");
       setPlayerColors(DEFAULT_COLORS);
     }
@@ -73,6 +74,8 @@ export function TimerSettingsModal({
 
   const durNum = parseInt(duration, 10);
   const durValid = !isNaN(durNum) && durNum > 0;
+  const roundSecondsNum = roundSeconds.trim() === "" ? 0 : parseInt(roundSeconds, 10);
+  const roundSecondsValid = !isNaN(roundSecondsNum) && roundSecondsNum >= 0;
 
   function setColor(playerIdx: number, hex: string) {
     setPlayerColors((prev) => {
@@ -83,13 +86,14 @@ export function TimerSettingsModal({
   }
 
   async function handleSave() {
-    if (!durValid || saving) {
+    if (!durValid || !roundSecondsValid || saving) {
       return;
     }
     setSaving(true);
     try {
       const data = {
         durationMinutesTotal: durNum * 4,
+        roundSecondsTotal: roundSecondsNum,
         direction,
         colors: playerColors,
       };
@@ -126,10 +130,10 @@ export function TimerSettingsModal({
         <Pressable
           style={[
             styles.saveBtn,
-            (!durValid || saving) && styles.saveBtnDisabled,
+            (!durValid || !roundSecondsValid || saving) && styles.saveBtnDisabled,
           ]}
           onPress={handleSave}
-          disabled={!durValid || saving}
+          disabled={!durValid || !roundSecondsValid || saving}
         >
           {saving ? (
             <ActivityIndicator size="small" color={colors.onAccent} />
@@ -141,43 +145,32 @@ export function TimerSettingsModal({
         </Pressable>
       }
     >
-      <FormField
-        icon="hourglass-outline"
-        label={t("timerSettingsModal.durationField")}
-      >
-        <TextInput
-          style={[
-            styles.input,
-            durBlurred && duration !== "" && !durValid && styles.inputError,
-          ]}
-          value={duration}
-          onChangeText={(v) => {
-            setDuration(v);
-            if (durBlurred) {
-              const n = parseInt(v, 10);
-              if (!isNaN(n) && n > 0) {
-                setDurBlurred(false);
-              }
+      <TimerDurationFields
+        duration={duration}
+        onDurationChange={(v) => {
+          setDuration(v);
+          if (durBlurred) {
+            const n = parseInt(v, 10);
+            if (!isNaN(n) && n > 0) {
+              setDurBlurred(false);
             }
-          }}
-          onBlur={() => setDurBlurred(true)}
-          placeholder={t("timerSettingsModal.durationPlaceholder")}
-          placeholderTextColor={colors.textPlaceholder}
-          keyboardType="number-pad"
-        />
-      </FormField>
-
-      <FormField
-        icon="swap-vertical-outline"
-        label={t("timerSettingsModal.directionField")}
-      >
-        <DirectionPicker
-          value={direction}
-          onChange={setDirection}
-          labelDown={t("timerSettingsModal.directionDown")}
-          labelUp={t("timerSettingsModal.directionUp")}
-        />
-      </FormField>
+          }
+        }}
+        onDurationBlur={() => setDurBlurred(true)}
+        durationLabel={t("timerSettingsModal.durationField")}
+        durationPlaceholder={t("timerSettingsModal.durationPlaceholder")}
+        durationInvalid={durBlurred && duration !== "" && !durValid}
+        roundSeconds={roundSeconds}
+        onRoundSecondsChange={setRoundSeconds}
+        roundSecondsLabel={t("timerSettingsModal.roundSecondsField")}
+        roundSecondsPlaceholder={t("timerSettingsModal.roundSecondsPlaceholder")}
+        roundSecondsInvalid={roundSeconds !== "" && !roundSecondsValid}
+        direction={direction}
+        onDirectionChange={setDirection}
+        directionLabel={t("timerSettingsModal.directionField")}
+        directionDownLabel={t("timerSettingsModal.directionDown")}
+        directionUpLabel={t("timerSettingsModal.directionUp")}
+      />
 
       {playerColors.map((hex, i) => {
         const isOpen = expandedPlayer === i;

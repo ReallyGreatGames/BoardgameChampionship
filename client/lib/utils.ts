@@ -64,21 +64,54 @@ export function formatElapsedSeconds(seconds: number) {
   return `${m}:${s}`;
 }
 
-/** Corrects the active player's stored time for elapsed real time since the
- *  timer doc was last saved — saves only happen on press/pause/reset, not every tick. */
-export function applyElapsedCorrection(
-  times: number[],
-  activeIdx: number | null,
-  paused: boolean,
+export type RoundPoolReconcileResult = {
+  poolTimes: number[];
+  roundTimesLeft: number[];
+  roundExpired: boolean[];
+};
+
+/** Fast-forwards each unpaused seat's round time and pool time for elapsed
+ *  real time since the timer doc was last saved — saves only happen on
+ *  press/pause/reset, not every tick. Consumes round time first (while
+ *  `roundSecondsTotal > 0` and the seat hasn't already expired its round),
+ *  then spills any remaining elapsed seconds onto the pool — mirrors what
+ *  useTimerState.ts's per-second tick loop would have done. Used both by the
+ *  interactive timer (on reconnect) and the read-only results dashboard, so
+ *  pool time never appears to drain during a seat's round-time phase. */
+export function reconcileRoundAndPool(
+  poolTimes: number[],
+  roundTimesLeft: number[],
+  roundExpired: boolean[],
+  pausedFlags: boolean[],
+  roundSecondsTotal: number,
   updatedAt: string,
   now: number,
-): number[] {
-  if (activeIdx === null || paused) {return times;}
-  const elapsed = Math.floor((now - new Date(updatedAt).getTime()) / 1000);
-  if (elapsed <= 0) {return times;}
-  const corrected = [...times];
-  corrected[activeIdx] = times[activeIdx] - elapsed;
-  return corrected;
+): RoundPoolReconcileResult {
+  const elapsedTotal = Math.max(0, Math.floor((now - new Date(updatedAt).getTime()) / 1000));
+  if (elapsedTotal === 0) {
+    return { poolTimes, roundTimesLeft, roundExpired };
+  }
+  const nextPool = [...poolTimes];
+  const nextRound = [...roundTimesLeft];
+  const nextExpired = [...roundExpired];
+  for (let i = 0; i < poolTimes.length; i++) {
+    if (pausedFlags[i]) {
+      continue;
+    }
+    let remaining = elapsedTotal;
+    if (roundSecondsTotal > 0 && !nextExpired[i]) {
+      const consumed = Math.min(remaining, nextRound[i]);
+      nextRound[i] -= consumed;
+      remaining -= consumed;
+      if (nextRound[i] <= 0) {
+        nextExpired[i] = true;
+      }
+    }
+    if (remaining > 0) {
+      nextPool[i] -= remaining;
+    }
+  }
+  return { poolTimes: nextPool, roundTimesLeft: nextRound, roundExpired: nextExpired };
 }
 
 /** Normalizes playerTimes — real-time payloads may serialize arrays as JSON strings */

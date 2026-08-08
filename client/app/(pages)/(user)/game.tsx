@@ -190,8 +190,7 @@ export default function GamePage() {
         table: tableNumber,
         games: gameId ?? null,
         playerTimes: [],
-        activePlayerTimer: null,
-        paused: true,
+        playersPaused: [],
         playersInOvertime: [],
         playerPositions: validIds as any,
       });

@@ -1,6 +1,7 @@
-import { Timer } from "@/lib/models/timer";
+import { Timer, timerRowId } from "@/lib/models/timer";
 import { Models, Query } from "react-native-appwrite";
 import { create } from "zustand";
+import { resolveGameId } from "@/lib/utils";
 import {
   addToCollection,
   fetchCollection,
@@ -32,7 +33,14 @@ export const useTimerStore = create<TimerState>((set) => {
       );
     },
 
-    add: async (data) => await addToCollection(key, data),
+    // Deterministic id (table + game) — two devices racing to start the same
+    // table's timer for the first time converge on one document instead of
+    // each creating their own (see timerRowId / addToCollection).
+    add: async (data) =>
+      await addToCollection(key, data, {
+        rowId: timerRowId(data.table, resolveGameId(data.games)),
+        silentOnConflict: true,
+      }),
 
     update: async (item, silent = false) =>
       await updateInCollection(key, item, silent),

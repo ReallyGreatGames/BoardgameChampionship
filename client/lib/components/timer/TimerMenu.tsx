@@ -1,6 +1,5 @@
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { CustomTimerModal } from "@/lib/components/timer/CustomTimerModal";
-import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
 import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
 import { Ionicons } from "@expo/vector-icons";
@@ -12,37 +11,38 @@ import {
   View,
 } from "react-native";
 import { useTranslation } from "react-i18next";
-import { TableBell } from "@/lib/models/table-bell"
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  bell: TableBell | undefined;
-  bellActions: ReturnType<typeof useTableBellActions>;
-  onToggleBell: () => Promise<void>;
   onReset: () => Promise<void>;
   onOpenCustomTimer: () => void;
+  onUseDefaultTimer: () => Promise<void>;
   onCloseTimer: () => void;
   customTimerOpen: boolean;
   onCloseCustomTimer: () => void;
   initialDuration: number | undefined;
   initialDirection: "up" | "down" | undefined;
-  onSaveCustomTimer: (duration: number, dir: "up" | "down") => Promise<void>;
+  initialRoundSeconds: number | undefined;
+  onSaveCustomTimer: (
+    duration: number,
+    dir: "up" | "down",
+    roundSeconds: number,
+  ) => Promise<void>;
 };
 
 export function TimerMenu({
   open,
   onClose,
-  bell,
-  bellActions,
-  onToggleBell,
   onReset,
   onOpenCustomTimer,
+  onUseDefaultTimer,
   onCloseTimer,
   customTimerOpen,
   onCloseCustomTimer,
   initialDuration,
   initialDirection,
+  initialRoundSeconds,
   onSaveCustomTimer,
 }: Props) {
   const { colors } = useTheme();
@@ -58,43 +58,6 @@ export function TimerMenu({
               { backgroundColor: colors.surface, borderColor: colors.border },
             ]}
           >
-            <Text
-              style={[
-                type.eyebrow,
-                {
-                  color: colors.textMuted,
-                  marginBottom: 8,
-                  paddingHorizontal: 20,
-                  paddingTop: 8,
-                },
-              ]}
-            >
-              {t("paused")}
-            </Text>
-
-            <MenuButton
-              icon={bell ? "notifications-off-outline" : "notifications-outline"}
-              label={
-                bell?.acknowledgeTime
-                  ? t("bellAcknowledged")
-                  : bell
-                    ? t("bellRinging")
-                    : t("ringBell")
-              }
-              color={
-                bell?.acknowledgeTime
-                  ? colors.success
-                  : bell
-                    ? colors.accent
-                    : colors.text
-              }
-              onPress={onToggleBell}
-              disabled={bellActions.isLoading || (!!bell && !bellActions.canDelete(bell))}
-              loading={bellActions.isLoading}
-            />
-
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
             <MenuButton
               icon="refresh-outline"
               label={t("resetTimers")}
@@ -114,6 +77,15 @@ export function TimerMenu({
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
             <MenuButton
+              icon="arrow-undo-outline"
+              label={t("useDefaultTimer")}
+              color={colors.text}
+              onPress={onUseDefaultTimer}
+            />
+
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            <MenuButton
               icon="exit-outline"
               label={t("closeTimer")}
               color={colors.error}
@@ -128,6 +100,7 @@ export function TimerMenu({
         onClose={onCloseCustomTimer}
         initialDuration={initialDuration}
         initialDirection={initialDirection}
+        initialRoundSeconds={initialRoundSeconds}
         onSave={onSaveCustomTimer}
       />
     </>
