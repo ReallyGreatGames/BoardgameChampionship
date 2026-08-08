@@ -17,7 +17,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 type Language = "en" | "de";
 
 const LANGUAGES: Language[] = ["en", "de"];
-const SCHEMES: ColorScheme[] = ["light", "dark", "highContrast"];
+const SCHEMES: ColorScheme[] = ["light", "dark", "oled", "highContrast"];
 
 export default function SettingsScreen() {
   const { t, i18n: i18nHook } = useTranslation(["settings"]);

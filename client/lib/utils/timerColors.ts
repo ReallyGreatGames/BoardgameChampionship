@@ -34,11 +34,19 @@ function darkenHex(hex: string, factor: number): string {
   return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
 }
 
+function liftNearBlack(hex: string): string {
+  const h = hex.replace("#", "").padStart(6, "0");
+  const n = parseInt(h, 16);
+  const brightest = Math.max((n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff);
+  return brightest < 64 ? "#7b8490" : hex;
+}
+
 export function buildPlayerColor(hex: string) {
+  const active = liftNearBlack(hex);
   return {
-    active: hex,
-    muted: darkenHex(hex, 0.65),
-    elapsed: darkenHex(hex, 0.3),
-    elapsedMuted: darkenHex(hex, 0.15),
+    active,
+    muted: darkenHex(active, 0.65),
+    elapsed: darkenHex(active, 0.3),
+    elapsedMuted: darkenHex(active, 0.15),
   };
 }

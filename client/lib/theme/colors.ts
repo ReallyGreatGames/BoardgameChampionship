@@ -1,5 +1,5 @@
 /**
- * Brand color tokens — applied via `dark`, `light`, and `highContrast` objects.
+ * Brand color tokens — applied via `dark`, `oled`, `light`, and `highContrast` objects.
  *
  * Usage strategy:
  *   primary   → interactive chrome (links, back buttons, icons, focused states, identifiers)
@@ -32,6 +32,32 @@ export const dark = {
   error: "#f05252",
   success: "#4caf50",
   onAccent: "#ffffff",  // text on accent/primary CTA buttons
+} as const;
+
+export const oled = {
+  // Backgrounds
+  background: "#000000",
+  surface: "#050505",       // cards, inputs
+  surfaceHigh: "#0b0d0c",   // slightly elevated surfaces
+
+  // Borders / dividers
+  border: "#1c2421",
+  borderMuted: "#101614",
+  divider: "#151b18",
+
+  // Text
+  text: "#e8fff6",
+  textSecondary: "#9bcab8",
+  textMuted: "#5f8275",
+  textPlaceholder: "#48665b",
+
+  // Brand
+  primary: "#00d68f",
+  secondary: "#7cb7ff",
+  accent: "#ff4f8b",
+  error: "#ff6b6b",
+  success: "#45e37f",
+  onAccent: "#080004",
 } as const;
 
 export const light = {
@@ -88,11 +114,16 @@ export const highContrast = {
   onAccent: "#ffffff",
 } as const;
 
-export type ColorScheme = "light" | "dark" | "highContrast";
+export type ColorScheme = "light" | "dark" | "oled" | "highContrast";
 
 export type Palette = { [K in keyof typeof dark]: string };
 
-export const palettes: Record<ColorScheme, Palette> = { light, dark, highContrast };
+export const palettes: Record<ColorScheme, Palette> = {
+  light,
+  dark,
+  oled,
+  highContrast,
+};
 
 /** Fallback static palette — prefer useTheme() from ThemeProvider for dynamic theming */
 export const colors = dark;
