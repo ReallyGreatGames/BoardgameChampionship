@@ -60,6 +60,7 @@ const translations = {
     schemes: {
       light: "Light",
       dark: "Dark",
+      oled: "Black (OLED)",
       highContrast: "High Contrast",
     },
     language: "Language",

@@ -27,7 +27,10 @@ const ThemeContext = createContext<ThemeContextValue>({
 export const useTheme = () => useContext(ThemeContext);
 
 const isColorScheme = (value: string): value is ColorScheme =>
-  value === "light" || value === "dark" || value === "highContrast";
+  value === "light" ||
+  value === "dark" ||
+  value === "oled" ||
+  value === "highContrast";
 
 export const ThemeProvider: FC<PropsWithChildren> = ({ children }) => {
   const [scheme, setSchemeState] = useState<ColorScheme>(DEFAULT_SCHEME);
@@ -65,7 +68,7 @@ export const ThemeProvider: FC<PropsWithChildren> = ({ children }) => {
     () => ({
       scheme,
       setScheme,
-      isDark: scheme === "dark",
+      isDark: scheme === "dark" || scheme === "oled",
       colors: palettes[scheme],
     }),
     [scheme, setScheme],
