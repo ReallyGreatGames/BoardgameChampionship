@@ -18,4 +18,8 @@ export type TableEntry = {
   timerDirection: "up" | "down";
   /** Effective per-player total seconds, resolved from the timer doc or the game's timer settings. */
   timerTotalSeconds: number;
+  /** Effective per-player round-time budget in seconds, resolved from the
+   *  timer doc or the game's timer settings — 0 disables round-time
+   *  accounting, so pool time reconciliation ticks from the start. */
+  timerRoundSecondsTotal: number;
 };

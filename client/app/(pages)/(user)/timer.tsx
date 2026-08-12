@@ -1,19 +1,20 @@
 import { useScreenOrientation } from "@/lib/bootstrap/ScreenOrientationProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { TimerCell } from "@/lib/components/timer/TimerCell";
+import { TimerControlPanel } from "@/lib/components/timer/TimerControlPanel";
 import { TimerMenu } from "@/lib/components/timer/TimerMenu";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
+import { useTimerLocalSettings } from "@/lib/hooks/useTimerLocalSettings";
 import { useTimerState } from "@/lib/hooks/useTimerState";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { formatElapsedSeconds } from "@/lib/utils";
-import { Ionicons } from "@expo/vector-icons";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { OrientationLock } from "expo-screen-orientation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, StatusBar, StyleSheet, Text, View } from "react-native";
+import { StatusBar, StyleSheet, View } from "react-native";
 import { useTranslation } from "react-i18next";
 
 export default function TimerPage() {
@@ -42,13 +43,21 @@ export default function TimerPage() {
     [tableBellStore.collection, tableNumber],
   );
 
+  const { orientationMode, pauseMode, toggleOrientationMode, togglePauseMode } =
+    useTimerLocalSettings(params.gameId);
+
   const {
     times,
-    activeIdx,
-    paused,
+    roundTimesLeft,
+    roundExpired,
     playersInOvertime,
+    playersPaused,
+    allPaused,
     depleteAnims,
+    graceAnims,
     totalSeconds,
+    effectiveDuration,
+    roundSecondsTotal,
     direction,
     playerColors,
     cellSize,
@@ -57,9 +66,10 @@ export default function TimerPage() {
     handlePause,
     handleReset,
     handleSaveCustomTimer,
+    handleUseDefaultTimer,
+    toggleAllPause,
     existingTimer,
-    timerSettings,
-  } = useTimerState({ gameId: params.gameId, tableNumber, bell });
+  } = useTimerState({ gameId: params.gameId, tableNumber, bell, pauseMode });
 
   const playerNames = useMemo(
     () => existingTimer?.playerPositions?.map((p) => p.name) ?? [],
@@ -70,8 +80,6 @@ export default function TimerPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [customTimerOpen, setCustomTimerOpen] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-
-  const bellColor = bell?.acknowledgeTime ? colors.success : colors.accent;
 
   useEffect(() => {
     if (!bell) {
@@ -109,111 +117,66 @@ export default function TimerPage() {
     }
   };
 
+  // Top row = seats [0,1], bottom row = seats [3,2] — mirrors the seat/color
+  // setup grid in PlayerColorSetupModal.tsx.
+  const seatOrder: number[][] = [
+    [0, 1],
+    [3, 2],
+  ];
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <StatusBar hidden />
 
       <View style={styles.fill}>
-        <View style={styles.row}>
-          {([0, 1] as const).map((idx) => (
-            <TimerCell
-              key={idx}
-              idx={idx}
-              playerName={playerNames[idx]}
-              timeLeft={times[idx]}
-              totalSeconds={totalSeconds}
-              direction={direction}
-              activeIdx={activeIdx}
-              paused={paused}
-              playersInOvertime={playersInOvertime}
-              playerColor={playerColors[idx]}
-              depleteAnim={depleteAnims.current[idx]}
-              cellSize={cellSize}
-              onPress={() => handlePress(idx)}
-              onLayout={idx === 0 ? handleCellLayout : undefined}
-            />
-          ))}
-        </View>
-        <View style={styles.row}>
-          {([3, 2] as const).map((idx) => (
-            <TimerCell
-              key={idx}
-              idx={idx}
-              playerName={playerNames[idx]}
-              timeLeft={times[idx]}
-              totalSeconds={totalSeconds}
-              direction={direction}
-              activeIdx={activeIdx}
-              paused={paused}
-              playersInOvertime={playersInOvertime}
-              playerColor={playerColors[idx]}
-              depleteAnim={depleteAnims.current[idx]}
-              cellSize={cellSize}
-              onPress={() => handlePress(idx)}
-            />
-          ))}
-        </View>
+        {seatOrder.map((row, rowIdx) => (
+          <View key={rowIdx} style={styles.row}>
+            {row.map((idx) => (
+              <TimerCell
+                key={idx}
+                idx={idx}
+                playerName={playerNames[idx]}
+                timeLeft={times[idx]}
+                totalSeconds={totalSeconds}
+                direction={direction}
+                isPaused={playersPaused[idx]}
+                playersInOvertime={playersInOvertime}
+                roundSecondsTotal={roundSecondsTotal}
+                roundTimeLeft={roundTimesLeft[idx]}
+                roundExpired={roundExpired[idx]}
+                orientationMode={orientationMode}
+                playerColor={playerColors[idx]}
+                depleteAnim={depleteAnims.current[idx]}
+                graceAnim={graceAnims.current[idx]}
+                cellSize={cellSize}
+                onPress={() => handlePress(idx)}
+                onLayout={idx === 0 ? handleCellLayout : undefined}
+              />
+            ))}
+          </View>
+        ))}
       </View>
 
       <View style={styles.centerOverlay} pointerEvents="box-none">
-        <Pressable
-          style={[
-            styles.menuTrigger,
-            {
-              backgroundColor: colors.surfaceHigh + "ee",
-              borderColor: colors.border,
-            },
-            bell && !bell.acknowledgeTime && { borderColor: colors.accent },
-            bell?.acknowledgeTime && { borderColor: colors.success },
-          ]}
-          onPress={() => setMenuOpen(true)}
-        >
-          <Ionicons
-            name="ellipsis-horizontal"
-            size={20}
-            color={colors.textSecondary}
-          />
-        </Pressable>
-
-        {bell && (
-          <View
-            style={[
-              styles.bellBadge,
-              {
-                backgroundColor: colors.surface,
-                borderColor: bell.acknowledgeTime
-                  ? colors.success
-                  : colors.accent,
-              },
-            ]}
-          >
-            <View style={styles.bellBadgeIcons}>
-              {bell.acknowledgeTime && (
-                <Ionicons name="walk-outline" size={10} color={bellColor} />
-              )}
-              <Ionicons
-                name={
-                  bell.acknowledgeTime
-                    ? "notifications-off-outline"
-                    : "notifications-outline"
-                }
-                size={12}
-                color={bellColor}
-              />
-            </View>
-            <Text style={[styles.bellBadgeTime, { color: bellColor }]}>
-              {formatElapsedSeconds(elapsedSeconds)}
-            </Text>
-          </View>
-        )}
+        <TimerControlPanel
+          onOpenMenu={() => setMenuOpen(true)}
+          orientationMode={orientationMode}
+          onToggleOrientation={toggleOrientationMode}
+          pauseMode={pauseMode}
+          onTogglePauseMode={togglePauseMode}
+          bell={bell}
+          bellElapsedLabel={bell ? formatElapsedSeconds(elapsedSeconds) : undefined}
+          onToggleBell={handleToggleBell}
+          bellLoading={bellActions.isLoading}
+          bellDisabled={bellActions.isLoading || (!!bell && !bellActions.canDelete(bell))}
+          allPaused={allPaused}
+          onToggleAllPause={toggleAllPause}
+        />
       </View>
 
       <TimerMenu
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
-        bell={bell}
-        bellActions={bellActions}
-        onToggleBell={handleToggleBell}
         onReset={async () => {
           const ok = await handleReset();
           if (ok) {
@@ -223,6 +186,12 @@ export default function TimerPage() {
         onOpenCustomTimer={() => {
           setMenuOpen(false);
           setCustomTimerOpen(true);
+        }}
+        onUseDefaultTimer={async () => {
+          const ok = await handleUseDefaultTimer();
+          if (ok) {
+            setMenuOpen(false);
+          }
         }}
         onCloseTimer={() => {
           setMenuOpen(false);
@@ -235,11 +204,15 @@ export default function TimerPage() {
         }}
         customTimerOpen={customTimerOpen}
         onCloseCustomTimer={() => setCustomTimerOpen(false)}
-        initialDuration={
-          existingTimer?.durationMinutesTotal ??
-          timerSettings?.durationMinutesTotal
-        }
-        initialDirection={existingTimer?.direction ?? timerSettings?.direction}
+        // Reuse the hook's already-resolved values instead of re-deriving
+        // them here — `hasCustomTimer` is what correctly distinguishes a
+        // deliberate per-table override (including an explicit `0` round
+        // time) from a table that was never customized, which comparing the
+        // raw stored numbers/strings against the game default can't (see
+        // useTimerState.ts).
+        initialDuration={effectiveDuration}
+        initialDirection={direction}
+        initialRoundSeconds={roundSecondsTotal}
         onSaveCustomTimer={handleSaveCustomTimer}
       />
     </View>
@@ -258,33 +231,5 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: "center",
     alignItems: "center",
-  },
-  menuTrigger: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  bellBadge: {
-    marginTop: 6,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-  },
-  bellBadgeIcons: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-  },
-  bellBadgeTime: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 11,
-    letterSpacing: 0.5,
   },
 });

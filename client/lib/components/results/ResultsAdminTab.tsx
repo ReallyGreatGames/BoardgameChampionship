@@ -30,7 +30,7 @@ import {
   hasScorePlacementConflict,
   isValidPlacementCombo,
 } from "@/lib/utils/placements";
-import { resolveGameId, teamName, toNumberArray } from "@/lib/utils";
+import { resolveEffectiveTimer, resolveGameId, teamName, toNumberArray } from "@/lib/utils";
 import { ChipGroup } from "@/lib/components/ui/ChipGroup";
 import { Combobox } from "@/lib/components/ui/Combobox";
 import { useDialog } from "@/lib/components/ui/Dialog";
@@ -190,8 +190,13 @@ export function ResultsAdminTab() {
       );
       const result = resultForTable(t.tableNumber);
       const bell = bells.find((b) => b.table === t.tableNumber);
-      const effectiveDuration =
-        timer?.durationMinutesTotal ?? gameTimerSettings?.durationMinutesTotal;
+      // Shared with useTimerState.ts so the live timer and this read-only
+      // dashboard can't resolve a table's effective duration/round-time/
+      // direction differently — see resolveEffectiveTimer for why
+      // `hasCustomTimer` (not durationMinutesTotal/roundSecondsTotal
+      // themselves) is the authoritative signal for a deliberate override.
+      const { effectiveDuration, roundSecondsTotal: effectiveRoundSeconds, direction: timerDirection } =
+        resolveEffectiveTimer(timer, gameTimerSettings);
       return {
         id: t.tableNumber,
         players: t.players,
@@ -203,10 +208,11 @@ export function ResultsAdminTab() {
         isRunning: !!timer,
         isSubmitted: result?.submitted ?? false,
         hasNote: !!result?.note,
-        timerDirection: timer?.direction ?? gameTimerSettings?.direction ?? "down",
+        timerDirection,
         timerTotalSeconds: effectiveDuration
           ? (effectiveDuration * 60) / PLAYER_COUNT
           : DEFAULT_TIMER_SECONDS,
+        timerRoundSecondsTotal: effectiveRoundSeconds,
       };
     });
   }, [gameTables, timers, results, bells, selectedGameId, resultForTable, gameTimerSettings]);

@@ -1,4 +1,5 @@
 import type { Player } from "./models/player";
+import type { Timer } from "./models/timer";
 
 export const EMPTY = Symbol("empty");
 
@@ -64,21 +65,54 @@ export function formatElapsedSeconds(seconds: number) {
   return `${m}:${s}`;
 }
 
-/** Corrects the active player's stored time for elapsed real time since the
- *  timer doc was last saved — saves only happen on press/pause/reset, not every tick. */
-export function applyElapsedCorrection(
-  times: number[],
-  activeIdx: number | null,
-  paused: boolean,
+export type RoundPoolReconcileResult = {
+  poolTimes: number[];
+  roundTimesLeft: number[];
+  roundExpired: boolean[];
+};
+
+/** Fast-forwards each unpaused seat's round time and pool time for elapsed
+ *  real time since the timer doc was last saved — saves only happen on
+ *  press/pause/reset, not every tick. Consumes round time first (while
+ *  `roundSecondsTotal > 0` and the seat hasn't already expired its round),
+ *  then spills any remaining elapsed seconds onto the pool — mirrors what
+ *  useTimerState.ts's per-second tick loop would have done. Used both by the
+ *  interactive timer (on reconnect) and the read-only results dashboard, so
+ *  pool time never appears to drain during a seat's round-time phase. */
+export function reconcileRoundAndPool(
+  poolTimes: number[],
+  roundTimesLeft: number[],
+  roundExpired: boolean[],
+  pausedFlags: boolean[],
+  roundSecondsTotal: number,
   updatedAt: string,
   now: number,
-): number[] {
-  if (activeIdx === null || paused) {return times;}
-  const elapsed = Math.floor((now - new Date(updatedAt).getTime()) / 1000);
-  if (elapsed <= 0) {return times;}
-  const corrected = [...times];
-  corrected[activeIdx] = times[activeIdx] - elapsed;
-  return corrected;
+): RoundPoolReconcileResult {
+  const elapsedTotal = Math.max(0, Math.floor((now - new Date(updatedAt).getTime()) / 1000));
+  if (elapsedTotal === 0) {
+    return { poolTimes, roundTimesLeft, roundExpired };
+  }
+  const nextPool = [...poolTimes];
+  const nextRound = [...roundTimesLeft];
+  const nextExpired = [...roundExpired];
+  for (let i = 0; i < poolTimes.length; i++) {
+    if (pausedFlags[i]) {
+      continue;
+    }
+    let remaining = elapsedTotal;
+    if (roundSecondsTotal > 0 && !nextExpired[i]) {
+      const consumed = Math.min(remaining, nextRound[i]);
+      nextRound[i] -= consumed;
+      remaining -= consumed;
+      if (nextRound[i] <= 0) {
+        nextExpired[i] = true;
+      }
+    }
+    if (remaining > 0) {
+      nextPool[i] -= remaining;
+    }
+  }
+  return { poolTimes: nextPool, roundTimesLeft: nextRound, roundExpired: nextExpired };
 }
 
 /** Normalizes playerTimes — real-time payloads may serialize arrays as JSON strings */
@@ -96,6 +130,64 @@ export function toBooleanArray(value: unknown): boolean[] {
     try { return JSON.parse(value) as boolean[]; } catch { return []; }
   }
   return [];
+}
+
+/** Value-equality for flat arrays of primitives — cheaper than a
+ *  `JSON.stringify` comparison and used on hot paths (e.g. detecting a
+ *  realtime update that's just the echo of this device's own write). */
+export function arraysEqual<T>(a: T[], b: T[]): boolean {
+  if (a.length !== b.length) {return false;}
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) {return false;}
+  }
+  return true;
+}
+
+export type EffectiveTimerSettings = {
+  /** Whether this table has a deliberate per-table override — see below. */
+  hasCustomTimer: boolean;
+  effectiveDuration: number | undefined;
+  roundSecondsTotal: number;
+  direction: NonNullable<Timer["direction"]>;
+};
+
+/** Resolves the timer settings that actually apply to a table: its own
+ *  deliberate override, or the game's default. `hasCustomTimer` is the
+ *  authoritative signal for "this table was customized" — durationMinutesTotal/
+ *  roundSecondsTotal are numbers Appwrite defaults to `0` when never
+ *  explicitly set, indistinguishable from a deliberately-chosen `0` (e.g.
+ *  round timer disabled on purpose) without it.
+ *
+ *  Timer docs saved before `hasCustomTimer` existed have the field as
+ *  `undefined` but may still carry a genuine custom duration from back then
+ *  — inferred from that instead of silently losing the override on rollout.
+ *  A table explicitly reverted via "use default timer" has `hasCustomTimer
+ *  === false` set deliberately, which must NOT fall into that legacy
+ *  inference (checked via `=== undefined`, not just falsy).
+ *
+ *  Shared by the live timer (useTimerState.ts) and the read-only results
+ *  dashboard (ResultsAdminTab.tsx) so the two can't drift apart. */
+export function resolveEffectiveTimer(
+  timer:
+    | Pick<Timer, "hasCustomTimer" | "durationMinutesTotal" | "roundSecondsTotal" | "direction">
+    | undefined,
+  gameSettings:
+    | { durationMinutesTotal?: number; roundSecondsTotal?: number; direction?: Timer["direction"] }
+    | undefined,
+): EffectiveTimerSettings {
+  const hasCustomTimer =
+    timer?.hasCustomTimer === true ||
+    (timer?.hasCustomTimer === undefined && !!timer?.durationMinutesTotal);
+  const effectiveDuration = hasCustomTimer
+    ? timer?.durationMinutesTotal || gameSettings?.durationMinutesTotal
+    : gameSettings?.durationMinutesTotal;
+  const roundSecondsTotal = hasCustomTimer
+    ? timer?.roundSecondsTotal ?? 0
+    : gameSettings?.roundSecondsTotal || 0;
+  const direction = hasCustomTimer
+    ? timer?.direction ?? gameSettings?.direction ?? "down"
+    : gameSettings?.direction ?? "down";
+  return { hasCustomTimer, effectiveDuration, roundSecondsTotal, direction };
 }
 
 /** Handles Appwrite returning team as hydrated Team object OR bare string $id */

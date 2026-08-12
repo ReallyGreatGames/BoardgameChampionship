@@ -155,8 +155,16 @@ export default function GamePage() {
     router.replace((from as any) ?? "/(pages)/(user)/schedule");
   };
 
+  // Keyed by (gameId, tableNumber) — NOT gameId alone. A game can have
+  // several tables, each with its own seating/players, so completing this
+  // setup for one table must not silently skip it for another table in the
+  // same game: skipping means that OTHER table's Timer doc never gets its
+  // playerPositions set, and its timer falls back to showing "P1".."P4"
+  // instead of names.
+  const playerColorsKey = `playerColors_${gameId}_${tableNumber}`;
+
   const handleTimerPress = async () => {
-    const stored = await getItemAsync(`playerColors_${gameId}`);
+    const stored = await getItemAsync(playerColorsKey);
     if (!stored && currentTable) {
       setColorSetupVisible(true);
     } else {
@@ -168,7 +176,7 @@ export default function GamePage() {
     playerIds: (string | null)[],
     hexColors: string[],
   ) => {
-    await setItemAsync(`playerColors_${gameId}`, JSON.stringify(hexColors));
+    await setItemAsync(playerColorsKey, JSON.stringify(hexColors));
 
     const validIds = playerIds.filter((id): id is string => id !== null);
     const existing =
@@ -190,8 +198,7 @@ export default function GamePage() {
         table: tableNumber,
         games: gameId ?? null,
         playerTimes: [],
-        activePlayerTimer: null,
-        paused: true,
+        playersPaused: [],
         playersInOvertime: [],
         playerPositions: validIds as any,
       });
