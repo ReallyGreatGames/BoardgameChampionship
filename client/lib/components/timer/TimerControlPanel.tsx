@@ -26,6 +26,10 @@ type Props = {
   bellDisabled?: boolean;
   allPaused: boolean;
   onToggleAllPause: () => void;
+  /** Total time the table has had at least one seat running, pre-formatted
+   *  (mm:ss) — deliberately small/secondary here, not a focal element (see
+   *  useTimerState's tableElapsedSeconds). */
+  tableElapsedLabel: string;
 };
 
 /**
@@ -46,6 +50,7 @@ export function TimerControlPanel({
   bellDisabled,
   allPaused,
   onToggleAllPause,
+  tableElapsedLabel,
 }: Props) {
   const { colors } = useTheme();
   const { t } = useTranslation(["timer"]);
@@ -65,6 +70,16 @@ export function TimerControlPanel({
       ]}
       pointerEvents="box-none"
     >
+      {/* Small and non-interactive on purpose — the whole-table elapsed
+          time is useful context, not something anyone needs to focus on
+          (see useTimerState's tableElapsedSeconds doc comment). */}
+      <View style={styles.tableElapsedRow}>
+        <Ionicons name="time-outline" size={14} color={colors.textMuted} />
+        <Text style={[type.eyebrow, { color: colors.textMuted }]}>
+          {t("tableTimeElapsed")} · {tableElapsedLabel}
+        </Text>
+      </View>
+
       <View style={styles.iconRow}>
         <IconToggle
           icon={orientationMode === "center" ? "grid-outline" : "reorder-two-outline"}
@@ -169,6 +184,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: inset.tight,
     gap: inset.tight,
+  },
+  tableElapsedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
   },
   iconRow: {
     flexDirection: "row",

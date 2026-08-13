@@ -5,12 +5,13 @@ import { buildPlayerColor } from "@/lib/utils/timerColors";
 import {
   Animated,
   LayoutChangeEvent,
-  Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { useEffect, useState } from "react";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { useEffect, useMemo, useState } from "react";
+import { runOnJS } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { TimerOrientationMode } from "@/lib/hooks/useTimerLocalSettings";
 
@@ -178,110 +179,129 @@ export function TimerCell({
   // a fixed per-round budget draining toward zero, not a running total.
   const roundBaseSeconds = Math.max(0, roundTimeLeft);
 
+  // Deliberately react-native-gesture-handler's own Tap gesture, NOT
+  // Pressable/Touchable — RN's legacy responder system negotiates a single
+  // active JS responder per touch stream, which makes two players pressing
+  // two different seats' cells at the same instant unreliable (one press
+  // gets delayed or swallowed). Each GestureDetector below runs its own
+  // native gesture recognizer, so sibling cells genuinely recognize
+  // simultaneous taps. `onEnd` (not `onStart`) mirrors Pressable's onPress
+  // timing — fires once the tap completed, not the instant the finger lands.
+  const tapGesture = useMemo(
+    () =>
+      Gesture.Tap().onEnd((_event, success) => {
+        // `success` is false for a tap the recognizer cancelled (finger
+        // dragged too far, held too long) — same "didn't count" cases
+        // Pressable's onPress already silently ignores.
+        if (success) {
+          runOnJS(onPress)();
+        }
+      }),
+    [onPress],
+  );
+
   return (
-    <Pressable
-      style={[styles.cell, { backgroundColor: bgColor }]}
-      onPress={onPress}
-      onLayout={onLayout}
-    >
-      <Animated.View
-        style={[
-          styles.depletionOverlay,
-          {
-            ...overlayStyle,
-            backgroundColor: direction === "up"
-              ? isRunning ? playerColor.active : playerColor.muted
-              : isRunning ? playerColor.elapsed : playerColor.elapsedMuted,
-          },
-        ]}
-        pointerEvents="none"
-      />
-      <View style={[styles.cellContent, { transform: [{ rotate: rotation }] }]}>
-        <View style={styles.nameBadge}>
-          <Text
-            style={[
-              type.eyebrow,
-              { color: NAME_TEXT_COLOR, fontSize: 14, lineHeight: 20 },
-            ]}
-          >
-            {playerName ?? `P${idx + 1}`}
-          </Text>
-        </View>
-
-        {showBadge ? (
-          <>
-            {/* Pool time, small, above the round badge — takes back the big
-                spot below the instant the badge disappears (round expired,
-                or its grace window ran out while paused). */}
-            <Text style={[styles.smallPoolText, { color: NAME_TEXT_COLOR, ...TEXT_SHADOW }]}>
-              {formatTime(baseSeconds)}
+    <GestureDetector gesture={tapGesture}>
+      <View style={[styles.cell, { backgroundColor: bgColor }]} onLayout={onLayout}>
+        <Animated.View
+          style={[
+            styles.depletionOverlay,
+            {
+              ...overlayStyle,
+              backgroundColor: direction === "up"
+                ? isRunning ? playerColor.active : playerColor.muted
+                : isRunning ? playerColor.elapsed : playerColor.elapsedMuted,
+            },
+          ]}
+          pointerEvents="none"
+        />
+        <View style={[styles.cellContent, { transform: [{ rotate: rotation }] }]}>
+          <View style={styles.nameBadge}>
+            <Text
+              style={[
+                type.eyebrow,
+                { color: NAME_TEXT_COLOR, fontSize: 14, lineHeight: 20 },
+              ]}
+            >
+              {playerName ?? `P${idx + 1}`}
             </Text>
+          </View>
 
-            {/* The badge itself is the big, centered element while the round
-                is running and still within its grace window. */}
-            <View style={styles.roundBigWrap}>
-              <View style={styles.roundBigBadge}>
-                <Text style={[styles.roundBigBadgeText, { color: ROUND_BADGE_TEXT_COLOR }]}>
-                  {formatTime(roundBaseSeconds)}
-                </Text>
+          {showBadge ? (
+            <>
+              {/* Pool time, small, above the round badge — takes back the big
+                  spot below the instant the badge disappears (round expired,
+                  or its grace window ran out while paused). */}
+              <Text style={[styles.smallPoolText, { color: NAME_TEXT_COLOR, ...TEXT_SHADOW }]}>
+                {formatTime(baseSeconds)}
+              </Text>
+
+              {/* The badge itself is the big, centered element while the round
+                  is running and still within its grace window. */}
+              <View style={styles.roundBigWrap}>
+                <View style={styles.roundBigBadge}>
+                  <Text style={[styles.roundBigBadgeText, { color: ROUND_BADGE_TEXT_COLOR }]}>
+                    {formatTime(roundBaseSeconds)}
+                  </Text>
+                </View>
+
+                {isRunning && (
+                  <View style={[styles.activePip, { backgroundColor: "#ffffff" }]} />
+                )}
               </View>
-
+            </>
+          ) : (
+            <View style={styles.timeGroup}>
+              <Text style={[styles.timeText, { color: timeColor, ...TEXT_SHADOW }]}>
+                {formatTime(baseSeconds)}
+              </Text>
+              {isDepleted && overageSeconds > 0 && (
+                <Text style={[styles.overtimeText, { color: colors.error, ...TEXT_SHADOW }]}>
+                  +{formatTime(overageSeconds)}
+                </Text>
+              )}
               {isRunning && (
                 <View style={[styles.activePip, { backgroundColor: "#ffffff" }]} />
               )}
             </View>
-          </>
-        ) : (
-          <View style={styles.timeGroup}>
-            <Text style={[styles.timeText, { color: timeColor, ...TEXT_SHADOW }]}>
-              {formatTime(baseSeconds)}
+          )}
+
+          {/* Visible whenever paused and a round system is configured — shows
+              whether resuming now would reset the round — independent of
+              whether the shield badge itself is currently displayed (it isn't
+              once the round has expired or its own grace window already ran
+              out, but resuming after a long-enough pause still resets it). */}
+          {isPaused && roundSecondsTotal > 0 && (
+            <View style={[styles.graceTrack, { backgroundColor: colors.border }]}>
+              <Animated.View
+                style={[
+                  styles.graceFill,
+                  {
+                    backgroundColor: colors.primary,
+                    width: graceAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ["0%", "100%"],
+                    }),
+                  },
+                ]}
+              />
+            </View>
+          )}
+
+          {isPaused && !showTimeOut && (
+            <Text style={[type.eyebrow, { color: colors.textMuted, marginTop: 4 }]}>
+              {t("paused")}
             </Text>
-            {isDepleted && overageSeconds > 0 && (
-              <Text style={[styles.overtimeText, { color: colors.error, ...TEXT_SHADOW }]}>
-                +{formatTime(overageSeconds)}
-              </Text>
-            )}
-            {isRunning && (
-              <View style={[styles.activePip, { backgroundColor: "#ffffff" }]} />
-            )}
-          </View>
-        )}
+          )}
 
-        {/* Visible whenever paused and a round system is configured — shows
-            whether resuming now would reset the round — independent of
-            whether the shield badge itself is currently displayed (it isn't
-            once the round has expired or its own grace window already ran
-            out, but resuming after a long-enough pause still resets it). */}
-        {isPaused && roundSecondsTotal > 0 && (
-          <View style={[styles.graceTrack, { backgroundColor: colors.border }]}>
-            <Animated.View
-              style={[
-                styles.graceFill,
-                {
-                  backgroundColor: colors.primary,
-                  width: graceAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ["0%", "100%"],
-                  }),
-                },
-              ]}
-            />
-          </View>
-        )}
-
-        {isPaused && !showTimeOut && (
-          <Text style={[type.eyebrow, { color: colors.textMuted, marginTop: 4 }]}>
-            {t("paused")}
-          </Text>
-        )}
-
-        {showTimeOut && (
-          <Text style={[type.eyebrow, { color: colors.error, marginTop: 4, ...TEXT_SHADOW }]}>
-            {t("timeOut")}
-          </Text>
-        )}
+          {showTimeOut && (
+            <Text style={[type.eyebrow, { color: colors.error, marginTop: 4, ...TEXT_SHADOW }]}>
+              {t("timeOut")}
+            </Text>
+          )}
+        </View>
       </View>
-    </Pressable>
+    </GestureDetector>
   );
 }
 

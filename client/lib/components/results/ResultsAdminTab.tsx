@@ -17,10 +17,12 @@ import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
 import type { Result } from "@/lib/models/result";
 import type { Table } from "@/lib/models/table";
 import type { TableBell } from "@/lib/models/table-bell";
+import type { TimerSeat } from "@/lib/models/timer-seat";
 import { useResultStore } from "@/lib/stores/appwrite/result-store";
 import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { useTableStore } from "@/lib/stores/appwrite/table-store";
+import { useTimerSeatStore } from "@/lib/stores/appwrite/timer-seat-store";
 import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-store";
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
 import { inset, space } from "@/lib/theme/spacing";
@@ -30,7 +32,7 @@ import {
   hasScorePlacementConflict,
   isValidPlacementCombo,
 } from "@/lib/utils/placements";
-import { resolveEffectiveTimer, resolveGameId, teamName, toNumberArray } from "@/lib/utils";
+import { resolveEffectiveTimer, resolveGameId, teamName } from "@/lib/utils";
 import { ChipGroup } from "@/lib/components/ui/ChipGroup";
 import { Combobox } from "@/lib/components/ui/Combobox";
 import { useDialog } from "@/lib/components/ui/Dialog";
@@ -64,6 +66,7 @@ export function ResultsAdminTab() {
   const { collection: results } = useResultStore();
   const tables = useTableStore((s) => s.collection);
   const { collection: timers } = useTimerStore();
+  const { collection: timerSeats } = useTimerSeatStore();
   const { collection: timerSettingsCollection } = useTimerSettingsStore();
   const bells = useTableBellStore((s) => s.collection);
   const resultStore = useResultStore();
@@ -181,6 +184,24 @@ export function ResultsAdminTab() {
     [timerSettingsCollection, selectedGameId],
   );
 
+  // Grouped once per selectedGameId change rather than re-filtering the
+  // whole (all-games) seats collection inside the per-table loop below —
+  // that loop otherwise rescans every seat of every game for every table.
+  const seatsByTable = useMemo(() => {
+    const map = new Map<number, TimerSeat[]>();
+    if (!selectedGameId) return map;
+    for (const s of timerSeats) {
+      if (resolveGameId(s.games) !== selectedGameId) continue;
+      const forTable = map.get(s.table);
+      if (forTable) {
+        forTable.push(s);
+      } else {
+        map.set(s.table, [s]);
+      }
+    }
+    return map;
+  }, [timerSeats, selectedGameId]);
+
   // Build TableEntry list (for overview mode)
   const tableEntries = useMemo<TableEntry[]>(() => {
     if (!selectedGameId) return [];
@@ -188,6 +209,7 @@ export function ResultsAdminTab() {
       const timer = timers.find(
         (tm) => resolveGameId(tm.games) === selectedGameId && tm.table === t.tableNumber,
       );
+      const seats = seatsByTable.get(t.tableNumber) ?? [];
       const result = resultForTable(t.tableNumber);
       const bell = bells.find((b) => b.table === t.tableNumber);
       // Shared with useTimerState.ts so the live timer and this read-only
@@ -201,6 +223,7 @@ export function ResultsAdminTab() {
         id: t.tableNumber,
         players: t.players,
         timer,
+        seats,
         result,
         bell,
         hasBell: !!bell && !bell.acknowledgeTime,
@@ -215,7 +238,7 @@ export function ResultsAdminTab() {
         timerRoundSecondsTotal: effectiveRoundSeconds,
       };
     });
-  }, [gameTables, timers, results, bells, selectedGameId, resultForTable, gameTimerSettings]);
+  }, [gameTables, timers, seatsByTable, results, bells, selectedGameId, resultForTable, gameTimerSettings]);
 
   const filteredEntries = useMemo<TableEntry[]>(() => {
     const q = search.trim().toLowerCase();
@@ -249,16 +272,16 @@ export function ResultsAdminTab() {
           if (!a.timer && !b.timer) return a.id - b.id;
           if (!a.timer) return 1;
           if (!b.timer) return -1;
-          const aSum = toNumberArray(a.timer.playerTimes).reduce((s, v) => s + v, 0);
-          const bSum = toNumberArray(b.timer.playerTimes).reduce((s, v) => s + v, 0);
+          const aSum = a.seats.reduce((s, v) => s + v.playerTime, 0);
+          const bSum = b.seats.reduce((s, v) => s + v.playerTime, 0);
           return aSum - bSum;
         }
         case "minTimer": {
           if (!a.timer && !b.timer) return a.id - b.id;
           if (!a.timer) return 1;
           if (!b.timer) return -1;
-          const aTimes = toNumberArray(a.timer.playerTimes);
-          const bTimes = toNumberArray(b.timer.playerTimes);
+          const aTimes = a.seats.map((s) => s.playerTime);
+          const bTimes = b.seats.map((s) => s.playerTime);
           const aMin = aTimes.length ? Math.min(...aTimes) : Infinity;
           const bMin = bTimes.length ? Math.min(...bTimes) : Infinity;
           return aMin - bMin;

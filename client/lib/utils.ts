@@ -65,6 +65,21 @@ export function formatElapsedSeconds(seconds: number) {
   return `${m}:${s}`;
 }
 
+/** Table-wide elapsed seconds — accumulated milliseconds from past active
+ *  stretches, plus (while `resumedAtIso` is set) wall-clock time since then.
+ *  Shared by the live timer (useTimerState.ts) and the read-only results
+ *  dashboard (TableCard.tsx) so the two can't drift apart — see Timer's
+ *  tableActiveAccumulatedMs/tableActiveResumedAt doc comments. */
+export function computeTableElapsedSeconds(
+  accumulatedMs: number,
+  resumedAtIso: string | null | undefined,
+  now: number,
+): number {
+  const resumedAt = resumedAtIso ? new Date(resumedAtIso).getTime() : null;
+  const liveMs = resumedAt !== null ? Math.max(0, now - resumedAt) : 0;
+  return Math.floor((accumulatedMs + liveMs) / 1000);
+}
+
 export type RoundPoolReconcileResult = {
   poolTimes: number[];
   roundTimesLeft: number[];
@@ -72,26 +87,28 @@ export type RoundPoolReconcileResult = {
 };
 
 /** Fast-forwards each unpaused seat's round time and pool time for elapsed
- *  real time since the timer doc was last saved — saves only happen on
+ *  real time since ITS OWN doc was last saved — saves only happen on
  *  press/pause/reset, not every tick. Consumes round time first (while
  *  `roundSecondsTotal > 0` and the seat hasn't already expired its round),
  *  then spills any remaining elapsed seconds onto the pool — mirrors what
  *  useTimerState.ts's per-second tick loop would have done. Used both by the
  *  interactive timer (on reconnect) and the read-only results dashboard, so
- *  pool time never appears to drain during a seat's round-time phase. */
+ *  pool time never appears to drain during a seat's round-time phase.
+ *
+ *  `updatedAt` is per-seat (one `$updatedAt` per index), not a single shared
+ *  value — each seat now lives in its own document (see
+ *  lib/models/timer-seat.ts), so a seat that hasn't been touched in a while
+ *  fast-forwards from its OWN last-saved moment rather than borrowing
+ *  whichever seat happened to be updated most recently on the table. */
 export function reconcileRoundAndPool(
   poolTimes: number[],
   roundTimesLeft: number[],
   roundExpired: boolean[],
   pausedFlags: boolean[],
   roundSecondsTotal: number,
-  updatedAt: string,
+  updatedAt: string[],
   now: number,
 ): RoundPoolReconcileResult {
-  const elapsedTotal = Math.max(0, Math.floor((now - new Date(updatedAt).getTime()) / 1000));
-  if (elapsedTotal === 0) {
-    return { poolTimes, roundTimesLeft, roundExpired };
-  }
   const nextPool = [...poolTimes];
   const nextRound = [...roundTimesLeft];
   const nextExpired = [...roundExpired];
@@ -99,7 +116,10 @@ export function reconcileRoundAndPool(
     if (pausedFlags[i]) {
       continue;
     }
-    let remaining = elapsedTotal;
+    let remaining = Math.max(0, Math.floor((now - new Date(updatedAt[i]).getTime()) / 1000));
+    if (remaining === 0) {
+      continue;
+    }
     if (roundSecondsTotal > 0 && !nextExpired[i]) {
       const consumed = Math.min(remaining, nextRound[i]);
       nextRound[i] -= consumed;

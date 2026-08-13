@@ -13,6 +13,7 @@ import { useScheduleStore } from "../stores/appwrite/schedule-store";
 import { useTableBellStore } from "../stores/appwrite/table-bell-store";
 import { useTableStore } from "../stores/appwrite/table-store";
 import { useTeamStore } from "../stores/appwrite/team-store";
+import { useTimerSeatStore } from "../stores/appwrite/timer-seat-store";
 import { useTimerSettingsStore } from "../stores/appwrite/timer-settings-store";
 import { useTimerStore } from "../stores/appwrite/timer-store";
 import { useTournamentStore } from "../stores/appwrite/tournament-store";
@@ -40,6 +41,7 @@ const userInits = [
   useTableBellStore,
   useRuleStore,
   useTimerStore,
+  useTimerSeatStore,
   useTimerSettingsStore,
   useResultStore,
   useTableStore,
@@ -55,7 +57,12 @@ type Tier = "global" | "user" | "admin";
 function tierEntries(stores: any[]) {
   return stores.map((store) => {
     const state = store.getState();
-    return { key: state.key, set: state.realtimeSet, channel: state.channel };
+    return {
+      key: state.key,
+      set: state.realtimeSet,
+      channel: state.channel,
+      relationshipFields: state.relationshipFields,
+    };
   });
 }
 

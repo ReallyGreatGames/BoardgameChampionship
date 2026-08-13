@@ -15,6 +15,11 @@ export const usePlayerStore = create<PlayerState>((set) => {
     collection: [],
     key,
     realtimeSet: set as any,
+    // `team` is a to-one relationship — Appwrite's realtime payload can omit
+    // it (coming back null) on an update that didn't touch it; see
+    // real-time-store.ts's updateRealtimeCollectionUpdate for why this list
+    // exists and must stay scoped to genuine relationship attributes only.
+    relationshipFields: ["team"],
     initialized: false,
     init: async () => {
       await fetchCollection<Player>(key, set as any, [

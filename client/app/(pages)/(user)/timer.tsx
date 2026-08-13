@@ -53,6 +53,7 @@ export default function TimerPage() {
     playersInOvertime,
     playersPaused,
     allPaused,
+    tableElapsedSeconds,
     depleteAnims,
     graceAnims,
     totalSeconds,
@@ -171,6 +172,7 @@ export default function TimerPage() {
           bellDisabled={bellActions.isLoading || (!!bell && !bellActions.canDelete(bell))}
           allPaused={allPaused}
           onToggleAllPause={toggleAllPause}
+          tableElapsedLabel={formatElapsedSeconds(tableElapsedSeconds)}
         />
       </View>
 

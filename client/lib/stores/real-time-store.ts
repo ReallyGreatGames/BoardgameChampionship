@@ -33,6 +33,15 @@ export interface RealtimeCollectionStore<T extends RealtimeEntity> {
   realtimeSet: RealtimeSetter;
   /** Overrides the default `databases.*.collections.*.documents` channel — for non-document resources (e.g. a storage bucket's file events). */
   channel?: string;
+  /** Names of this document's Appwrite RELATIONSHIP attributes (e.g. "team",
+   *  "playerPositions") — see updateRealtimeCollectionUpdate's doc comment
+   *  for why ONLY these fields get the "incoming null/empty-array probably
+   *  just means Appwrite omitted this relationship" treatment. Omit (or
+   *  leave empty) for collections with no relationship attributes — this is
+   *  the correct default; the merge fix that introduced this parameter
+   *  exists BECAUSE applying that treatment to a plain nullable field was
+   *  actively wrong. */
+  relationshipFields?: readonly string[];
   init: () => void | Promise<void>;
 }
 
@@ -42,6 +51,7 @@ export function updateRealtimeCollection<T extends Models.Document>(
   key: Key,
   collection: T[],
   response: RealtimeResponseEvent<T>,
+  relationshipFields: readonly string[] = [],
 ) {
   const { events, payload } = response;
   const eventType =
@@ -55,7 +65,7 @@ export function updateRealtimeCollection<T extends Models.Document>(
 
   const handling: Record<string, (collection: T[], payload: T) => T[]> = {
     create: updateRealtimeCollectionCreate,
-    update: updateRealtimeCollectionUpdate,
+    update: (c: T[], p: T) => updateRealtimeCollectionUpdate(c, p, relationshipFields),
     delete: updateRealtimeCollectionDelete,
     unknown: (collection: T[], _payload: T) => collection,
   };
@@ -177,6 +187,8 @@ type TierEntry = {
   set: RealtimeSetter;
   /** Overrides the default `databases.*.collections.*.documents` channel — for non-document resources (e.g. a storage bucket's file events). */
   channel?: string;
+  /** See RealtimeCollectionStore's doc comment. */
+  relationshipFields?: readonly string[];
 };
 
 /**
@@ -220,6 +232,7 @@ export function subscribeTier(entries: TierEntry[]): () => void {
           entry.key,
           [...state.collection],
           response,
+          entry.relationshipFields,
         ),
       }));
     } catch (e) {
@@ -252,6 +265,7 @@ function updateRealtimeCollectionCreate<T extends Models.Document>(
 function updateRealtimeCollectionUpdate<T extends Models.Document>(
   collection: T[],
   payload: T,
+  relationshipFields: readonly string[],
 ) {
   // no existing entry — insert to be safe
   const id = collection.findIndex((item) => item.$id === payload.$id);
@@ -277,10 +291,19 @@ function updateRealtimeCollectionUpdate<T extends Models.Document>(
 
   console.debug([`[realtime] collection update`, payload]);
 
-  // Appwrite realtime payloads may omit relationship fields (returning null/[]).
-  // Preserve existing non-null values so relationship-based filters don't break.
+  // Appwrite realtime payloads may omit RELATIONSHIP fields specifically
+  // (returning null for a to-one relation, [] for a to-many one) when the
+  // update didn't touch that relation — preserve the existing value there so
+  // relationship-based filters don't break. Deliberately scoped to ONLY the
+  // caller-declared `relationshipFields` (see RealtimeCollectionStore's doc
+  // comment): applying this blanket to every field used to also catch
+  // plain nullable attributes (e.g. Timer's `tableActiveResumedAt`,
+  // TimerSeat's `roundLastPausedAt`) — a legitimate write that clears one of
+  // THOSE back to null got silently reverted to its old non-null value by
+  // this exact logic, which is a real, previously-shipped bug, not a
+  // hypothetical.
   const merged: any = { ...existing, ...payload };
-  for (const key of Object.keys(existing)) {
+  for (const key of relationshipFields) {
     const pv = (payload as any)[key];
     const ev = existing[key];
     if (

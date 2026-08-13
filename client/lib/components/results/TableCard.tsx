@@ -12,18 +12,23 @@ import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import {
+  computeTableElapsedSeconds,
   formatElapsed,
+  formatElapsedSeconds,
   formatTime,
   reconcileRoundAndPool,
   teamName,
-  toBooleanArray,
-  toNumberArray,
 } from "@/lib/utils";
 import type { TableEntry } from "@/lib/components/results/types";
 import { SignatureStatusIcon } from "@/lib/components/results/SignatureStatusIcon";
 import { StateBadge } from "@/lib/components/results/StateBadge";
 
 const PLAYER_COUNT = 4;
+// A seat with no document yet is always treated as paused (see the
+// fallbacks below), so this placeholder is never actually read for a real
+// elapsed-time computation — hoisted so building it isn't repeated per seat
+// per render.
+const EPOCH_ISO = new Date(0).toISOString();
 
 type Props = {
   entry: TableEntry;
@@ -54,35 +59,51 @@ export function TableCard({
   const missingSig =
     !!entry.result && sigIds.length > 0 && sigIds.some((id) => !id);
 
-  // Seats with no valid playerTimes/playersPaused/round data yet (timer doc
-  // just created, not touched) default to "full pool"/"paused"/"fresh
-  // round" — matches useTimerState.ts's own defaults. Compared against the
-  // fixed seat count, not against each other's length — a doc created with
-  // empty arrays (see game.tsx) would otherwise make every fallback compare
-  // 0 === 0 and vacuously "pass" as valid, real data. Memoized off the raw
-  // stored fields so identity stays stable across the once-a-second re-
-  // renders driven by `now`, which is what lets the `playerTimes` memo below
+  // Seats with no seat document yet (never touched) default to "full
+  // pool"/"paused"/"fresh round" — matches useTimerState.ts's own defaults.
+  // Each seat now lives in its own document (see lib/models/timer-seat.ts),
+  // so a "missing" seat is simply absent from `entry.seats` rather than a
+  // too-short array. Resolved once per seat here rather than re-scanning
+  // `entry.seats` in each of the five memos below. Memoized off the raw
+  // seat docs so identity stays stable across the once-a-second re-renders
+  // driven by `now`, which is what lets the `playerTimes` memo further down
   // actually skip recomputing `reconcileRoundAndPool` most ticks.
-  const storedTimes = useMemo(() => {
-    const raw = toNumberArray(entry.timer?.playerTimes);
-    return raw.length === PLAYER_COUNT ? raw : Array(PLAYER_COUNT).fill(entry.timerTotalSeconds);
-  }, [entry.timer?.playerTimes, entry.timerTotalSeconds]);
-  const pausedFlags = useMemo(() => {
-    const raw = toBooleanArray(entry.timer?.playersPaused);
-    return raw.length === PLAYER_COUNT ? raw : Array(PLAYER_COUNT).fill(true);
-  }, [entry.timer?.playersPaused]);
-  const roundTimesLeft = useMemo(() => {
-    const raw = toNumberArray(entry.timer?.roundTimesLeft);
-    return raw.length === PLAYER_COUNT ? raw : Array(PLAYER_COUNT).fill(entry.timerRoundSecondsTotal);
-  }, [entry.timer?.roundTimesLeft, entry.timerRoundSecondsTotal]);
-  const roundExpired = useMemo(() => {
-    const raw = toBooleanArray(entry.timer?.roundExpired);
-    return raw.length === PLAYER_COUNT ? raw : Array(PLAYER_COUNT).fill(false);
-  }, [entry.timer?.roundExpired]);
-  const overtimeFlags = useMemo(
-    () => toBooleanArray(entry.timer?.playersInOvertime),
-    [entry.timer?.playersInOvertime],
+  const seatByIndex = useMemo(
+    () => Array.from({ length: PLAYER_COUNT }, (_, i) => entry.seats.find((s) => s.seat === i)),
+    [entry.seats],
   );
+  const storedTimes = useMemo(
+    () => seatByIndex.map((s) => s?.playerTime ?? entry.timerTotalSeconds),
+    [seatByIndex, entry.timerTotalSeconds],
+  );
+  const pausedFlags = useMemo(() => seatByIndex.map((s) => s?.paused ?? true), [seatByIndex]);
+  const roundTimesLeft = useMemo(
+    () => seatByIndex.map((s) => s?.roundTimeLeft ?? entry.timerRoundSecondsTotal),
+    [seatByIndex, entry.timerRoundSecondsTotal],
+  );
+  const roundExpired = useMemo(() => seatByIndex.map((s) => s?.roundExpired ?? false), [seatByIndex]);
+  const overtimeFlags = useMemo(() => seatByIndex.map((s) => s?.inOvertime ?? false), [seatByIndex]);
+  // Per-seat `$updatedAt`, one per index — reconcileRoundAndPool fast-
+  // forwards each seat from ITS OWN last-saved moment now that seats are
+  // separate documents (see its doc comment). A seat with no document yet
+  // is always paused via the fallback above, so this placeholder timestamp
+  // is never actually read.
+  const seatUpdatedAt = useMemo(() => seatByIndex.map((s) => s?.$updatedAt ?? EPOCH_ISO), [seatByIndex]);
+
+  // Same derivation as useTimerState.ts's tableElapsedSeconds — accumulated
+  // milliseconds from past active stretches, plus (while a seat is still
+  // running) wall-clock time since the table's `tableActiveResumedAt`. Null
+  // when the timer's never been touched at all, to tell "never started"
+  // apart from a genuine 0.
+  const tableElapsedSeconds = useMemo(() => {
+    const timer = entry.timer;
+    if (!timer) {
+      return null;
+    }
+    const accumulatedMs =
+      typeof timer.tableActiveAccumulatedMs === "number" ? timer.tableActiveAccumulatedMs : 0;
+    return computeTableElapsedSeconds(accumulatedMs, timer.tableActiveResumedAt, now);
+  }, [entry.timer?.tableActiveAccumulatedMs, entry.timer?.tableActiveResumedAt, now]);
 
   // Pool time must not appear to drain while a seat is still in its
   // round-time phase — reconcile both together, same as the live timer, and
@@ -98,7 +119,7 @@ export function TableCard({
       roundExpired,
       pausedFlags,
       entry.timerRoundSecondsTotal,
-      timer.$updatedAt,
+      seatUpdatedAt,
       now,
     ).poolTimes;
   }, [
@@ -106,6 +127,7 @@ export function TableCard({
     roundTimesLeft,
     roundExpired,
     pausedFlags,
+    seatUpdatedAt,
     entry.timer,
     entry.timerRoundSecondsTotal,
     entry.isSubmitted,
@@ -138,7 +160,7 @@ export function TableCard({
         cardWidth > 0 ? { width: cardWidth } : { width: "100%" },
         entry.hasBell && styles.cardBellActive,
         entry.bellAcknowledged && styles.cardBellAcknowledged,
-        !entry.isSubmitted && entry.timer?.playersInOvertime?.some(Boolean) && styles.cardOvertimeWarning,
+        !entry.isSubmitted && overtimeFlags.some(Boolean) && styles.cardOvertimeWarning,
       ]}
       {...wrapperProps}
     >
@@ -149,6 +171,15 @@ export function TableCard({
         </Text>
 
         <View style={styles.headerRight}>
+          {/* Table-wide elapsed time — only once the timer's been touched
+              at all (see tableElapsedSeconds), small/secondary like on the
+              live timer screen's own display. */}
+          {tableElapsedSeconds !== null && (
+            <View style={styles.indicatorChip}>
+              <Ionicons name="time-outline" size={12} color={colors.textSecondary} />
+              <Text style={styles.indicatorLabel}>{formatElapsedSeconds(tableElapsedSeconds)}</Text>
+            </View>
+          )}
           {/* Result status */}
           {entry.result && (
             <StateBadge result={entry.result} t={t} />

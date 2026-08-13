@@ -197,9 +197,6 @@ export default function GamePage() {
       await timerStore.add({
         table: tableNumber,
         games: gameId ?? null,
-        playerTimes: [],
-        playersPaused: [],
-        playersInOvertime: [],
         playerPositions: validIds as any,
       });
     }

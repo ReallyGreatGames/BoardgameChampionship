@@ -25,6 +25,11 @@ export const useTimerStore = create<TimerState>((set) => {
     collection: [],
     key,
     realtimeSet: set,
+    // `playerPositions` (to-many) is the only relationship attribute on
+    // this document — every other field (including the nullable
+    // `tableActiveResumedAt`) is a plain attribute and must NOT get this
+    // treatment; see real-time-store.ts's updateRealtimeCollectionUpdate.
+    relationshipFields: ["playerPositions"],
     init: async () => {
       await fetchCollection<Timer, TimerState>(
         key,
