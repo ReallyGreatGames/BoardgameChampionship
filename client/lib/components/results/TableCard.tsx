@@ -249,18 +249,16 @@ export function TableCard({
       <View style={styles.playersRow}>
         {entry.players.map((player, i) => {
           const isRunning = entry.timer ? !pausedFlags[i] : false;
-          // While a round is active, its pool hasn't actually run out yet
-          // from the player's perspective — matches TimerCell.tsx, which
-          // ignores pool-overtime entirely for the same seat/round state.
-          const roundActive = entry.timerRoundSecondsTotal > 0 && !roundExpired[i];
-          // The persisted flag only updates on the next explicit action
-          // (press/pause), not continuously as the pool depletes — for
-          // direction "down" that's masked by the display freezing at 00:00
-          // anyway, but "up" would otherwise just keep counting past the
-          // total with no visual cue. Derive it live from the already-
-          // reconciled pool time too, same as useTimerState.ts does.
-          const isOvertime =
-            !roundActive && ((overtimeFlags[i] ?? false) || (playerTimes[i] ?? 0) <= 0);
+          // Deliberately NOT gated on round-active the way TimerCell.tsx's
+          // `showOvertimeLook` is on the live timer — that suppression is a
+          // player-facing UX choice (don't flash red mid-round for a
+          // still-acting player), which is the wrong call for this
+          // staff-facing dashboard: it should show a seat's real pool
+          // overage regardless of whether a fresh round is currently
+          // running on top of it. The persisted overtime flag can lag
+          // behind (only rewritten on the live timer's next press/pause),
+          // so it's OR'd with the already-reconciled live pool time too.
+          const isOvertime = (overtimeFlags[i] ?? false) || (playerTimes[i] ?? 0) <= 0;
           const placement = placements[i];
           const score = scores[i];
 
