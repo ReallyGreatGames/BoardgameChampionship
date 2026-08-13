@@ -63,6 +63,31 @@ incoming seat-document update:
 3. **A stale/out-of-order update** (an initial fetch or reconnect refetch
    landing after a newer local write already applied). Should be ignored.
 
+### Same-tick multi-touch safety (`playersPausedRef`, `tickStateRef`)
+
+`handlePress`, `toggleAllPause`, and `handlePause` all read the *current*
+pause/tick state and write the *next* one — but they read and write
+`playersPausedRef.current`/`tickStateRef.current`, never the
+`playersPaused`/`tickState` state variables directly, and update both refs
+synchronously before calling `setPlayersPaused`/`setTickState`. This
+matters specifically for real simultaneous multi-touch: pressing two
+different seats at (near enough) the same physical instant can invoke
+`handlePress` twice before React re-renders in between (React defers the
+re-render — that's what batching means), so anything reading the
+`playersPaused`/`tickState` state variables directly would have both calls
+compute their "next" values from the *same* pre-press snapshot, and the
+second `setPlayersPaused` call would silently overwrite the first's result
+— i.e. only the last-processed touch would ever actually register, which
+reads exactly like "multi-touch doesn't work" even though the underlying
+gesture recognition (`Gesture.Tap()` per seat, see
+[`TimerCell`](../components/timer/TimerCell.md)) is doing its job fine.
+Refs update immediately regardless of React's render timing, so the second
+call always sees the first's result. The remote-sync effect's own
+`setPlayersPaused`/`setTickState` calls follow the same pattern (compute
+from the refs, write the refs, then call the setters) for the same reason,
+even though a same-tick collision between a remote sync and a local press
+is a much rarer case in practice than two local touches.
+
 ### Own-echo detection (`pendingWritesRef`, `pausedAtRoughlyEqual`)
 
 Every write this device sends via `persistSeatPatch` is recorded in

@@ -317,6 +317,8 @@ export function useTimerState({
   const clockOffsetEstimateRef = useRef(0);
   const playersPausedRef = useRef(playersPaused);
   playersPausedRef.current = playersPaused;
+  const tickStateRef = useRef(tickState);
+  tickStateRef.current = tickState;
   const roundSecondsTotalRef = useRef(roundSecondsTotal);
   roundSecondsTotalRef.current = roundSecondsTotal;
 
@@ -463,13 +465,17 @@ export function useTimerState({
       return;
     }
 
-    setPlayersPaused((prev) => prev.map((p, i) => outcomes[i]?.paused ?? p));
-    setTickState((prev) => ({
-      times: prev.times.map((v, i) => outcomes[i]?.poolTime ?? v),
-      roundTimesLeft: prev.roundTimesLeft.map((v, i) => outcomes[i]?.roundTimeLeft ?? v),
-      roundExpired: prev.roundExpired.map((v, i) => outcomes[i]?.roundExpired ?? v),
-      playersInOvertime: prev.playersInOvertime.map((v, i) => outcomes[i]?.inOvertime ?? v),
-    }));
+    const nextPlayersPaused = playersPausedRef.current.map((p, i) => outcomes[i]?.paused ?? p);
+    const nextTick = {
+      times: tickStateRef.current.times.map((v, i) => outcomes[i]?.poolTime ?? v),
+      roundTimesLeft: tickStateRef.current.roundTimesLeft.map((v, i) => outcomes[i]?.roundTimeLeft ?? v),
+      roundExpired: tickStateRef.current.roundExpired.map((v, i) => outcomes[i]?.roundExpired ?? v),
+      playersInOvertime: tickStateRef.current.playersInOvertime.map((v, i) => outcomes[i]?.inOvertime ?? v),
+    };
+    playersPausedRef.current = nextPlayersPaused;
+    tickStateRef.current = nextTick;
+    setPlayersPaused(nextPlayersPaused);
+    setTickState(nextTick);
   }, [existingSeats, totalSeconds, roundSecondsTotal]);
 
   const getOrCreateTimerId = useCallback(
@@ -752,6 +758,8 @@ export function useTimerState({
     const freshPaused = Array(PLAYER_COUNT).fill(true);
     const freshLastPaused: (string | null)[] = Array(PLAYER_COUNT).fill(null);
 
+    tickStateRef.current = fresh;
+    playersPausedRef.current = freshPaused;
     setTickState(fresh);
     setPlayersPaused(freshPaused);
     roundLastPausedAtRef.current = freshLastPaused;
@@ -768,12 +776,14 @@ export function useTimerState({
 
   const handlePress = (idx: number) => {
     const now = Date.now();
-    const wasPaused = playersPaused[idx];
-    const wasAllPaused = playersPaused.every(Boolean);
+    const currentPaused = playersPausedRef.current;
+    const currentTick = tickStateRef.current;
+    const wasPaused = currentPaused[idx];
+    const wasAllPaused = currentPaused.every(Boolean);
 
-    const nextPaused = [...playersPaused];
-    let nextRoundTimesLeft = tickState.roundTimesLeft;
-    let nextRoundExpired = tickState.roundExpired;
+    const nextPaused = [...currentPaused];
+    let nextRoundTimesLeft = currentTick.roundTimesLeft;
+    let nextRoundExpired = currentTick.roundExpired;
     const nextLastPaused = [...roundLastPausedAtRef.current];
     const nextCorrectedLastPaused = [...correctedLastPausedAtRef.current];
     const touchedSeats = new Set<number>([idx]);
@@ -807,8 +817,11 @@ export function useTimerState({
       lastSyncedGraceRef.current[idx] = null;
     }
 
+    const nextTick = { ...currentTick, roundTimesLeft: nextRoundTimesLeft, roundExpired: nextRoundExpired };
+    playersPausedRef.current = nextPaused;
+    tickStateRef.current = nextTick;
     setPlayersPaused(nextPaused);
-    setTickState((prev) => ({ ...prev, roundTimesLeft: nextRoundTimesLeft, roundExpired: nextRoundExpired }));
+    setTickState(nextTick);
     roundLastPausedAtRef.current = nextLastPaused;
     correctedLastPausedAtRef.current = nextCorrectedLastPaused;
 
@@ -819,9 +832,9 @@ export function useTimerState({
         seat,
         seatPatchAt(
           seat,
-          tickState.times,
+          currentTick.times,
           nextPaused,
-          tickState.playersInOvertime,
+          currentTick.playersInOvertime,
           nextRoundTimesLeft,
           nextRoundExpired,
           nextLastPaused,
@@ -834,13 +847,16 @@ export function useTimerState({
 
   const toggleAllPause = useCallback(() => {
     const now = Date.now();
+    const currentPaused = playersPausedRef.current;
+    const currentTick = tickStateRef.current;
+    const wasAllPaused = currentPaused.every(Boolean);
     const nextLastPaused = [...roundLastPausedAtRef.current];
     const nextCorrectedLastPaused = [...correctedLastPausedAtRef.current];
-    const nextPaused = Array(PLAYER_COUNT).fill(!allPaused);
-    let nextRoundTimesLeft = tickState.roundTimesLeft;
-    let nextRoundExpired = tickState.roundExpired;
+    const nextPaused = Array(PLAYER_COUNT).fill(!wasAllPaused);
+    let nextRoundTimesLeft = currentTick.roundTimesLeft;
+    let nextRoundExpired = currentTick.roundExpired;
 
-    if (allPaused) {
+    if (wasAllPaused) {
       for (let i = 0; i < PLAYER_COUNT; i++) {
         const resumed = resumeRoundState(
           i,
@@ -856,7 +872,7 @@ export function useTimerState({
         lastSyncedGraceRef.current[i] = null;
       }
     } else {
-      playersPaused.forEach((paused, i) => {
+      currentPaused.forEach((paused, i) => {
         if (paused) {
           return;
         }
@@ -864,28 +880,31 @@ export function useTimerState({
       });
     }
 
+    const nextTick = { ...currentTick, roundTimesLeft: nextRoundTimesLeft, roundExpired: nextRoundExpired };
+    playersPausedRef.current = nextPaused;
+    tickStateRef.current = nextTick;
     setPlayersPaused(nextPaused);
-    setTickState((prev) => ({ ...prev, roundTimesLeft: nextRoundTimesLeft, roundExpired: nextRoundExpired }));
+    setTickState(nextTick);
     roundLastPausedAtRef.current = nextLastPaused;
     correctedLastPausedAtRef.current = nextCorrectedLastPaused;
 
-    applyTableActiveTransition(allPaused, !allPaused, now);
+    applyTableActiveTransition(wasAllPaused, !wasAllPaused, now);
 
     for (let i = 0; i < PLAYER_COUNT; i++) {
       persistSeatPatch(
         i,
         seatPatchAt(
           i,
-          tickState.times,
+          currentTick.times,
           nextPaused,
-          tickState.playersInOvertime,
+          currentTick.playersInOvertime,
           nextRoundTimesLeft,
           nextRoundExpired,
           nextLastPaused,
         ),
       );
     }
-  }, [allPaused, playersPaused, tickState, roundSecondsTotal, persistSeatPatch, applyTableActiveTransition, pauseSeatLocally]);
+  }, [roundSecondsTotal, persistSeatPatch, applyTableActiveTransition, pauseSeatLocally]);
 
   const prevPauseModeRef = useRef(pauseMode);
   useEffect(() => {
@@ -973,26 +992,29 @@ export function useTimerState({
   }, [confirm, t, timerSettings, persistTablePatch, persistAllSeatsFresh, resetTimerLocally]);
 
   const handlePause = useCallback(() => {
-    if (playersPaused.every(Boolean)) {
+    const currentPaused = playersPausedRef.current;
+    if (currentPaused.every(Boolean)) {
       return;
     }
+    const currentTick = tickStateRef.current;
     const now = Date.now();
     const nextLastPaused = [...roundLastPausedAtRef.current];
     const nextCorrectedLastPaused = [...correctedLastPausedAtRef.current];
-    playersPaused.forEach((paused, i) => {
+    currentPaused.forEach((paused, i) => {
       if (paused) {
         return;
       }
       pauseSeatLocally(i, now, nextLastPaused, nextCorrectedLastPaused);
     });
     const nextPaused = Array(PLAYER_COUNT).fill(true);
+    playersPausedRef.current = nextPaused;
     setPlayersPaused(nextPaused);
     roundLastPausedAtRef.current = nextLastPaused;
     correctedLastPausedAtRef.current = nextCorrectedLastPaused;
 
     applyTableActiveTransition(false, true, now);
 
-    playersPaused.forEach((paused, i) => {
+    currentPaused.forEach((paused, i) => {
       if (paused) {
         return;
       }
@@ -1000,16 +1022,16 @@ export function useTimerState({
         i,
         seatPatchAt(
           i,
-          tickState.times,
+          currentTick.times,
           nextPaused,
-          tickState.playersInOvertime,
-          tickState.roundTimesLeft,
-          tickState.roundExpired,
+          currentTick.playersInOvertime,
+          currentTick.roundTimesLeft,
+          currentTick.roundExpired,
           nextLastPaused,
         ),
       );
     });
-  }, [playersPaused, tickState, persistSeatPatch, applyTableActiveTransition, pauseSeatLocally]);
+  }, [persistSeatPatch, applyTableActiveTransition, pauseSeatLocally]);
 
   const tableElapsedSeconds = computeTableElapsedSeconds(
     tableActiveAccumulatedMsRef.current,
