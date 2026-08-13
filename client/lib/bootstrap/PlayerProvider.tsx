@@ -57,8 +57,6 @@ export const PlayerProvider: FC<PropsWithChildren> = ({ children }) => {
     })();
   }, []);
 
-  // Validate stored player against the player store once it first loads.
-  // Only triggers on the empty→populated transition; skips mid-session updates.
   useEffect(() => {
     if (playerStoreCollection.length === 0) {
       storeWasEmpty.current = true;

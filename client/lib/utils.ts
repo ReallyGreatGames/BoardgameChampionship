@@ -65,11 +65,6 @@ export function formatElapsedSeconds(seconds: number) {
   return `${m}:${s}`;
 }
 
-/** Table-wide elapsed seconds — accumulated milliseconds from past active
- *  stretches, plus (while `resumedAtIso` is set) wall-clock time since then.
- *  Shared by the live timer (useTimerState.ts) and the read-only results
- *  dashboard (TableCard.tsx) so the two can't drift apart — see Timer's
- *  tableActiveAccumulatedMs/tableActiveResumedAt doc comments. */
 export function computeTableElapsedSeconds(
   accumulatedMs: number,
   resumedAtIso: string | null | undefined,
@@ -86,20 +81,6 @@ export type RoundPoolReconcileResult = {
   roundExpired: boolean[];
 };
 
-/** Fast-forwards each unpaused seat's round time and pool time for elapsed
- *  real time since ITS OWN doc was last saved — saves only happen on
- *  press/pause/reset, not every tick. Consumes round time first (while
- *  `roundSecondsTotal > 0` and the seat hasn't already expired its round),
- *  then spills any remaining elapsed seconds onto the pool — mirrors what
- *  useTimerState.ts's per-second tick loop would have done. Used both by the
- *  interactive timer (on reconnect) and the read-only results dashboard, so
- *  pool time never appears to drain during a seat's round-time phase.
- *
- *  `updatedAt` is per-seat (one `$updatedAt` per index), not a single shared
- *  value — each seat now lives in its own document (see
- *  lib/models/timer-seat.ts), so a seat that hasn't been touched in a while
- *  fast-forwards from its OWN last-saved moment rather than borrowing
- *  whichever seat happened to be updated most recently on the table. */
 export function reconcileRoundAndPool(
   poolTimes: number[],
   roundTimesLeft: number[],
@@ -135,7 +116,6 @@ export function reconcileRoundAndPool(
   return { poolTimes: nextPool, roundTimesLeft: nextRound, roundExpired: nextExpired };
 }
 
-/** Normalizes playerTimes — real-time payloads may serialize arrays as JSON strings */
 export function toNumberArray(value: unknown): number[] {
   if (Array.isArray(value)) {return value as number[];}
   if (typeof value === "string") {
@@ -152,9 +132,6 @@ export function toBooleanArray(value: unknown): boolean[] {
   return [];
 }
 
-/** Value-equality for flat arrays of primitives — cheaper than a
- *  `JSON.stringify` comparison and used on hot paths (e.g. detecting a
- *  realtime update that's just the echo of this device's own write). */
 export function arraysEqual<T>(a: T[], b: T[]): boolean {
   if (a.length !== b.length) {return false;}
   for (let i = 0; i < a.length; i++) {
@@ -164,29 +141,12 @@ export function arraysEqual<T>(a: T[], b: T[]): boolean {
 }
 
 export type EffectiveTimerSettings = {
-  /** Whether this table has a deliberate per-table override — see below. */
   hasCustomTimer: boolean;
   effectiveDuration: number | undefined;
   roundSecondsTotal: number;
   direction: NonNullable<Timer["direction"]>;
 };
 
-/** Resolves the timer settings that actually apply to a table: its own
- *  deliberate override, or the game's default. `hasCustomTimer` is the
- *  authoritative signal for "this table was customized" — durationMinutesTotal/
- *  roundSecondsTotal are numbers Appwrite defaults to `0` when never
- *  explicitly set, indistinguishable from a deliberately-chosen `0` (e.g.
- *  round timer disabled on purpose) without it.
- *
- *  Timer docs saved before `hasCustomTimer` existed have the field as
- *  `undefined` but may still carry a genuine custom duration from back then
- *  — inferred from that instead of silently losing the override on rollout.
- *  A table explicitly reverted via "use default timer" has `hasCustomTimer
- *  === false` set deliberately, which must NOT fall into that legacy
- *  inference (checked via `=== undefined`, not just falsy).
- *
- *  Shared by the live timer (useTimerState.ts) and the read-only results
- *  dashboard (ResultsAdminTab.tsx) so the two can't drift apart. */
 export function resolveEffectiveTimer(
   timer:
     | Pick<Timer, "hasCustomTimer" | "durationMinutesTotal" | "roundSecondsTotal" | "direction">
@@ -210,13 +170,10 @@ export function resolveEffectiveTimer(
   return { hasCustomTimer, effectiveDuration, roundSecondsTotal, direction };
 }
 
-/** Handles Appwrite returning team as hydrated Team object OR bare string $id */
 export function teamName(player: Player): string {
   return typeof player.team === "string" ? player.team : player.team.name;
 }
 
-/** SVGs saved by signature.tsx lack viewBox, causing SvgXml to clip.
- *  Injects viewBox from width/height attrs so the content scales. */
 export function injectViewBox(xml: string): string {
   if (xml.includes("viewBox")) { return xml; }
   return xml.replace(/<svg([^>]*)>/, (_, attrs: string) => {
@@ -227,7 +184,6 @@ export function injectViewBox(xml: string): string {
   });
 }
 
-/** Handles string, object, or array shapes Appwrite may return for relationship fields */
 export function resolveGameId(ref: unknown): string | null {
   if (!ref) {return null;}
   if (typeof ref === "string") {return ref;}

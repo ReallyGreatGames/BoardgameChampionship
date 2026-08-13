@@ -118,8 +118,6 @@ export default function TimerPage() {
     }
   };
 
-  // Top row = seats [0,1], bottom row = seats [3,2] — mirrors the seat/color
-  // setup grid in PlayerColorSetupModal.tsx.
   const seatOrder: number[][] = [
     [0, 1],
     [3, 2],
@@ -206,12 +204,6 @@ export default function TimerPage() {
         }}
         customTimerOpen={customTimerOpen}
         onCloseCustomTimer={() => setCustomTimerOpen(false)}
-        // Reuse the hook's already-resolved values instead of re-deriving
-        // them here — `hasCustomTimer` is what correctly distinguishes a
-        // deliberate per-table override (including an explicit `0` round
-        // time) from a table that was never customized, which comparing the
-        // raw stored numbers/strings against the game default can't (see
-        // useTimerState.ts).
         initialDuration={effectiveDuration}
         initialDirection={direction}
         initialRoundSeconds={roundSecondsTotal}

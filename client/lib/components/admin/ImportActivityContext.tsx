@@ -1,7 +1,6 @@
 import { createContext, PropsWithChildren, useContext, useState } from "react";
 
 type ImportActivityContextValue = {
-  /** Whether an import/delete operation is actively running somewhere in the admin dashboard. */
   busy: boolean;
   setBusy: (busy: boolean) => void;
 };

@@ -1,11 +1,6 @@
 const TABLE_POINTS = [5, 3, 2, 1];
 const PLAYER_COUNT = 4;
 
-/**
- * Valid placement combos for 4 players follow the block rule:
- * first value must be 1, each block of equal values v with count n
- * must be followed by v+n (or end of array).
- */
 export function isValidPlacementCombo(placements: string[]): boolean {
   if (placements.length !== PLAYER_COUNT) return false;
   if (placements.some((p) => !p || isNaN(Number(p)))) return false;
@@ -25,12 +20,6 @@ export function isValidPlacementCombo(placements: string[]): boolean {
   return true;
 }
 
-/**
- * Returns true if any player with a better rank (lower place number)
- * has a strictly lower score than a player with a worse rank.
- * Equal scores at different places are fine (tiebreakers exist).
- * Skips pairs where placement or score is missing.
- */
 export function hasScorePlacementConflict(
   placements: string[],
   scores: string[],
@@ -52,19 +41,13 @@ export function hasScorePlacementConflict(
   return false;
 }
 
-/**
- * Compute tournament points per player seat.
- * Points scale: 5-3-2-1.
- * Draws: the points for the shared places are averaged.
- * Returns null for each seat if any placement is missing.
- */
 export function computeTablePoints(placements: string[]): (number | null)[] {
   if (placements.some((p) => !p || isNaN(Number(p)))) {
     return Array(PLAYER_COUNT).fill(null);
   }
 
   const result: (number | null)[] = Array(PLAYER_COUNT).fill(null);
-  const groups = new Map<number, number[]>(); // place → seat indices
+  const groups = new Map<number, number[]>();
 
   for (let i = 0; i < placements.length; i++) {
     const place = Number(placements[i]);
@@ -106,11 +89,6 @@ export type TeamRanking = {
   players: PlayerStat[];
 };
 
-/**
- * Compute team rankings from aggregated player stats.
- * Tiebreaker order: totalPoints DESC → avgPlacement ASC →
- * secondPlaces DESC → thirdPlaces DESC → best individual placements.
- */
 export function rankTeams(
   playerStats: PlayerStat[],
   teams: { id: string; name: string; code: string }[],
@@ -162,7 +140,6 @@ export function rankTeams(
     if (b.secondPlaces !== a.secondPlaces) return b.secondPlaces - a.secondPlaces;
     if (b.thirdPlaces !== a.thirdPlaces) return b.thirdPlaces - a.thirdPlaces;
 
-    // Best individual: compare sorted placements element by element
     const sortedA = [...(teamMap.get(a.teamId)?.allPlacements ?? [])].sort(
       (x, y) => x - y,
     );

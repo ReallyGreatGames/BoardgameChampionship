@@ -3,12 +3,6 @@ import { create } from "zustand";
 import { LOTTERY_BUCKET_ID, storage } from "../../appwrite";
 import { RealtimeCollectionStore } from "../real-time-store";
 
-/**
- * Lottery photos have no database row — the bucket listing itself is the
- * source of truth (see lib/utils/lottery.ts for the filename convention that
- * encodes which game a photo belongs to). This store just mirrors that
- * bucket's file list and stays live via the bucket's own realtime channel.
- */
 interface LotteryFilesState extends RealtimeCollectionStore<Models.File> {
   init: () => Promise<void>;
 }

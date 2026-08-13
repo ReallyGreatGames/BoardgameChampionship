@@ -24,19 +24,13 @@ import { SignatureStatusIcon } from "@/lib/components/results/SignatureStatusIco
 import { StateBadge } from "@/lib/components/results/StateBadge";
 
 const PLAYER_COUNT = 4;
-// A seat with no document yet is always treated as paused (see the
-// fallbacks below), so this placeholder is never actually read for a real
-// elapsed-time computation — hoisted so building it isn't repeated per seat
-// per render.
 const EPOCH_ISO = new Date(0).toISOString();
 
 type Props = {
   entry: TableEntry;
   cardWidth: number;
   now: number;
-  /** If provided, card is tappable and navigates to input mode. */
   onPress?: () => void;
-  /** If provided, a bell action button is shown. */
   onBellPress?: () => void;
   bellLoading?: boolean;
 };
@@ -59,15 +53,6 @@ export function TableCard({
   const missingSig =
     !!entry.result && sigIds.length > 0 && sigIds.some((id) => !id);
 
-  // Seats with no seat document yet (never touched) default to "full
-  // pool"/"paused"/"fresh round" — matches useTimerState.ts's own defaults.
-  // Each seat now lives in its own document (see lib/models/timer-seat.ts),
-  // so a "missing" seat is simply absent from `entry.seats` rather than a
-  // too-short array. Resolved once per seat here rather than re-scanning
-  // `entry.seats` in each of the five memos below. Memoized off the raw
-  // seat docs so identity stays stable across the once-a-second re-renders
-  // driven by `now`, which is what lets the `playerTimes` memo further down
-  // actually skip recomputing `reconcileRoundAndPool` most ticks.
   const seatByIndex = useMemo(
     () => Array.from({ length: PLAYER_COUNT }, (_, i) => entry.seats.find((s) => s.seat === i)),
     [entry.seats],
@@ -83,18 +68,8 @@ export function TableCard({
   );
   const roundExpired = useMemo(() => seatByIndex.map((s) => s?.roundExpired ?? false), [seatByIndex]);
   const overtimeFlags = useMemo(() => seatByIndex.map((s) => s?.inOvertime ?? false), [seatByIndex]);
-  // Per-seat `$updatedAt`, one per index — reconcileRoundAndPool fast-
-  // forwards each seat from ITS OWN last-saved moment now that seats are
-  // separate documents (see its doc comment). A seat with no document yet
-  // is always paused via the fallback above, so this placeholder timestamp
-  // is never actually read.
   const seatUpdatedAt = useMemo(() => seatByIndex.map((s) => s?.$updatedAt ?? EPOCH_ISO), [seatByIndex]);
 
-  // Same derivation as useTimerState.ts's tableElapsedSeconds — accumulated
-  // milliseconds from past active stretches, plus (while a seat is still
-  // running) wall-clock time since the table's `tableActiveResumedAt`. Null
-  // when the timer's never been touched at all, to tell "never started"
-  // apart from a genuine 0.
   const tableElapsedSeconds = useMemo(() => {
     const timer = entry.timer;
     if (!timer) {
@@ -105,9 +80,6 @@ export function TableCard({
     return computeTableElapsedSeconds(accumulatedMs, timer.tableActiveResumedAt, now);
   }, [entry.timer?.tableActiveAccumulatedMs, entry.timer?.tableActiveResumedAt, now]);
 
-  // Pool time must not appear to drain while a seat is still in its
-  // round-time phase — reconcile both together, same as the live timer, and
-  // only surface the pool half here.
   const playerTimes = useMemo(() => {
     const timer = entry.timer;
     if (!timer || entry.isSubmitted) {
@@ -137,11 +109,6 @@ export function TableCard({
   const displayTime = (seconds: number) =>
     entry.timerDirection === "up" ? entry.timerTotalSeconds - seconds : seconds;
 
-  // Pool time goes negative once exhausted (both directions tick the same
-  // underlying value — see useTimerState.ts). `formatTime` clamps negatives
-  // to 00:00, which froze the display at zero for "down" and let "up" grow
-  // past the total instead — neither showed how far over anyone actually is.
-  // Once in overtime, show just the overage, regardless of direction.
   const formatPlayerTime = (seconds: number, isOvertime: boolean) =>
     isOvertime ? `+${formatTime(-seconds)}` : formatTime(displayTime(seconds));
 
@@ -164,31 +131,29 @@ export function TableCard({
       ]}
       {...wrapperProps}
     >
-      {/* Header */}
+      {}
       <View style={styles.cardHeader}>
         <Text style={styles.tableLabel}>
           {t("tableLabel").replace("{n}", String(entry.id))}
         </Text>
 
         <View style={styles.headerRight}>
-          {/* Table-wide elapsed time — only once the timer's been touched
-              at all (see tableElapsedSeconds), small/secondary like on the
-              live timer screen's own display. */}
+          {}
           {tableElapsedSeconds !== null && (
             <View style={styles.indicatorChip}>
               <Ionicons name="time-outline" size={12} color={colors.textSecondary} />
               <Text style={styles.indicatorLabel}>{formatElapsedSeconds(tableElapsedSeconds)}</Text>
             </View>
           )}
-          {/* Result status */}
+          {}
           {entry.result && (
             <StateBadge result={entry.result} t={t} />
           )}
-          {/* Missing signature warning */}
+          {}
           {missingSig && (
             <Ionicons name="warning-outline" size={16} color={colors.error} />
           )}
-          {/* Note indicator */}
+          {}
           {entry.hasNote && (
             <View style={styles.indicatorChip}>
               <Ionicons name="document-text-outline" size={13} color={colors.textSecondary} />
@@ -198,7 +163,7 @@ export function TableCard({
         </View>
       </View>
 
-      {/* Bell row — shown when a bell exists */}
+      {}
       {bell && (
         <View
           style={[
@@ -245,19 +210,10 @@ export function TableCard({
         </View>
       )}
 
-      {/* Players grid */}
+      {}
       <View style={styles.playersRow}>
         {entry.players.map((player, i) => {
           const isRunning = entry.timer ? !pausedFlags[i] : false;
-          // Deliberately NOT gated on round-active the way TimerCell.tsx's
-          // `showOvertimeLook` is on the live timer — that suppression is a
-          // player-facing UX choice (don't flash red mid-round for a
-          // still-acting player), which is the wrong call for this
-          // staff-facing dashboard: it should show a seat's real pool
-          // overage regardless of whether a fresh round is currently
-          // running on top of it. The persisted overtime flag can lag
-          // behind (only rewritten on the live timer's next press/pause),
-          // so it's OR'd with the already-reconciled live pool time too.
           const isOvertime = (overtimeFlags[i] ?? false) || (playerTimes[i] ?? 0) <= 0;
           const placement = placements[i];
           const score = scores[i];
@@ -272,7 +228,7 @@ export function TableCard({
               </Text>
 
               <View style={styles.playerDataRow}>
-                {/* Timer or placement/score */}
+                {}
                 {entry.timer && !entry.isSubmitted ? (
                 isRunning ? (
                   <View
@@ -313,7 +269,7 @@ export function TableCard({
                   </View>
                 ) : null}
 
-                {/* Signature status */}
+                {}
                 {entry.result && (
                   <SignatureStatusIcon
                     index={i}

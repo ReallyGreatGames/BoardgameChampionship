@@ -10,10 +10,6 @@ import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
 import { SeatStats } from "@/lib/utils/statistics";
 
-/**
- * Placement is ordinal (1st is strictly better than 2nd, etc.), so slices are
- * one hue at monotone opacity steps rather than unrelated categorical colors.
- */
 const PLACEMENT_OPACITIES = ["FF", "CC", "88", "44"];
 
 type Props = {

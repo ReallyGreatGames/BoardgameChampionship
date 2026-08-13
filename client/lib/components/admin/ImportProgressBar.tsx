@@ -15,7 +15,6 @@ type ImportProgressBarProps = {
   total: number;
   succeeded: number;
   failedItems: FailedItem[];
-  /** Whether this phase is the one currently running (vs. pending or done). */
   active: boolean;
   onRetry?: () => void;
 };

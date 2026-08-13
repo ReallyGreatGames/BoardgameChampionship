@@ -26,11 +26,6 @@ type Props = {
   directionUpLabel: string;
 };
 
-/**
- * Shared duration/round-time/direction fields — used by both the per-table
- * custom timer override (CustomTimerModal) and the per-game default timer
- * settings (TimerSettingsModal) so the two forms can't drift apart.
- */
 export function TimerDurationFields({
   duration,
   onDurationChange,

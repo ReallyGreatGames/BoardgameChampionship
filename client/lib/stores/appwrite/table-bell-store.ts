@@ -30,9 +30,6 @@ export const useTableBellStore = create<TableBellState>((set) => {
       await fetchCollection<TableBell, TableBellState>(key, set);
     },
 
-    // Deterministic per-table id — only one active bell may exist per table,
-    // so two simultaneous ring attempts (staff or auto-ring racing across
-    // devices) converge on one row instead of each creating their own.
     add: async (data: Omit<TableBell, keyof Models.Document>) =>
       await addToCollection(key, data, {
         rowId: bellRowId(data.table),

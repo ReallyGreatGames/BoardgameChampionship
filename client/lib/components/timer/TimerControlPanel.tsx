@@ -26,17 +26,9 @@ type Props = {
   bellDisabled?: boolean;
   allPaused: boolean;
   onToggleAllPause: () => void;
-  /** Total time the table has had at least one seat running, pre-formatted
-   *  (mm:ss) — deliberately small/secondary here, not a focal element (see
-   *  useTimerState's tableElapsedSeconds). */
   tableElapsedLabel: string;
 };
 
-/**
- * Replaces the old small round menu-trigger button in the center of the
- * timer screen: a compact row of icon toggles (orientation, menu, pause
- * mode) on top of two full-width action bars (table bell, pause/resume all).
- */
 export function TimerControlPanel({
   onOpenMenu,
   orientationMode,
@@ -70,9 +62,7 @@ export function TimerControlPanel({
       ]}
       pointerEvents="box-none"
     >
-      {/* Small and non-interactive on purpose — the whole-table elapsed
-          time is useful context, not something anyone needs to focus on
-          (see useTimerState's tableElapsedSeconds doc comment). */}
+      {}
       <View style={styles.tableElapsedRow}>
         <Ionicons name="time-outline" size={14} color={colors.textMuted} />
         <Text style={[type.eyebrow, { color: colors.textMuted }]}>

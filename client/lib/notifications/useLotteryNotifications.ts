@@ -5,7 +5,6 @@ import { useScheduleStore } from "../stores/appwrite/schedule-store";
 import { parseLotteryFileName } from "../utils/lottery";
 import { requestNotificationPermissions, triggerLocalNotification } from "./localNotify";
 
-/** Notifies non-admin users when a new lottery photo is uploaded, for any game. */
 export function useLotteryNotifications(isAdmin: boolean) {
   const collection = useLotteryStore((s) => s.collection);
   const schedules = useScheduleStore((s) => s.collection);
@@ -40,10 +39,6 @@ export function useLotteryNotifications(isAdmin: boolean) {
     );
 
     newPhotos.forEach((photo) => {
-      // collection can be re-set multiple times for the same upload (the
-      // realtime `create` event, plus the explicit post-upload refresh that
-      // closes the app-backgrounding race) — track what we've already
-      // notified for so each photo only ever triggers one notification.
       notifiedIdsRef.current.add(photo.$id);
       const gameId = parseLotteryFileName(photo.name)?.gameId;
       const gameName = schedules.find((s) => s.gameId === gameId)?.title;

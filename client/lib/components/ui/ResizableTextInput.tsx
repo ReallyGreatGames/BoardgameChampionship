@@ -16,7 +16,6 @@ type ResizableTextInputProps = {
   onChangeText: (v: string) => void;
   placeholder?: string;
   style?: TextStyle;
-  /** Height resets to the default whenever this becomes true (e.g. pass the modal's `visible` prop). */
   resetOn: boolean;
 };
 

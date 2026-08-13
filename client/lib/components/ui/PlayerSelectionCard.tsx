@@ -10,13 +10,9 @@ import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
-  /** Navigation origin — determines where choose-your-character returns after selection. */
   from?: "settings" | "game";
-  /** Called instead of navigating when set (e.g. inline step transition in setup screen). */
   onPress?: () => void;
-  /** Bypass the allowUserChange schedule flag — always show the change button. */
   forceAllow?: boolean;
-  /** Game ID to pass through when from="game". */
   gameId?: string;
 };
 

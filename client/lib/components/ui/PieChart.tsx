@@ -23,7 +23,6 @@ function slicePath(cx: number, cy: number, r: number, startAngle: number, endAng
   return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 1 ${end.x} ${end.y} Z`;
 }
 
-/** Simple pie chart. Slices are drawn in order starting at 12 o'clock, clockwise. */
 export function PieChart({ slices, size = 88 }: Props) {
   const { colors } = useTheme();
   const total = slices.reduce((s, sl) => s + sl.value, 0);

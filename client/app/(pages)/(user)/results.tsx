@@ -47,7 +47,6 @@ export default function ResultsPage() {
   const tableNumber = usePlayerTable(gameId);
   const tables = useTableStore((s) => s.collection);
 
-  // Player names ordered by seat index
   const playerData = useMemo(() => {
     if (!gameId || tableNumber === null) return [];
     const entry = tables.find((tbl) => {
@@ -70,7 +69,6 @@ export default function ResultsPage() {
     [resultStore.collection, gameId, tableNumber],
   );
 
-  // State: all arrays are seat-indexed (index = seat at table)
   const [placements, setPlacements] = useState<string[]>(() =>
     Array(PLAYER_COUNT).fill(""),
   );
@@ -87,7 +85,6 @@ export default function ResultsPage() {
   const acknowledgedAtRef = useRef<string | null>(null);
   const ownSaveRef = useRef(false);
 
-  // Refs for score/chip tab order
   const scoreRefs = useRef<(PlayerResultRowHandle | null)[]>([null, null, null, null]);
   const noteRef = useRef<TextInput | null>(null);
 
@@ -231,7 +228,6 @@ export default function ResultsPage() {
   const handleSubmit = useCallback(async () => {
     if (submitting) return;
 
-    // Always try to save first
     if (canSave) {
       const saved = await handleSave();
       if (!saved) return;
@@ -406,7 +402,7 @@ export default function ResultsPage() {
             );
           })}
 
-          {/* Error / hint area — anchored inside the card so the card position never shifts */}
+          {}
           {(scoreConflict || !placementComboValid || (signatureCount < 3 && !isSubmitted && isActiveGame)) && (
             <View style={styles.cardErrors}>
               {scoreConflict && (
@@ -463,7 +459,7 @@ export default function ResultsPage() {
           )}
         </View>
 
-        {/* Single submit button */}
+        {}
         <TouchableOpacity
           style={[
             styles.submitBtn,

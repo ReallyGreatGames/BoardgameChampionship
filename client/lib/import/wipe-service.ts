@@ -17,11 +17,8 @@ export type WipeItem = {
 };
 
 export type WipeGroup = {
-  /** Stable key identifying this group, e.g. "teams" */
   key: string;
-  /** Human-readable label for the progress UI, e.g. "Teams" */
   label: string;
-  /** Appwrite table (collection) ID the items belong to */
   tableId: string;
   items: WipeItem[];
 };
@@ -51,7 +48,6 @@ function retry<T>(fn: () => Promise<T>): Promise<T> {
   return withRetry(fn, { shouldRetry: isRateLimit });
 }
 
-/** Fetches every row in a table, paging past Appwrite's per-request row limit. */
 export async function listAllRows<T>(
   tableId: string,
 ): Promise<(T & { $id: string })[]> {
@@ -76,17 +72,6 @@ export async function listAllRows<T>(
   return rows;
 }
 
-/**
- * Deletes each item one at a time, reporting status per item via onStatus.
- * Keeps going past individual failures so the whole group's failures can be
- * retried together afterward, instead of aborting the entire wipe on the
- * first error.
- *
- * A "row not found" error is treated as success, not failure: some rows
- * (e.g. players) are cascade-deleted by Appwrite when their parent row
- * (e.g. their team) is removed first, so by the time we get to them
- * explicitly they're already gone — which is exactly the outcome we wanted.
- */
 export async function deleteItems(
   tableId: string,
   items: WipeItem[],
@@ -140,13 +125,6 @@ function timerGroup(timers: (RawTimer & { $id: string })[]): WipeGroup {
   };
 }
 
-/**
- * Everything that must be cleared before re-importing teams & players:
- * the teams themselves (deleting a team cascade-deletes its players via
- * Appwrite's relationship attribute, so players never need to be deleted
- * explicitly), plus every table seating and timer that could reference
- * their (about to be invalidated) row ids.
- */
 export async function listPlayersWipePlan(): Promise<WipeGroup[]> {
   const [teams, tables, timers] = await Promise.all([
     listAllRows<RawTeam>("teams"),
@@ -166,11 +144,6 @@ export async function listPlayersWipePlan(): Promise<WipeGroup[]> {
   ];
 }
 
-/**
- * Everything that must be cleared before re-importing table seatings: the
- * seatings themselves, plus every timer (a reseat can put a different set of
- * players at a table an existing timer already refers to).
- */
 export async function listTablesWipePlan(): Promise<WipeGroup[]> {
   const [tables, timers] = await Promise.all([
     listAllRows<RawTable>("tables"),

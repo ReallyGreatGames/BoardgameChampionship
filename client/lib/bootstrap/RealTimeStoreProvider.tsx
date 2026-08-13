@@ -19,20 +19,6 @@ import { useTimerStore } from "../stores/appwrite/timer-store";
 import { useTournamentStore } from "../stores/appwrite/tournament-store";
 import { subscribeTier } from "../stores/real-time-store";
 
-/**
- * Initializes realtime store subscriptions after authentication.
- *
- * Add store init hooks to the arrays below:
- *   globalInits — runs immediately, no auth required
- *   userInits   — runs once when any authenticated user (PIN or admin) is ready
- *   adminInits  — runs once when an admin session is ready
- *
- * Each tier's stores fetch their own initial data independently (their own
- * init()), but share a single realtime subscription per tier — Appwrite
- * multiplexes every subscription onto one shared WebSocket regardless, and
- * subscribing once per tier (instead of once per store) avoids the socket
- * being torn down and rebuilt once per collection on every reconnect.
- */
 
 const globalInits = [useFeatureFlagStore, useTournamentStore];
 

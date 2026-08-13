@@ -16,10 +16,8 @@ export type Set<
   ...args: any[]
 ) => void;
 
-/** Loosely typed on purpose — each store's concrete `set` is typed against its own state shape, which isn't structurally assignable to a shared field type without variance issues. */
 export type RealtimeSetter = (partialState: any) => void;
 
-/** Minimal shape the realtime dedupe/merge logic actually needs — satisfied by both Models.Document and Models.File. */
 export type RealtimeEntity = {
   $id: string;
   $updatedAt?: string;
@@ -29,18 +27,8 @@ export type RealtimeEntity = {
 export interface RealtimeCollectionStore<T extends RealtimeEntity> {
   collection: T[];
   key: Key;
-  /** Setter realtime updates are relayed through — usually the store's raw zustand `set`, but may wrap it (e.g. to derive extra state). */
   realtimeSet: RealtimeSetter;
-  /** Overrides the default `databases.*.collections.*.documents` channel — for non-document resources (e.g. a storage bucket's file events). */
   channel?: string;
-  /** Names of this document's Appwrite RELATIONSHIP attributes (e.g. "team",
-   *  "playerPositions") — see updateRealtimeCollectionUpdate's doc comment
-   *  for why ONLY these fields get the "incoming null/empty-array probably
-   *  just means Appwrite omitted this relationship" treatment. Omit (or
-   *  leave empty) for collections with no relationship attributes — this is
-   *  the correct default; the merge fix that introduced this parameter
-   *  exists BECAUSE applying that treatment to a plain nullable field was
-   *  actively wrong. */
   relationshipFields?: readonly string[];
   init: () => void | Promise<void>;
 }
@@ -77,12 +65,7 @@ export async function addToCollection<T>(
   key: Key,
   data: Omit<T, keyof Models.Document>,
   options?: {
-    /** Use a stable id instead of `ID.unique()` — see `silentOnConflict`. */
     rowId?: string;
-    /** When the `rowId` already exists (another device created it a moment
-     *  earlier), fetch and return that row instead of showing an error. This
-     *  is what makes a deterministic `rowId` safe: concurrent creators
-     *  converge on the same document rather than each creating their own. */
     silentOnConflict?: boolean;
   },
 ): Promise<T | null> {
@@ -185,22 +168,10 @@ export async function fetchCollection<
 type TierEntry = {
   key: Key;
   set: RealtimeSetter;
-  /** Overrides the default `databases.*.collections.*.documents` channel — for non-document resources (e.g. a storage bucket's file events). */
   channel?: string;
-  /** See RealtimeCollectionStore's doc comment. */
   relationshipFields?: readonly string[];
 };
 
-/**
- * Opens a single realtime subscription covering every collection in
- * `entries`, relaying each incoming event to the matching store's setter.
- * Appwrite's SDK multiplexes all subscriptions onto one shared WebSocket
- * regardless — but every independent `client.subscribe()` call forces that
- * socket to be torn down and recreated, since its URL is derived from *all*
- * currently subscribed channels. Subscribing once per tier (instead of once
- * per store) keeps that churn to one reconnect per tier transition, instead
- * of one per collection.
- */
 export function subscribeTier(entries: TierEntry[]): () => void {
   if (entries.length === 0) {
     return () => {};
@@ -250,7 +221,6 @@ function updateRealtimeCollectionCreate<T extends Models.Document>(
   collection: T[],
   payload: T,
 ) {
-  // already present — ignore duplicate create
   if (collection.some((c) => c.$id === payload.$id)) {
     console.debug([`[realtime] collection create deduped`, payload]);
     return collection;
@@ -267,7 +237,6 @@ function updateRealtimeCollectionUpdate<T extends Models.Document>(
   payload: T,
   relationshipFields: readonly string[],
 ) {
-  // no existing entry — insert to be safe
   const id = collection.findIndex((item) => item.$id === payload.$id);
   if (id === -1) {
     console.debug([`[realtime] collection update fallback add`, payload]);
@@ -283,7 +252,6 @@ function updateRealtimeCollectionUpdate<T extends Models.Document>(
     ? new Date((payload as any).$updatedAt).getTime()
     : 0;
 
-  // older or same update — ignore
   if (payloadUpdated && existingUpdated && payloadUpdated <= existingUpdated) {
     console.debug([`[realtime] collection update deduped`, payload]);
     return collection;
@@ -291,17 +259,6 @@ function updateRealtimeCollectionUpdate<T extends Models.Document>(
 
   console.debug([`[realtime] collection update`, payload]);
 
-  // Appwrite realtime payloads may omit RELATIONSHIP fields specifically
-  // (returning null for a to-one relation, [] for a to-many one) when the
-  // update didn't touch that relation — preserve the existing value there so
-  // relationship-based filters don't break. Deliberately scoped to ONLY the
-  // caller-declared `relationshipFields` (see RealtimeCollectionStore's doc
-  // comment): applying this blanket to every field used to also catch
-  // plain nullable attributes (e.g. Timer's `tableActiveResumedAt`,
-  // TimerSeat's `roundLastPausedAt`) — a legitimate write that clears one of
-  // THOSE back to null got silently reverted to its old non-null value by
-  // this exact logic, which is a real, previously-shipped bug, not a
-  // hypothetical.
   const merged: any = { ...existing, ...payload };
   for (const key of relationshipFields) {
     const pv = (payload as any)[key];
@@ -327,7 +284,6 @@ function updateRealtimeCollectionDelete<T extends Models.Document>(
   collection: T[],
   payload: T,
 ) {
-  // nothing to delete
   if (!collection.some((c) => c.$id === payload.$id)) {
     console.debug([`[realtime] collection delete deduped`, payload]);
     return collection;
@@ -340,8 +296,6 @@ function updateRealtimeCollectionDelete<T extends Models.Document>(
 }
 
 function isNewUpdate(key: string, payload: any, eventType: string): boolean {
-  // Include $updatedAt so each distinct update has a unique key.
-  // Only true duplicate events (same document, same timestamp, fired twice) are dropped.
   const updatedAt = payload.$updatedAt ?? payload.$createdAt ?? "";
   const dedupeKey = `${key}:${payload.$id}:${eventType}:${updatedAt}`;
   const now = Date.now();

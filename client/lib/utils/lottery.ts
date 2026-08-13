@@ -1,10 +1,5 @@
 import { Models } from "react-native-appwrite";
 
-/**
- * Lottery photos have no database row — the game they belong to is encoded
- * directly in the storage file's name (`lottery_<gameId>_<uploadedAt>.<ext>`),
- * and the bucket listing is the source of truth.
- */
 const FILENAME_PATTERN = /^lottery_(.+)_(\d+)\.[^.]+$/;
 
 export function buildLotteryFileName(gameId: string, extension: string): string {
@@ -26,7 +21,6 @@ export type NumberedLotteryPhoto = {
   number: number;
 };
 
-/** Filters a bucket file listing down to one game's photos, numbered by upload order (oldest = 1), newest first. */
 export function getLotteryPhotosForGame(
   files: Models.File[],
   gameId: string,

@@ -16,9 +16,6 @@ import { useTranslation } from "react-i18next";
 import { TimerOrientationMode } from "@/lib/hooks/useTimerLocalSettings";
 
 const PLAYER_COUNT = 4;
-/** Rotation per seat index for "center" orientation — text faces outward, as
- *  if the app sits in the middle of the table. "side" orientation skips this
- *  entirely so every seat's text faces the same direction (see timer.tsx). */
 const CENTER_ROTATIONS = ["180deg", "180deg", "0deg", "0deg"] as const;
 
 const TEXT_SHADOW = {
@@ -27,11 +24,6 @@ const TEXT_SHADOW = {
   textShadowRadius: 4,
 } as const;
 
-// Fixed (theme-independent) colors for the small badges overlaid on the cell.
-// The cell's own background is an arbitrary, often-dark player color, so
-// theme tokens like `colors.textMuted`/`colors.primary` can't be relied on
-// for contrast — a translucent dark backdrop + light border keeps these
-// legible against any player color, same reasoning as TEXT_SHADOW above.
 const BADGE_BG = "rgba(0,0,0,0.4)";
 const BADGE_BORDER = "rgba(255,255,255,0.55)";
 const NAME_TEXT_COLOR = "#f2f6fb";
@@ -85,14 +77,6 @@ export function TimerCell({
   const isDepleted = playersInOvertime[idx];
   const rotation = orientationMode === "side" ? "0deg" : CENTER_ROTATIONS[idx] ?? "0deg";
 
-  // graceAnim reaching 1 means the 3s pause-safety window has fully charged
-  // — resuming now would reset the round. Mirrored into real state (not just
-  // an opacity interpolation) so the badge doesn't just fade invisible while
-  // still holding its layout spot — the pool time needs to actually take
-  // over the big center spot at that point, same as a genuinely expired round.
-  // The swap itself is delayed slightly past the threshold so the bar
-  // actually gets to render fully charged for a moment first, instead of the
-  // badge (and the bar with it) disappearing in the same instant it finishes.
   const [graceExpired, setGraceExpired] = useState(false);
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -117,15 +101,8 @@ export function TimerCell({
     };
   }, [graceAnim]);
 
-  // While a round is running (and its grace window hasn't already run out),
-  // the round badge (shield + countdown, styled as a badge — border,
-  // background, icon) takes over the big, centered spot; the pool time
-  // shrinks to a small line above it. The instant the round expires — or its
-  // grace window runs out while paused — the badge is gone entirely and the
-  // pool time takes back the big center spot, exactly as without round-time.
   const roundActive = roundSecondsTotal > 0 && !roundExpired;
   const showBadge = roundActive && !graceExpired;
-  // "TIME OUT" only makes sense when the pool is the thing being shown big.
   const showTimeOut = isDepleted && !showBadge;
 
   const isLeftCol = PLAYER_COUNT === 4 ? idx === 0 || idx === 3 : null;
@@ -147,10 +124,6 @@ export function TimerCell({
       ? { top: 0, bottom: 0, [overlayAnchor]: 0, width: overlaySize }
       : { left: 0, right: 0, [overlayAnchor]: 0, height: overlaySize };
 
-  // While a round is active, the "overtime" look (both background and time
-  // text) is ignored entirely — the round itself hasn't run out, so showing
-  // it in red would be misleading even if this seat's pool is already
-  // negative from an earlier round.
   const showOvertimeLook = isDepleted && !roundActive;
 
   const bgColor = showOvertimeLook
@@ -166,33 +139,16 @@ export function TimerCell({
   const runningColor = isRunning ? "#ffffff" : playerColor.active;
   const timeColor = showOvertimeLook ? colors.error : runningColor;
 
-  // `timeLeft` always ticks down uniformly regardless of direction and can go
-  // negative once the pool is exhausted (see useTimerState.ts) — the base
-  // line freezes at the pool total once depleted, with the overage shown
-  // separately, symmetric for both count directions.
   const overageSeconds = Math.max(0, -timeLeft);
   const baseSeconds =
     direction === "up"
       ? Math.min(totalSeconds, totalSeconds - timeLeft)
       : Math.max(0, timeLeft);
-  // Round time always counts down, regardless of the pool's direction — it's
-  // a fixed per-round budget draining toward zero, not a running total.
   const roundBaseSeconds = Math.max(0, roundTimeLeft);
 
-  // Deliberately react-native-gesture-handler's own Tap gesture, NOT
-  // Pressable/Touchable — RN's legacy responder system negotiates a single
-  // active JS responder per touch stream, which makes two players pressing
-  // two different seats' cells at the same instant unreliable (one press
-  // gets delayed or swallowed). Each GestureDetector below runs its own
-  // native gesture recognizer, so sibling cells genuinely recognize
-  // simultaneous taps. `onEnd` (not `onStart`) mirrors Pressable's onPress
-  // timing — fires once the tap completed, not the instant the finger lands.
   const tapGesture = useMemo(
     () =>
       Gesture.Tap().onEnd((_event, success) => {
-        // `success` is false for a tap the recognizer cancelled (finger
-        // dragged too far, held too long) — same "didn't count" cases
-        // Pressable's onPress already silently ignores.
         if (success) {
           runOnJS(onPress)();
         }
@@ -229,15 +185,12 @@ export function TimerCell({
 
           {showBadge ? (
             <>
-              {/* Pool time, small, above the round badge — takes back the big
-                  spot below the instant the badge disappears (round expired,
-                  or its grace window ran out while paused). */}
+              {}
               <Text style={[styles.smallPoolText, { color: NAME_TEXT_COLOR, ...TEXT_SHADOW }]}>
                 {formatTime(baseSeconds)}
               </Text>
 
-              {/* The badge itself is the big, centered element while the round
-                  is running and still within its grace window. */}
+              {}
               <View style={styles.roundBigWrap}>
                 <View style={styles.roundBigBadge}>
                   <Text style={[styles.roundBigBadgeText, { color: ROUND_BADGE_TEXT_COLOR }]}>
@@ -266,11 +219,7 @@ export function TimerCell({
             </View>
           )}
 
-          {/* Visible whenever paused and a round system is configured — shows
-              whether resuming now would reset the round — independent of
-              whether the shield badge itself is currently displayed (it isn't
-              once the round has expired or its own grace window already ran
-              out, but resuming after a long-enough pause still resets it). */}
+          {}
           {isPaused && roundSecondsTotal > 0 && (
             <View style={[styles.graceTrack, { backgroundColor: colors.border }]}>
               <Animated.View

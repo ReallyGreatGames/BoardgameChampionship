@@ -172,11 +172,6 @@ export default function RootLayout() {
   }
 
   return (
-    // Required by react-native-gesture-handler (used directly by the timer
-    // cells, see TimerCell.tsx, to get real independent multi-touch instead
-    // of RN's legacy single-responder Touchable/Pressable system) — must
-    // wrap the whole app, not just the timer screen, per RNGH's own setup
-    // requirement.
     <GestureHandlerRootView style={styles.fill}>
       <BootstrapProvider>
         <AppNavigator />

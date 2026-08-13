@@ -29,9 +29,6 @@ export const useTimerSeatStore = create<TimerSeatState>((set) => {
       await fetchCollection<TimerSeat, TimerSeatState>(key, set);
     },
 
-    // Deterministic id (table + game + seat) — two devices racing to start
-    // the same seat's timer for the first time converge on one document
-    // instead of each creating their own (see timerSeatRowId / addToCollection).
     add: async (data) =>
       await addToCollection(key, data, {
         rowId: timerSeatRowId(data.table, resolveGameId(data.games), data.seat),

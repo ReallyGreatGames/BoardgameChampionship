@@ -77,9 +77,6 @@ export function ImportPlayers() {
     [],
   );
 
-  // Block leaving the import tabs while a delete/import run is active — the
-  // user must cancel or let it finish, since unmounting mid-run silently
-  // aborts it.
   useEffect(() => {
     setBusy(phase === "deleting" || phase === "importing");
     return () => setBusy(false);

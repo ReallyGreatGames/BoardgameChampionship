@@ -43,7 +43,6 @@ export function RankingsTab() {
 
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
 
-  // Collect all game IDs with results
   const gameSchedules = useMemo(
     () =>
       [...schedules]
@@ -56,9 +55,7 @@ export function RankingsTab() {
   const submittedResults = results.filter((r) => r.submitted);
   const isComplete = submittedResults.length >= totalTables && totalTables > 0;
 
-  // Aggregate: for each player (identified by table+seat), accumulate points
   const rankings = useMemo<TeamRanking[]>(() => {
-    // Build player-stat map: key = playerId ($id), accumulates tournamentPoints + placements
     type Acc = {
       playerId: string;
       playerName: string;
@@ -129,7 +126,7 @@ export function RankingsTab() {
       contentContainerStyle={styles.list}
       showsVerticalScrollIndicator={false}
     >
-      {/* Status banner */}
+      {}
       <View style={[styles.statusBanner, isComplete ? styles.statusComplete : styles.statusIncomplete]}>
         <Ionicons
           name={isComplete ? "checkmark-circle-outline" : "hourglass-outline"}
@@ -145,7 +142,7 @@ export function RankingsTab() {
         </Text>
       </View>
 
-      {/* Column headers */}
+      {}
       <View style={styles.headerRow}>
         <View style={styles.colRank} />
         <Text style={[styles.colHeader, styles.colTeam]}>{t("colTeam")}</Text>

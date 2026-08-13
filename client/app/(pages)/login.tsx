@@ -54,7 +54,6 @@ export default function LoginScreen() {
     }
   });
 
-  // Admin badge spring-in when mode activates
   useEffect(() => {
     if (adminMode) {
       badgeAnim.setValue(0);
@@ -143,7 +142,7 @@ export default function LoginScreen() {
         onPress={Platform.OS !== "web" ? Keyboard.dismiss : undefined}
       >
         <View style={styles.inner}>
-          {/* Zone 1 — Title */}
+          {}
           <View style={styles.headerZone}>
             <Pressable onPress={handleTitleTap}>
               <Text style={styles.title}>
@@ -162,7 +161,7 @@ export default function LoginScreen() {
             )}
           </View>
 
-          {/* Zone 2 — Form */}
+          {}
           <View style={styles.formZone}>
             {adminMode ? (
               <>
@@ -229,7 +228,7 @@ export default function LoginScreen() {
             )}
           </View>
 
-          {/* Zone 3 — Action */}
+          {}
           <View style={styles.actionZone}>
             {loading ? (
               <ActivityIndicator size="large" color={colors.accent} />

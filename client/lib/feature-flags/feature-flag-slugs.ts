@@ -1,5 +1,3 @@
-// Add your feature flag slugs here. The slug must match the `slug` field in Appwrite.
-// Example: MY_FEATURE: "my_feature",
 export const FeatureFlagSlugs = {
   TABLE_BELL: "table_bell",
   TIMER: "timer",

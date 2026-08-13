@@ -72,12 +72,10 @@ export function ResultsAdminTab() {
   const resultStore = useResultStore();
   const bellActions = useTableBellActions();
 
-  // Shared state
   const [mode, setMode] = useState<ViewMode>("overview");
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now);
 
-  // Overview state
   const [search, setSearch] = useState("");
   const [bellFilter, setBellFilter] = useState<BellFilter>("any");
   const [submitFilter, setSubmitFilter] = useState<SubmitFilter>("all");
@@ -86,7 +84,6 @@ export function ResultsAdminTab() {
   const [gridWidth, setGridWidth] = useState(0);
   const [filterDialogVisible, setFilterDialogVisible] = useState(false);
 
-  // Input state
   const [currentTableIdx, setCurrentTableIdx] = useState(0);
   const [jumpText, setJumpText] = useState("");
   const [saving, setSaving] = useState(false);
@@ -184,9 +181,6 @@ export function ResultsAdminTab() {
     [timerSettingsCollection, selectedGameId],
   );
 
-  // Grouped once per selectedGameId change rather than re-filtering the
-  // whole (all-games) seats collection inside the per-table loop below —
-  // that loop otherwise rescans every seat of every game for every table.
   const seatsByTable = useMemo(() => {
     const map = new Map<number, TimerSeat[]>();
     if (!selectedGameId) return map;
@@ -202,7 +196,6 @@ export function ResultsAdminTab() {
     return map;
   }, [timerSeats, selectedGameId]);
 
-  // Build TableEntry list (for overview mode)
   const tableEntries = useMemo<TableEntry[]>(() => {
     if (!selectedGameId) return [];
     return gameTables.map((t): TableEntry => {
@@ -212,11 +205,6 @@ export function ResultsAdminTab() {
       const seats = seatsByTable.get(t.tableNumber) ?? [];
       const result = resultForTable(t.tableNumber);
       const bell = bells.find((b) => b.table === t.tableNumber);
-      // Shared with useTimerState.ts so the live timer and this read-only
-      // dashboard can't resolve a table's effective duration/round-time/
-      // direction differently — see resolveEffectiveTimer for why
-      // `hasCustomTimer` (not durationMinutesTotal/roundSecondsTotal
-      // themselves) is the authoritative signal for a deliberate override.
       const { effectiveDuration, roundSecondsTotal: effectiveRoundSeconds, direction: timerDirection } =
         resolveEffectiveTimer(timer, gameTimerSettings);
       return {
@@ -314,16 +302,12 @@ export function ResultsAdminTab() {
     });
   }, [filteredEntries, sortOrder]);
 
-  // Based on the grid's own measured width, not window width — window.innerWidth
-  // shifts with browser zoom on web, which made the column count flicker between
-  // 1 and 2 at the same physical zoom-independent layout size.
   const numColumns = gridWidth >= ui.breakpointTablet - inset.screen * 2 ? 2 : 1;
   const cardWidth = useMemo(() => {
     if (!gridWidth) return 0;
     return (gridWidth - (numColumns - 1) * inset.list) / numColumns;
   }, [gridWidth, numColumns]);
 
-  // Input mode — current table
   const currentTable: Table | undefined = gameTables[currentTableIdx];
   const currentResult = useMemo(
     () => (currentTable ? resultForTable(currentTable.tableNumber) : undefined),
@@ -345,7 +329,6 @@ export function ResultsAdminTab() {
     setSubmitted(currentResult?.submitted ?? false);
   }, [currentResult, currentTableIdx]);
 
-  // Arrow-key navigation between tables — web only
   useEffect(() => {
     if (mode !== "input" || Platform.OS !== "web") return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -359,7 +342,6 @@ export function ResultsAdminTab() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [mode, gameTables.length]);
 
-  // Signature modal
   const modalFileId =
     sigModalIdx !== null ? currentResult?.signatureIds?.[sigModalIdx] : undefined;
 
@@ -535,7 +517,6 @@ export function ResultsAdminTab() {
     </View>
   );
 
-  // ── Overview mode ─────────────────────────────────────────────────────────
   if (mode === "overview") {
     return (
       <View
@@ -595,7 +576,6 @@ export function ResultsAdminTab() {
     );
   }
 
-  // ── Input mode ────────────────────────────────────────────────────────────
   return (
     <View style={styles.container}>
       {header}
@@ -619,7 +599,7 @@ export function ResultsAdminTab() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {/* Header */}
+            {}
             <View style={styles.inputCardHeader}>
               <Text style={styles.inputTableNum}>
                 {currentTable
@@ -685,7 +665,7 @@ export function ResultsAdminTab() {
               />
             ))}
 
-            {/* Warnings — above the note field */}
+            {}
             {(missingSig || scoreConflict || placementInvalid) && (
               <View style={styles.warningGroup}>
                 {missingSig && (

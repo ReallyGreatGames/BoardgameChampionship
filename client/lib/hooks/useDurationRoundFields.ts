@@ -6,14 +6,6 @@ export type DurationRoundInitial = {
   direction?: "up" | "down";
 };
 
-/**
- * Shared duration/round-time/direction field state + validation for
- * CustomTimerModal and TimerSettingsModal — keeps the "0 or blank means
- * disabled" round-seconds rule and the duration-blur-clearing UX in exactly
- * one place instead of drifting between the two forms (which is exactly
- * what TimerDurationFields.tsx's own extraction was meant to prevent, but
- * only covered the JSX half).
- */
 export function useDurationRoundFields() {
   const [duration, setDurationState] = useState("");
   const [roundSeconds, setRoundSeconds] = useState("");
@@ -40,10 +32,6 @@ export function useDurationRoundFields() {
 
   const onDurationBlur = useCallback(() => setDurBlurred(true), []);
 
-  /** (Re)initializes the form — called when a modal opens. `initial.duration`
-   *  is per-player minutes (matches what's displayed); pass the already-
-   *  divided value. `!= null` (not truthy) so a deliberately-saved `0`
-   *  round-time shows as "0" instead of looking unconfigured. */
   const reset = useCallback((initial?: DurationRoundInitial) => {
     setDurationState(initial?.duration != null ? String(initial.duration) : "");
     setRoundSeconds(initial?.roundSeconds != null ? String(initial.roundSeconds) : "");

@@ -206,7 +206,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     list: {
       gap: inset.list,
     },
-    // Card
     card: {
       backgroundColor: colors.surface,
       borderWidth: 1,

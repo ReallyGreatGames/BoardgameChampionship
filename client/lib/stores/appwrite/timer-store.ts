@@ -25,10 +25,6 @@ export const useTimerStore = create<TimerState>((set) => {
     collection: [],
     key,
     realtimeSet: set,
-    // `playerPositions` (to-many) is the only relationship attribute on
-    // this document — every other field (including the nullable
-    // `tableActiveResumedAt`) is a plain attribute and must NOT get this
-    // treatment; see real-time-store.ts's updateRealtimeCollectionUpdate.
     relationshipFields: ["playerPositions"],
     init: async () => {
       await fetchCollection<Timer, TimerState>(
@@ -38,9 +34,6 @@ export const useTimerStore = create<TimerState>((set) => {
       );
     },
 
-    // Deterministic id (table + game) — two devices racing to start the same
-    // table's timer for the first time converge on one document instead of
-    // each creating their own (see timerRowId / addToCollection).
     add: async (data) =>
       await addToCollection(key, data, {
         rowId: timerRowId(data.table, resolveGameId(data.games)),
