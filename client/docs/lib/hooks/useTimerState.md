@@ -21,11 +21,11 @@ is the single most complex piece of client-side logic in the app.
 | `pauseMode` | [`TimerPauseMode`](useTimerLocalSettings.md) | `"auto"` (one active seat at a time) or `"manual"` (independent seats) |
 
 Returns per-seat tick state (`times`, `roundTimesLeft`, `roundExpired`,
-`playersInOvertime`, `playersPaused`), `allPaused`, `tableElapsedSeconds`,
-animation refs (`depleteAnims`, `graceAnims`), resolved settings
-(`totalSeconds`, `effectiveDuration`, `roundSecondsTotal`, `direction`,
-`playerColors`), layout state (`cellSize`, `handleCellLayout`), and the
-action handlers `handlePress`, `handlePause`, `handleReset`,
+`playersInOvertime`, `playersPaused`), `allPaused`, `spamProtectionActive`,
+`tableElapsedSeconds`, animation refs (`depleteAnims`, `graceAnims`),
+resolved settings (`totalSeconds`, `effectiveDuration`, `roundSecondsTotal`,
+`direction`, `playerColors`), layout state (`cellSize`, `handleCellLayout`),
+and the action handlers `handlePress`, `handlePause`, `handleReset`,
 `handleSaveCustomTimer`, `handleUseDefaultTimer`, `toggleAllPause`, plus the
 raw `existingTimer`/`timerSettings` documents.
 
@@ -87,6 +87,37 @@ call always sees the first's result. The remote-sync effect's own
 from the refs, write the refs, then call the setters) for the same reason,
 even though a same-tick collision between a remote sync and a local press
 is a much rarer case in practice than two local touches.
+
+### Spam protection (`registerPressAndCheckSpam`, `spamProtectionActive`)
+
+A burst of rapid presses across all four seats (or repeatedly toggling
+pause-all) fires that many concurrent Appwrite writes — every seat is its
+own document (see the data model recap above), so there's no client-side
+batching of these calls, and enough of them close together can trip
+Appwrite's own rate limiting. A write that fails there isn't retried with
+backoff (`persistSeatPatch`'s failure handling assumes the doc might be
+missing, not that the request was throttled) — it just silently never
+lands, leaving this device's already-applied local/optimistic state with
+nothing to show for it on any other device watching the same table.
+
+`registerPressAndCheckSpam` is called at the top of `handlePress` and
+`toggleAllPause` (not `handlePause` — that's a leave-the-screen safety
+action, not something a user mashes) and tracks press timestamps in
+`pressHistoryRef`, a sliding window of the last `SPAM_WINDOW_MS`. More than
+`SPAM_MAX_PRESSES` within that window blocks every further press for
+`SPAM_COOLDOWN_MS` (returns `false`, so the caller does nothing at all —
+no local state change, no network write) and flips `spamProtectionActive`
+to `true` for that same duration, which
+[`TimerControlPanel`](../components/timer/TimerControlPanel.md) shows as a
+banner and uses to disable the pause-all button.
+
+This deliberately throttles at the *input* layer, not the network layer —
+an earlier design considered pacing the Appwrite writes themselves (spacing
+out calls to stay under the limit) instead of blocking presses, but that
+delays *every* write, including on a rapid-but-not-spammy burst, which
+means other devices watching the table would see the update later than
+they do today. Blocking further input outright, with a visible reason
+shown to the user, keeps every write that does happen fully realtime.
 
 ### Own-echo detection (`pendingWritesRef`, `pausedAtRoughlyEqual`)
 

@@ -27,6 +27,7 @@ type Props = {
   allPaused: boolean;
   onToggleAllPause: () => void;
   tableElapsedLabel: string;
+  spamProtectionActive: boolean;
 };
 
 export function TimerControlPanel({
@@ -43,6 +44,7 @@ export function TimerControlPanel({
   allPaused,
   onToggleAllPause,
   tableElapsedLabel,
+  spamProtectionActive,
 }: Props) {
   const { colors } = useTheme();
   const { t } = useTranslation(["timer"]);
@@ -69,6 +71,15 @@ export function TimerControlPanel({
           {t("tableTimeElapsed")} · {tableElapsedLabel}
         </Text>
       </View>
+
+      {spamProtectionActive && (
+        <View style={[styles.spamBanner, { backgroundColor: colors.error + "22", borderColor: colors.error }]}>
+          <Ionicons name="hourglass-outline" size={16} color={colors.error} />
+          <Text style={[type.bodySmall, { color: colors.error, flex: 1 }]} numberOfLines={2}>
+            {t("spamProtectionActive")}
+          </Text>
+        </View>
+      )}
 
       <View style={styles.iconRow}>
         <IconToggle
@@ -101,6 +112,7 @@ export function TimerControlPanel({
         color={colors.text}
         label={allPaused ? t("resumeAll") : t("pauseAll")}
         onPress={onToggleAllPause}
+        disabled={spamProtectionActive}
       />
     </View>
   );
@@ -180,6 +192,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
+  },
+  spamBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
   },
   iconRow: {
     flexDirection: "row",

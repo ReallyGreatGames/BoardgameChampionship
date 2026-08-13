@@ -24,6 +24,9 @@ const PLAYER_COUNT = 4;
 const ROUND_RESET_GRACE_MS = 3000;
 const OWN_ECHO_TIMESTAMP_TOLERANCE_MS = 1500;
 const PENDING_WRITE_MAX_AGE_MS = 15000;
+const SPAM_WINDOW_MS = 2000;
+const SPAM_MAX_PRESSES = 12;
+const SPAM_COOLDOWN_MS = 3000;
 
 type PendingSeatWrite = {
   playerTime: number;
@@ -281,6 +284,42 @@ export function useTimerState({
     Array(PLAYER_COUNT).fill(true),
   );
   const [cellSize, setCellSize] = useState({ w: width / 2, h: height / 2 });
+  const [spamProtectionActive, setSpamProtectionActive] = useState(false);
+
+  const pressHistoryRef = useRef<number[]>([]);
+  const spamCooldownUntilRef = useRef(0);
+  const spamCooldownTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const registerPressAndCheckSpam = useCallback((now: number): boolean => {
+    if (now < spamCooldownUntilRef.current) {
+      return false;
+    }
+    const recent = pressHistoryRef.current.filter((t) => now - t < SPAM_WINDOW_MS);
+    recent.push(now);
+    pressHistoryRef.current = recent;
+    if (recent.length <= SPAM_MAX_PRESSES) {
+      return true;
+    }
+    pressHistoryRef.current = [];
+    spamCooldownUntilRef.current = now + SPAM_COOLDOWN_MS;
+    setSpamProtectionActive(true);
+    if (spamCooldownTimeoutRef.current) {
+      clearTimeout(spamCooldownTimeoutRef.current);
+    }
+    spamCooldownTimeoutRef.current = setTimeout(() => {
+      setSpamProtectionActive(false);
+      spamCooldownTimeoutRef.current = null;
+    }, SPAM_COOLDOWN_MS);
+    return false;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (spamCooldownTimeoutRef.current) {
+        clearTimeout(spamCooldownTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const timerStartedRef = useRef(false);
   if (playersPaused.some((p) => !p)) {
@@ -776,6 +815,9 @@ export function useTimerState({
 
   const handlePress = (idx: number) => {
     const now = Date.now();
+    if (!registerPressAndCheckSpam(now)) {
+      return;
+    }
     const currentPaused = playersPausedRef.current;
     const currentTick = tickStateRef.current;
     const wasPaused = currentPaused[idx];
@@ -847,6 +889,9 @@ export function useTimerState({
 
   const toggleAllPause = useCallback(() => {
     const now = Date.now();
+    if (!registerPressAndCheckSpam(now)) {
+      return;
+    }
     const currentPaused = playersPausedRef.current;
     const currentTick = tickStateRef.current;
     const wasAllPaused = currentPaused.every(Boolean);
@@ -904,7 +949,7 @@ export function useTimerState({
         ),
       );
     }
-  }, [roundSecondsTotal, persistSeatPatch, applyTableActiveTransition, pauseSeatLocally]);
+  }, [roundSecondsTotal, persistSeatPatch, applyTableActiveTransition, pauseSeatLocally, registerPressAndCheckSpam]);
 
   const prevPauseModeRef = useRef(pauseMode);
   useEffect(() => {
@@ -1046,6 +1091,7 @@ export function useTimerState({
     playersInOvertime: tickState.playersInOvertime,
     playersPaused,
     allPaused,
+    spamProtectionActive,
     tableElapsedSeconds,
     depleteAnims,
     graceAnims,

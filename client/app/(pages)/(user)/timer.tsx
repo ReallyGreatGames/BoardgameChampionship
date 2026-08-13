@@ -87,6 +87,7 @@ function TimerScreenContent({
     handleUseDefaultTimer,
     toggleAllPause,
     existingTimer,
+    spamProtectionActive,
   } = useTimerState({ gameId, tableNumber, bell, pauseMode });
 
   const playerNames = useMemo(
@@ -188,6 +189,7 @@ function TimerScreenContent({
           allPaused={allPaused}
           onToggleAllPause={toggleAllPause}
           tableElapsedLabel={formatElapsedSeconds(tableElapsedSeconds)}
+          spamProtectionActive={spamProtectionActive}
         />
       </View>
 
