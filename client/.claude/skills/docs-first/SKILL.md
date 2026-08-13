@@ -53,12 +53,15 @@ change** — don't leave it for later or for the user to notice:
 - **Changed who imports/uses a file?** Update the "Used by" list on the
   file(s) whose consumers changed — this list is a manually-maintained
   reverse-dependency index, not auto-generated, so it drifts if left alone.
-- **New comments explaining non-obvious reasoning?** Prefer putting that
-  explanation in the doc's "How it works" section instead of as a code
-  comment — this repo deliberately keeps `app/`/`lib/` source free of
-  explanatory comments, with that reasoning captured in `docs/` instead.
-  Functional directives (`eslint-disable`, `@ts-expect-error`, etc.) are
-  fine to keep in code — only explanatory prose comments were removed.
+- **New comments explaining non-obvious reasoning?** Do not add them to
+  `app/`/`lib/` source — put that explanation in the doc's "How it works"
+  section instead. This repo deliberately keeps source free of explanatory
+  prose comments, with that reasoning captured in `docs/` instead. This
+  applies to fixes and small changes too, not just new files — a one-line
+  code comment justifying *why* a line changed belongs in the doc, not next
+  to the line. Functional directives (`eslint-disable`, `@ts-expect-error`,
+  etc.) are fine to keep in code — only explanatory prose comments are
+  disallowed.
 
 Keep doc updates proportional to the code change — a one-line bugfix
 doesn't need a rewritten "How it works" section, but a behavior change

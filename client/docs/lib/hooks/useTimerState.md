@@ -88,6 +88,45 @@ update for its own echo. On a match, every older queued write for that seat
 is dropped too (writes reach Appwrite in strict order via `writeChainRef`,
 so a match this deep means every older entry already landed).
 
+Because matching is by value, not by an explicit device/origin marker,
+an entry that's never matched sits in the queue forever and can later
+coincidentally match a genuinely different remote update with the same
+field values — plausible for pause-all/reset/start-stop, which force seats
+to the same predictable, often-repeated values. Two things guard against
+this: the match check runs (and prunes matched-and-older entries) *before*
+the stale-update check below, not after — a delayed echo of this device's
+own write can itself arrive "stale" (superseded by a newer doc already
+processed), and running the stale check first would discard it without
+ever reaching the match/clear step, permanently stranding that entry.
+`PENDING_WRITE_MAX_AGE_MS` (15s) is the second guard: entries older than
+that are dropped before matching is attempted at all, on the assumption
+that any real echo would have round-tripped well before then, so nothing
+that old is worth risking a coincidental match against.
+
+### Creating a doc with its final values directly (`getOrCreateSeatDocId`/`getOrCreateTimerId`, the `created` flag)
+
+The very first time a seat (or the table) is touched, there's no existing
+Appwrite doc yet — `persistSeatPatch`/`persistTablePatch` need to create one.
+Creating it with hardcoded placeholder defaults (e.g. `paused: true`) and
+then immediately sending a second `update` call with the real intended
+values (e.g. `paused: false`, for "press start on a never-touched seat")
+used to cause exactly that: the seat visibly started, then instantly
+paused again, on the very first press only. The two writes race: the
+`create`'s own realtime echo (still carrying the placeholder defaults)
+isn't recognized by the own-echo detection above, because
+`pendingWritesRef` only ever recorded the *second* write's (real) values —
+so if that `create` echo is processed before the follow-up `update`'s echo
+arrives, the placeholder `paused: true` briefly reads as a genuinely new
+remote change and overwrites the local optimistic "started" state, which
+then flips back once the `update` echo catches up moments later.
+`getOrCreateSeatDocId`/`getOrCreateTimerId` fix this by accepting the
+patch that's about to be persisted and merging it into the doc at creation
+time — one write, carrying the final values from the start, so there's no
+placeholder state for a stray echo to reintroduce. Both return
+`{ id, created }`; `persistSeatPatch`/`persistTablePatch` skip their normal
+follow-up `update` call whenever `created` is true, since the doc already
+holds those exact values.
+
 ### Stale-update protection (`latestSeenSeatUpdatedAtRef` / `latestSeenTableUpdatedAtRef`)
 
 Belt-and-suspenders alongside `updateRealtimeCollectionUpdate`'s own
@@ -111,34 +150,103 @@ re-deriving would otherwise snap that seat's locally-ticked-down value back
 to its last-saved checkpoint (checkpoints only happen on press/pause/reset,
 not every tick).
 
-### Raw vs. server-corrected pause timestamp (`roundLastPausedAtRef` vs. `correctedLastPausedAtRef`)
+### Raw vs. server-corrected pause timestamp (`roundLastPausedAtRef`, `correctedLastPausedAtRef`)
 
 `roundLastPausedAt` is authored by whichever device paused a seat, using
-*its own* clock, and feeds two different consumers with opposite tolerance
-needs:
-- The **grace-bar animation** (`syncGraceAnimation`) uses the raw value —
-  cosmetic, so a late-discovered pause just animating less is preferable to
-  a "corrected" version reading as already-expired on almost every remote sync.
-- The **round-reset decision** (`resumeRoundState`'s grace check) uses a
-  server-anchored variant, substituting the seat doc's own `$updatedAt` for
-  the acting device's self-reported timestamp — this removes that device's
-  clock skew from a security/fairness-relevant decision. Forcing the
-  animation through the same substitution would make a cross-device resume
-  read as "outside grace" almost every time, purely from realtime delivery
-  lag (which can be multiple real seconds) — hence the two refs stay separate.
+*its own* clock — any consumer that compares it against *this* device's
+`Date.now()` inherits that device's clock skew relative to the pausing one.
+The **round-reset decision** (`resumeRoundState`'s grace check) uses
+`correctedLastPausedAtRef`, which substitutes the seat doc's own
+`$updatedAt` for the acting device's self-reported timestamp — but only
+once this device has already hydrated the seat at least once.
+`isFirstHydration` (a seat's very first sync since this device mounted/
+reconnected) still uses the raw value here: at that point `$updatedAt`
+reflects whatever the *last* write to the doc was, which could be long
+before this device connected and isn't a meaningful "just paused" anchor
+for a functional decision — the narrower clock-skew risk in this one-time
+case is an accepted trade-off for that decision specifically.
+
+### Grace-bar sync: live updates vs. catch-up (the seat-sync effect's `paused && !isFirstHydration` branch)
+
+Two categorically different situations both call `syncGraceAnimation`
+during the seat-sync effect, and were originally handled identically (both
+seeding from computed elapsed-since-pause) before three rounds of chasing
+increasingly precise cross-device clock reconciliation each failed to fix
+a reported "grace bar runs too fast or too slow, or starts partway filled,
+on a remote device" bug — see git history on this file for the abandoned
+attempts (raw vs. server-anchored timestamp; a `clockOffsetEstimateRef`
+device-clock-drift estimator). Real captured numbers from testing showed
+why: comparing two independently-clocked devices' timestamps over a live
+realtime channel is only accurate to within a few hundred ms to low
+seconds of jitter — nowhere near enough for a 3-second animation where
+every ~100ms is visible. The fix was to stop needing that precision at all
+for the case where it actually shows:
+- **A genuinely live pause, already-watching device** (`paused &&
+  !isFirstHydration`) — the common case, and the one actually being
+  watched by a user. Plays the *exact* same fresh `0 → 1` animation over the
+  full `ROUND_RESET_GRACE_MS`, timed from the moment THIS device's effect
+  runs — i.e. treated exactly like a local pause (see `syncGraceAnimation`
+  below), using only this device's own clock. Zero cross-device timestamp
+  math, so zero possible skew/jitter error. The only remaining discrepancy
+  versus the pausing device is a small, one-directional, honest start-time
+  delay (real realtime delivery lag, typically well under a second) — never
+  a rate distortion, which is what was actually reported broken.
+- **First hydration (mount/reconnect mid-window), or transitioning to
+  unpaused** — anchors on `seatDoc.$updatedAt` (server clock, removing the
+  *pausing* device's clock as an error source) further corrected by
+  `clockOffsetEstimateRef`'s estimate of *this* device's own clock drift
+  (see below). Imprecise, but this path only ever needs to roughly tell
+  "still within grace" from "long since expired" for a seat this device is
+  just now catching up on — not sub-second accuracy — so the same jitter
+  that broke the live case doesn't matter here.
+
+### This device's own clock skew (`clockOffsetEstimateRef`, `updateClockOffsetEstimate`)
+
+Used only by the catch-up path above. There's no NTP-style call anywhere in
+this app to ask the server "what time is it" directly, so
+`clockOffsetEstimateRef` estimates this device's own clock drift relative
+to the server opportunistically from data already flowing through this
+hook: every seat/table doc update this device processes carries a
+`$updatedAt` it can compare against its own `Date.now()` at receipt.
+`updateClockOffsetEstimate` keeps the **maximum** `$updatedAt − localNow`
+sample seen so far (called from both the per-seat loop and the table-level
+sync effect, for every update, not just pauses — own echoes count too, more
+samples only sharpen the estimate). Network delivery lag can only push a
+sample more negative (receipt always happens after the server write, never
+before), never more positive, so the least-negative sample seen so far is
+the best available estimate of this device's actual clock drift, and only
+ever improves as more updates arrive. Still only accurate to within roughly
+a second even once well-sampled — fine for the coarse catch-up decision,
+which is why the live path above doesn't use it at all.
+
+The temporary `[DEBUG-grace7f3]`-tagged logs are still in the code pending
+confirmation the live/catch-up split resolves the reported bug; remove them
+once confirmed.
 
 ### Grace window (`ROUND_RESET_GRACE_MS`, `resumeRoundState`, `syncGraceAnimation`)
 
 A seat resumed within 3000ms of its own pause keeps its round time instead
 of resetting — prevents "reset my round time" abuse via quick
-pause/unpause. `syncGraceAnimation` (re)starts a seat's grace-bar animation
-from how much of that window has *actually* elapsed (wall-clock), rather
-than always animating a fresh 3s — so the local pause action and the later
-cross-device sync of that same pause land on essentially the same visual
-state instead of visibly jumping. A `null` `lastPausedAtIso` on a seat with
-no prior pause is treated as "grace doesn't apply" (`anim.setValue(0)`),
-not "already elapsed" — treating it as elapsed made `TimerCell` hide the
-round badge for a round that hadn't even started, since a brand-new seat's
+pause/unpause. `syncGraceAnimation` takes an already-resolved `now` and
+`lastPausedAtIso` and seeds/starts the bar from however much of the window
+has elapsed between them — it doesn't itself know or care whether the
+caller is a local pause, a live remote sync, or a reconnect catch-up; see
+the section above for how each of those three call sites resolves what to
+pass in (local: always elapsed 0; live remote: also always elapsed 0, same
+as local; catch-up: genuinely computed, imprecisely). The `Animated.timing`
+call is pinned to `easing: Easing.linear` — a syncing device that
+legitimately does seed mid-flight (the catch-up path) restarts the
+animation from a non-zero value; `Animated.timing`'s *default* easing
+(`Easing.inOut(Easing.ease)`, unless overridden) is not self-similar,
+so replaying its curve from an arbitrary seed onward traces a visibly
+different value-over-time shape than the original curve would have past
+that point. Linear easing is the one shape where a restart from any point
+exactly continues the original trajectory, which is why it's forced
+explicitly here instead of relying on the (non-linear) library default.
+A `null` `lastPausedAtIso` on a seat with no prior pause is treated as
+"grace doesn't apply" (`anim.setValue(0)`), not "already elapsed" —
+treating it as elapsed made `TimerCell` hide the round badge for a round
+that hadn't even started, since a brand-new seat's
 very first sync goes through here with `roundLastPausedAt === null`.
 
 ### Table-wide "active" bookkeeping (`tableActiveTransition`)

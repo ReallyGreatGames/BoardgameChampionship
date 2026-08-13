@@ -18,6 +18,26 @@ essentially all of the actual logic.
 
 ## How it works
 
+### `TimerScreenContent`, keyed by `(gameId, tableNumber)`
+
+The actual screen body (everything using `useTimerState` and below) lives
+in an inner `TimerScreenContent` component, rendered with
+`key={`${gameId}-${tableNumber}`}` from the outer `TimerPage`.
+`useTimerState` caches Appwrite doc ids (`timerDocIdRef`, `seatDocIdRef`)
+and a dozen+ other per-table refs across renders, but expo-router reuses
+this same screen instance across a `gameId` change (same route, just new
+params) rather than remounting it. Without the `key`, switching to a
+different game/table while this screen stays mounted would keep returning
+the *previous* game's cached doc ids from those refs — silently skipping
+creation of the new game's `Timer`/`TimerSeat` docs and writing into the
+old game's docs instead. The `key` forces React to fully unmount/remount
+`TimerScreenContent` (and therefore re-run `useTimerState` from scratch)
+whenever the identity changes, instead of hand-resetting every affected ref
+in `useTimerState` and risking missing one. `useRequireAuth`, orientation,
+and the focus effect stay in the outer, unkeyed `TimerPage` — they don't
+hold any per-table state, so there's no benefit to remounting them on every
+game switch.
+
 ### Orientation + keep-awake
 
 `useFocusEffect` forces landscape-right orientation and activates

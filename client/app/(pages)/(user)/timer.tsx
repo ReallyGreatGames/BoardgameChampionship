@@ -19,8 +19,6 @@ import { useTranslation } from "react-i18next";
 
 export default function TimerPage() {
   useRequireAuth();
-  const { colors } = useTheme();
-  const { t } = useTranslation(["timer"]);
   const { forceOrientation, unlockOrientation } = useScreenOrientation();
   const params = useLocalSearchParams<{ gameId?: string }>();
 
@@ -37,6 +35,25 @@ export default function TimerPage() {
     }, [forceOrientation, unlockOrientation]),
   );
 
+  return (
+    <TimerScreenContent
+      key={`${params.gameId ?? "none"}-${tableNumber ?? "loading"}`}
+      gameId={params.gameId}
+      tableNumber={tableNumber}
+    />
+  );
+}
+
+function TimerScreenContent({
+  gameId,
+  tableNumber,
+}: {
+  gameId: string | undefined;
+  tableNumber: number | null;
+}) {
+  const { colors } = useTheme();
+  const { t } = useTranslation(["timer"]);
+
   const tableBellStore = useTableBellStore();
   const bell = useMemo(
     () => tableBellStore.collection.find((x) => x.table === tableNumber),
@@ -44,7 +61,7 @@ export default function TimerPage() {
   );
 
   const { orientationMode, pauseMode, toggleOrientationMode, togglePauseMode } =
-    useTimerLocalSettings(params.gameId);
+    useTimerLocalSettings(gameId);
 
   const {
     times,
@@ -70,7 +87,7 @@ export default function TimerPage() {
     handleUseDefaultTimer,
     toggleAllPause,
     existingTimer,
-  } = useTimerState({ gameId: params.gameId, tableNumber, bell, pauseMode });
+  } = useTimerState({ gameId, tableNumber, bell, pauseMode });
 
   const playerNames = useMemo(
     () => existingTimer?.playerPositions?.map((p) => p.name) ?? [],
@@ -197,8 +214,8 @@ export default function TimerPage() {
           setMenuOpen(false);
           handlePause();
           router.replace(
-            params.gameId
-              ? `/(pages)/(user)/game?gameId=${params.gameId}`
+            gameId
+              ? `/(pages)/(user)/game?gameId=${gameId}`
               : "/(pages)/(user)/schedule",
           );
         }}

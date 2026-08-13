@@ -1,19 +1,19 @@
 import { useDialog } from "@/lib/components/ui/Dialog";
+import { useSecureStoragePerGame } from "@/lib/hooks/useSecureStoragePerGame";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { useTimerSeatStore } from "@/lib/stores/appwrite/timer-seat-store";
 import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-store";
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
-import { buildPlayerColor, PLAYER_COLORS } from "@/lib/utils/timerColors";
 import {
   computeTableElapsedSeconds,
   reconcileRoundAndPool,
   resolveEffectiveTimer,
   resolveGameId,
 } from "@/lib/utils";
-import { useSecureStoragePerGame } from "@/lib/hooks/useSecureStoragePerGame";
-import { Animated, LayoutChangeEvent, useWindowDimensions } from "react-native";
+import { buildPlayerColor, PLAYER_COLORS } from "@/lib/utils/timerColors";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Animated, Easing, LayoutChangeEvent, useWindowDimensions } from "react-native";
 import { TableBell } from "../models/table-bell";
 import { Timer } from "../models/timer";
 import { TimerSeat } from "../models/timer-seat";
@@ -23,6 +23,7 @@ const DEFAULT_SECONDS = 10 * 60;
 const PLAYER_COUNT = 4;
 const ROUND_RESET_GRACE_MS = 3000;
 const OWN_ECHO_TIMESTAMP_TOLERANCE_MS = 1500;
+const PENDING_WRITE_MAX_AGE_MS = 15000;
 
 type PendingSeatWrite = {
   playerTime: number;
@@ -30,6 +31,7 @@ type PendingSeatWrite = {
   roundTimeLeft: number;
   roundExpired: boolean;
   roundLastPausedAt: string | null;
+  addedAt: number;
 };
 
 type SeatPatch = Partial<
@@ -71,6 +73,17 @@ function makeAnimatedValueArray(): Animated.Value[] {
 
 function parseIso(iso: string | null): number | null {
   return iso ? new Date(iso).getTime() : null;
+}
+
+function updateClockOffsetEstimate(ref: { current: number }, remoteUpdatedAtIso: string, localNow: number): void {
+  const remoteMs = parseIso(remoteUpdatedAtIso);
+  if (remoteMs === null) {
+    return;
+  }
+  const sample = remoteMs - localNow;
+  if (sample > ref.current) {
+    ref.current = sample;
+  }
 }
 
 function pausedAtRoughlyEqual(a: string | null, b: string | null, toleranceMs: number): boolean {
@@ -117,17 +130,6 @@ function seatPatchAt(
     roundExpired: roundExpired[seat],
     roundLastPausedAt: lastPaused[seat],
   };
-}
-
-async function getOrCreateDocId(
-  existingDoc: { $id: string } | undefined,
-  create: () => Promise<{ $id: string } | null>,
-): Promise<string | null> {
-  if (existingDoc) {
-    return existingDoc.$id;
-  }
-  const doc = await create();
-  return doc?.$id ?? null;
 }
 
 function parsePlayerColors(raw: string): string[] | null {
@@ -177,13 +179,24 @@ function syncGraceAnimation(
   }
   const elapsed = now - lastPausedAt;
   if (elapsed >= ROUND_RESET_GRACE_MS) {
+    console.log("[DEBUG-grace7f3] syncGraceAnimation: already expired", { now, lastPausedAt, elapsed });
     anim.setValue(1);
     return;
   }
-  anim.setValue(Math.max(0, elapsed) / ROUND_RESET_GRACE_MS);
+  const seedFraction = Math.max(0, elapsed) / ROUND_RESET_GRACE_MS;
+  const duration = ROUND_RESET_GRACE_MS - elapsed;
+  console.log("[DEBUG-grace7f3] syncGraceAnimation: seeding", {
+    now,
+    lastPausedAt,
+    elapsed,
+    seedFraction,
+    duration,
+  });
+  anim.setValue(seedFraction);
   Animated.timing(anim, {
     toValue: 1,
-    duration: ROUND_RESET_GRACE_MS - elapsed,
+    duration,
+    easing: Easing.linear,
     useNativeDriver: false,
   }).start();
 }
@@ -216,10 +229,10 @@ export function useTimerState({
     () =>
       tableNumber !== null
         ? timerStore.collection.find(
-            (tm) =>
-              tm.table === tableNumber &&
-              resolveGameId(tm.games) === (gameId ?? null),
-          )
+          (tm) =>
+            tm.table === tableNumber &&
+            resolveGameId(tm.games) === (gameId ?? null),
+        )
         : undefined,
     [timerStore.collection, gameId, tableNumber],
   );
@@ -228,8 +241,8 @@ export function useTimerState({
     () =>
       tableNumber !== null
         ? timerSeatStore.collection.filter(
-            (s) => s.table === tableNumber && resolveGameId(s.games) === (gameId ?? null),
-          )
+          (s) => s.table === tableNumber && resolveGameId(s.games) === (gameId ?? null),
+        )
         : [],
     [timerSeatStore.collection, gameId, tableNumber],
   );
@@ -301,6 +314,7 @@ export function useTimerState({
   const tableActiveAccumulatedMsRef = useRef(0);
   const tableActiveResumedAtRef = useRef<string | null>(null);
   const latestSeenTableUpdatedAtRef = useRef<string | null>(null);
+  const clockOffsetEstimateRef = useRef(0);
   const playersPausedRef = useRef(playersPaused);
   playersPausedRef.current = playersPaused;
   const roundSecondsTotalRef = useRef(roundSecondsTotal);
@@ -315,6 +329,7 @@ export function useTimerState({
       return;
     }
     latestSeenTableUpdatedAtRef.current = existingTimer.$updatedAt;
+    updateClockOffsetEstimate(clockOffsetEstimateRef, existingTimer.$updatedAt, Date.now());
     timerDocIdRef.current = existingTimer.$id;
     tableActiveAccumulatedMsRef.current =
       typeof existingTimer.tableActiveAccumulatedMs === "number"
@@ -356,18 +371,12 @@ export function useTimerState({
         continue;
       }
 
-      const seenUpdatedAt = latestSeenSeatUpdatedAtRef.current[i];
-      if (
-        seenUpdatedAt !== null &&
-        new Date(seatDoc.$updatedAt).getTime() < new Date(seenUpdatedAt).getTime()
-      ) {
-        lastProcessedSeatDocRef.current[i] = seatDoc;
-        continue;
-      }
-      latestSeenSeatUpdatedAtRef.current[i] = seatDoc.$updatedAt;
-
       const paused = seatDoc.paused;
       const remoteLastPaused = seatDoc.roundLastPausedAt ?? null;
+
+      pendingWritesRef.current[i] = pendingWritesRef.current[i].filter(
+        (written) => graceNow - written.addedAt <= PENDING_WRITE_MAX_AGE_MS,
+      );
 
       const matchIdx = pendingWritesRef.current[i].findIndex(
         (written) =>
@@ -383,6 +392,17 @@ export function useTimerState({
         continue;
       }
 
+      const seenUpdatedAt = latestSeenSeatUpdatedAtRef.current[i];
+      if (
+        seenUpdatedAt !== null &&
+        new Date(seatDoc.$updatedAt).getTime() < new Date(seenUpdatedAt).getTime()
+      ) {
+        lastProcessedSeatDocRef.current[i] = seatDoc;
+        continue;
+      }
+      latestSeenSeatUpdatedAtRef.current[i] = seatDoc.$updatedAt;
+      updateClockOffsetEstimate(clockOffsetEstimateRef, seatDoc.$updatedAt, graceNow);
+
       const isFirstHydration = hydratedSeatDocIdRef.current[i] !== seatDoc.$id;
 
       const previousRawLastPaused = roundLastPausedAtRef.current[i];
@@ -394,29 +414,38 @@ export function useTimerState({
           remoteLastPaused === null || isFirstHydration ? remoteLastPaused : seatDoc.$updatedAt;
       }
 
-      const lastPausedAtIso = paused ? remoteLastPaused : null;
-      if (lastSyncedGraceRef.current[i] !== lastPausedAtIso) {
-        lastSyncedGraceRef.current[i] = lastPausedAtIso;
-        syncGraceAnimation(graceAnims.current[i], paused, lastPausedAtIso, graceNow);
+      const rawLastPausedAtIso = paused ? remoteLastPaused : null;
+      if (lastSyncedGraceRef.current[i] !== rawLastPausedAtIso) {
+        lastSyncedGraceRef.current[i] = rawLastPausedAtIso;
+
+        if (paused && !isFirstHydration) {
+          const nowIso = new Date(graceNow).toISOString();
+          syncGraceAnimation(graceAnims.current[i], true, nowIso, graceNow);
+        } else {
+          const animAnchorIso = paused ? seatDoc.$updatedAt : null;
+          const correctedGraceNow = graceNow + clockOffsetEstimateRef.current;
+
+          syncGraceAnimation(graceAnims.current[i], paused, animAnchorIso, correctedGraceNow);
+        }
       }
 
       hydratedSeatDocIdRef.current[i] = seatDoc.$id;
 
       const reconciled = isFirstHydration
         ? reconcileRoundAndPool(
-            [seatDoc.playerTime],
-            [seatDoc.roundTimeLeft],
-            [seatDoc.roundExpired],
-            [paused],
-            roundSecondsTotal,
-            [seatDoc.$updatedAt],
-            Date.now(),
-          )
+          [seatDoc.playerTime],
+          [seatDoc.roundTimeLeft],
+          [seatDoc.roundExpired],
+          [paused],
+          roundSecondsTotal,
+          [seatDoc.$updatedAt],
+          Date.now(),
+        )
         : {
-            poolTimes: [seatDoc.playerTime],
-            roundTimesLeft: [seatDoc.roundTimeLeft],
-            roundExpired: [seatDoc.roundExpired],
-          };
+          poolTimes: [seatDoc.playerTime],
+          roundTimesLeft: [seatDoc.roundTimeLeft],
+          roundExpired: [seatDoc.roundExpired],
+        };
 
       const poolTime = reconciled.poolTimes[0];
       outcomes[i] = {
@@ -443,51 +472,59 @@ export function useTimerState({
     }));
   }, [existingSeats, totalSeconds, roundSecondsTotal]);
 
-  const getOrCreateTimerId = useCallback(async (): Promise<string | null> => {
-    if (timerDocIdRef.current) {
-      return timerDocIdRef.current;
-    }
-    if (tableNumber === null) {
-      return null;
-    }
-    const id = await getOrCreateDocId(existingTimer, () =>
-      timerStore.add({
+  const getOrCreateTimerId = useCallback(
+    async (initialPatch?: TablePatch): Promise<{ id: string | null; created: boolean }> => {
+      if (timerDocIdRef.current) {
+        return { id: timerDocIdRef.current, created: false };
+      }
+      if (tableNumber === null) {
+        return { id: null, created: false };
+      }
+      if (existingTimer) {
+        timerDocIdRef.current = existingTimer.$id;
+        return { id: existingTimer.$id, created: false };
+      }
+      const doc = await timerStore.add({
         table: tableNumber,
         games: gameId ?? null,
         tableActiveAccumulatedMs: 0,
         tableActiveResumedAt: null,
         playerPositions: [],
-      }),
-    );
-    timerDocIdRef.current = id;
-    return id;
-  }, [timerStore, gameId, tableNumber, existingTimer]);
+        ...initialPatch,
+      });
+      timerDocIdRef.current = doc?.$id ?? null;
+      return { id: doc?.$id ?? null, created: true };
+    },
+    [timerStore, gameId, tableNumber, existingTimer],
+  );
 
   const getOrCreateSeatDocId = useCallback(
-    async (seat: number): Promise<string | null> => {
+    async (seat: number, initialPatch?: SeatPatch): Promise<{ id: string | null; created: boolean }> => {
       if (seatDocIdRef.current[seat]) {
-        return seatDocIdRef.current[seat];
+        return { id: seatDocIdRef.current[seat], created: false };
       }
       if (tableNumber === null) {
-        return null;
+        return { id: null, created: false };
       }
-      const id = await getOrCreateDocId(
-        existingSeats.find((s) => s.seat === seat),
-        () =>
-          timerSeatStore.add({
-            table: tableNumber,
-            games: gameId ?? null,
-            seat,
-            playerTime: totalSeconds,
-            paused: true,
-            inOvertime: false,
-            roundTimeLeft: roundSecondsTotal,
-            roundExpired: false,
-            roundLastPausedAt: null,
-          }),
-      );
-      seatDocIdRef.current[seat] = id;
-      return id;
+      const existing = existingSeats.find((s) => s.seat === seat);
+      if (existing) {
+        seatDocIdRef.current[seat] = existing.$id;
+        return { id: existing.$id, created: false };
+      }
+      const doc = await timerSeatStore.add({
+        table: tableNumber,
+        games: gameId ?? null,
+        seat,
+        playerTime: totalSeconds,
+        paused: true,
+        inOvertime: false,
+        roundTimeLeft: roundSecondsTotal,
+        roundExpired: false,
+        roundLastPausedAt: null,
+        ...initialPatch,
+      });
+      seatDocIdRef.current[seat] = doc?.$id ?? null;
+      return { id: doc?.$id ?? null, created: true };
     },
     [timerSeatStore, gameId, tableNumber, totalSeconds, roundSecondsTotal, existingSeats],
   );
@@ -495,8 +532,15 @@ export function useTimerState({
   const persistTablePatch = useCallback(
     (patch: TablePatch) => {
       const run = async () => {
-        const id = await getOrCreateTimerId();
-        if (!id) {
+        const { id, created } = await getOrCreateTimerId(patch);
+        if (!id || created) {
+          // A brand-new Timer doc is created WITH this patch's values
+          // already merged in (see getOrCreateTimerId) -- a separate
+          // follow-up update here would briefly leave the doc showing its
+          // hardcoded creation defaults until that update lands, and any
+          // realtime "create" echo carrying those defaults isn't recognized
+          // by the seat-sync effect's own-write detection the way an
+          // "update" echo is, so it would flash back to the pre-patch state.
           return;
         }
         await timerStore.update({ $id: id, ...patch }, true);
@@ -511,24 +555,32 @@ export function useTimerState({
   const persistSeatPatch = useCallback(
     (seat: number, patch: SeatPatch) => {
       const run = async () => {
-        const id = await getOrCreateSeatDocId(seat);
-        if (!id) {
-          return;
-        }
-        if (
+        const isFullPatch =
           patch.playerTime !== undefined &&
           patch.paused !== undefined &&
           patch.roundTimeLeft !== undefined &&
           patch.roundExpired !== undefined &&
-          patch.roundLastPausedAt !== undefined
-        ) {
+          patch.roundLastPausedAt !== undefined;
+
+        const { id, created } = await getOrCreateSeatDocId(seat, patch);
+        if (!id) {
+          return;
+        }
+        if (isFullPatch) {
           pendingWritesRef.current[seat].push({
-            playerTime: patch.playerTime,
-            paused: patch.paused,
-            roundTimeLeft: patch.roundTimeLeft,
-            roundExpired: patch.roundExpired,
-            roundLastPausedAt: patch.roundLastPausedAt,
+            playerTime: patch.playerTime!,
+            paused: patch.paused!,
+            roundTimeLeft: patch.roundTimeLeft!,
+            roundExpired: patch.roundExpired!,
+            roundLastPausedAt: patch.roundLastPausedAt!,
+            addedAt: Date.now(),
           });
+        }
+        if (created) {
+          // See persistTablePatch's comment -- the doc was created WITH
+          // this patch's values already merged in, so a separate update
+          // would only reintroduce the same create-vs-update echo race.
+          return;
         }
 
         const ok = await timerSeatStore.update({ $id: id, ...patch }, true);
@@ -536,9 +588,9 @@ export function useTimerState({
           return;
         }
         seatDocIdRef.current[seat] = null;
-        const retryId = await getOrCreateSeatDocId(seat);
-        if (retryId) {
-          await timerSeatStore.update({ $id: retryId, ...patch }, true);
+        const retry = await getOrCreateSeatDocId(seat, patch);
+        if (retry.id && !retry.created) {
+          await timerSeatStore.update({ $id: retry.id, ...patch }, true);
         }
       };
       const chained = writeChainRef.current[seat].then(run, run);
