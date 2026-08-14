@@ -18,6 +18,7 @@ export const useTableStore = create<TableState>((set) => {
     collection: [],
     key,
     realtimeSet: set as any,
+    relationshipFields: ["players", "game"],
     init: async () => {
       await fetchCollection<Table>(key, set as any, [
         Query.select(["*", "players.*", "players.team.*", "game.*"]),

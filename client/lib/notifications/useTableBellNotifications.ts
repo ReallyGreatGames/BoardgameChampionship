@@ -39,9 +39,6 @@ export function useTableBellNotifications(isAdmin: boolean) {
     });
 
     newBells.forEach((bell) => {
-      // collection can be re-set multiple times for the same bell (realtime
-      // event plus any reconnect-triggered refetch) — track what we've
-      // already notified for so each bell only ever triggers one notification.
       notifiedIdsRef.current.add(bell.$id);
       const title = t("notificationTitle");
       const body = bell.reason

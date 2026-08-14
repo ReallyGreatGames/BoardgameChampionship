@@ -17,10 +17,12 @@ import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
 import type { Result } from "@/lib/models/result";
 import type { Table } from "@/lib/models/table";
 import type { TableBell } from "@/lib/models/table-bell";
+import type { TimerSeat } from "@/lib/models/timer-seat";
 import { useResultStore } from "@/lib/stores/appwrite/result-store";
 import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { useTableStore } from "@/lib/stores/appwrite/table-store";
+import { useTimerSeatStore } from "@/lib/stores/appwrite/timer-seat-store";
 import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-store";
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
 import { inset, space } from "@/lib/theme/spacing";
@@ -30,7 +32,7 @@ import {
   hasScorePlacementConflict,
   isValidPlacementCombo,
 } from "@/lib/utils/placements";
-import { resolveEffectiveTimer, resolveGameId, teamName, toNumberArray } from "@/lib/utils";
+import { resolveEffectiveTimer, resolveGameId, teamName } from "@/lib/utils";
 import { ChipGroup } from "@/lib/components/ui/ChipGroup";
 import { Combobox } from "@/lib/components/ui/Combobox";
 import { useDialog } from "@/lib/components/ui/Dialog";
@@ -64,17 +66,16 @@ export function ResultsAdminTab() {
   const { collection: results } = useResultStore();
   const tables = useTableStore((s) => s.collection);
   const { collection: timers } = useTimerStore();
+  const { collection: timerSeats } = useTimerSeatStore();
   const { collection: timerSettingsCollection } = useTimerSettingsStore();
   const bells = useTableBellStore((s) => s.collection);
   const resultStore = useResultStore();
   const bellActions = useTableBellActions();
 
-  // Shared state
   const [mode, setMode] = useState<ViewMode>("overview");
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now);
 
-  // Overview state
   const [search, setSearch] = useState("");
   const [bellFilter, setBellFilter] = useState<BellFilter>("any");
   const [submitFilter, setSubmitFilter] = useState<SubmitFilter>("all");
@@ -83,7 +84,6 @@ export function ResultsAdminTab() {
   const [gridWidth, setGridWidth] = useState(0);
   const [filterDialogVisible, setFilterDialogVisible] = useState(false);
 
-  // Input state
   const [currentTableIdx, setCurrentTableIdx] = useState(0);
   const [jumpText, setJumpText] = useState("");
   const [saving, setSaving] = useState(false);
@@ -181,26 +181,37 @@ export function ResultsAdminTab() {
     [timerSettingsCollection, selectedGameId],
   );
 
-  // Build TableEntry list (for overview mode)
+  const seatsByTable = useMemo(() => {
+    const map = new Map<number, TimerSeat[]>();
+    if (!selectedGameId) return map;
+    for (const s of timerSeats) {
+      if (resolveGameId(s.games) !== selectedGameId) continue;
+      const forTable = map.get(s.table);
+      if (forTable) {
+        forTable.push(s);
+      } else {
+        map.set(s.table, [s]);
+      }
+    }
+    return map;
+  }, [timerSeats, selectedGameId]);
+
   const tableEntries = useMemo<TableEntry[]>(() => {
     if (!selectedGameId) return [];
     return gameTables.map((t): TableEntry => {
       const timer = timers.find(
         (tm) => resolveGameId(tm.games) === selectedGameId && tm.table === t.tableNumber,
       );
+      const seats = seatsByTable.get(t.tableNumber) ?? [];
       const result = resultForTable(t.tableNumber);
       const bell = bells.find((b) => b.table === t.tableNumber);
-      // Shared with useTimerState.ts so the live timer and this read-only
-      // dashboard can't resolve a table's effective duration/round-time/
-      // direction differently — see resolveEffectiveTimer for why
-      // `hasCustomTimer` (not durationMinutesTotal/roundSecondsTotal
-      // themselves) is the authoritative signal for a deliberate override.
       const { effectiveDuration, roundSecondsTotal: effectiveRoundSeconds, direction: timerDirection } =
         resolveEffectiveTimer(timer, gameTimerSettings);
       return {
         id: t.tableNumber,
         players: t.players,
         timer,
+        seats,
         result,
         bell,
         hasBell: !!bell && !bell.acknowledgeTime,
@@ -215,7 +226,7 @@ export function ResultsAdminTab() {
         timerRoundSecondsTotal: effectiveRoundSeconds,
       };
     });
-  }, [gameTables, timers, results, bells, selectedGameId, resultForTable, gameTimerSettings]);
+  }, [gameTables, timers, seatsByTable, results, bells, selectedGameId, resultForTable, gameTimerSettings]);
 
   const filteredEntries = useMemo<TableEntry[]>(() => {
     const q = search.trim().toLowerCase();
@@ -249,16 +260,16 @@ export function ResultsAdminTab() {
           if (!a.timer && !b.timer) return a.id - b.id;
           if (!a.timer) return 1;
           if (!b.timer) return -1;
-          const aSum = toNumberArray(a.timer.playerTimes).reduce((s, v) => s + v, 0);
-          const bSum = toNumberArray(b.timer.playerTimes).reduce((s, v) => s + v, 0);
+          const aSum = a.seats.reduce((s, v) => s + v.playerTime, 0);
+          const bSum = b.seats.reduce((s, v) => s + v.playerTime, 0);
           return aSum - bSum;
         }
         case "minTimer": {
           if (!a.timer && !b.timer) return a.id - b.id;
           if (!a.timer) return 1;
           if (!b.timer) return -1;
-          const aTimes = toNumberArray(a.timer.playerTimes);
-          const bTimes = toNumberArray(b.timer.playerTimes);
+          const aTimes = a.seats.map((s) => s.playerTime);
+          const bTimes = b.seats.map((s) => s.playerTime);
           const aMin = aTimes.length ? Math.min(...aTimes) : Infinity;
           const bMin = bTimes.length ? Math.min(...bTimes) : Infinity;
           return aMin - bMin;
@@ -291,16 +302,12 @@ export function ResultsAdminTab() {
     });
   }, [filteredEntries, sortOrder]);
 
-  // Based on the grid's own measured width, not window width — window.innerWidth
-  // shifts with browser zoom on web, which made the column count flicker between
-  // 1 and 2 at the same physical zoom-independent layout size.
   const numColumns = gridWidth >= ui.breakpointTablet - inset.screen * 2 ? 2 : 1;
   const cardWidth = useMemo(() => {
     if (!gridWidth) return 0;
     return (gridWidth - (numColumns - 1) * inset.list) / numColumns;
   }, [gridWidth, numColumns]);
 
-  // Input mode — current table
   const currentTable: Table | undefined = gameTables[currentTableIdx];
   const currentResult = useMemo(
     () => (currentTable ? resultForTable(currentTable.tableNumber) : undefined),
@@ -322,7 +329,6 @@ export function ResultsAdminTab() {
     setSubmitted(currentResult?.submitted ?? false);
   }, [currentResult, currentTableIdx]);
 
-  // Arrow-key navigation between tables — web only
   useEffect(() => {
     if (mode !== "input" || Platform.OS !== "web") return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -336,7 +342,6 @@ export function ResultsAdminTab() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [mode, gameTables.length]);
 
-  // Signature modal
   const modalFileId =
     sigModalIdx !== null ? currentResult?.signatureIds?.[sigModalIdx] : undefined;
 
@@ -512,7 +517,6 @@ export function ResultsAdminTab() {
     </View>
   );
 
-  // ── Overview mode ─────────────────────────────────────────────────────────
   if (mode === "overview") {
     return (
       <View
@@ -572,7 +576,6 @@ export function ResultsAdminTab() {
     );
   }
 
-  // ── Input mode ────────────────────────────────────────────────────────────
   return (
     <View style={styles.container}>
       {header}
@@ -596,7 +599,7 @@ export function ResultsAdminTab() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {/* Header */}
+            {}
             <View style={styles.inputCardHeader}>
               <Text style={styles.inputTableNum}>
                 {currentTable
@@ -662,7 +665,7 @@ export function ResultsAdminTab() {
               />
             ))}
 
-            {/* Warnings — above the note field */}
+            {}
             {(missingSig || scoreConflict || placementInvalid) && (
               <View style={styles.warningGroup}>
                 {missingSig && (

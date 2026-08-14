@@ -2,6 +2,12 @@
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
+## Code documentation
+
+For per-file documentation of `app/` and `lib/` (purpose, exports, how
+non-trivial logic works, and which other files depend on each piece), see
+[`docs/README.md`](docs/README.md).
+
 ## Get started
 
 1. Install dependencies

@@ -2,11 +2,13 @@ import { Player } from "@/lib/models/player";
 import type { Result } from "@/lib/models/result";
 import type { TableBell } from "@/lib/models/table-bell";
 import type { Timer } from "@/lib/models/timer";
+import type { TimerSeat } from "@/lib/models/timer-seat";
 
 export type TableEntry = {
   id: number;
   players: Player[];
   timer: Timer | undefined;
+  seats: TimerSeat[];
   result: Result | undefined;
   bell: TableBell | undefined;
   hasBell: boolean;
@@ -14,12 +16,7 @@ export type TableEntry = {
   isRunning: boolean;
   isSubmitted: boolean;
   hasNote: boolean;
-  /** Effective timer direction, resolved from the timer doc or the game's timer settings. */
   timerDirection: "up" | "down";
-  /** Effective per-player total seconds, resolved from the timer doc or the game's timer settings. */
   timerTotalSeconds: number;
-  /** Effective per-player round-time budget in seconds, resolved from the
-   *  timer doc or the game's timer settings — 0 disables round-time
-   *  accounting, so pool time reconciliation ticks from the start. */
   timerRoundSecondsTotal: number;
 };

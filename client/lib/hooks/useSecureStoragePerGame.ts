@@ -1,18 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { getItemAsync, setItemAsync } from "@/lib/secureStorage";
 
-/**
- * Reads/writes a per-game, per-device preference under
- * `${keyPrefix}_${gameId}` in secureStorage — read once on mount/gameId
- * change, written through on every change. Shared by every setting that
- * follows this exact shape (player colors, timer orientation/pause mode)
- * so the read/write/key pattern lives in one place instead of being
- * re-implemented per setting.
- *
- * `parse` should be a stable (module-level) function reference — it's a
- * dependency of the load effect, so an inline lambda would re-run the load
- * on every render.
- */
 export function useSecureStoragePerGame<T>(
   keyPrefix: string,
   gameId: string | undefined,

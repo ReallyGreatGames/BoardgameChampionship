@@ -9,7 +9,6 @@ export type SeatStats = {
   matches: number;
   wins: number;
   winRate: number | null;
-  /** index i = count of placement (i + 1) */
   placementCounts: number[];
   placementRates: (number | null)[];
   scores: number[];
@@ -27,7 +26,6 @@ export type TeamSeatPerformance = {
   occurrences: number;
   avgActualPlacement: number;
   avgExpectedPlacement: number;
-  /** expected - actual; positive = team placed better than the seat's baseline on average */
   delta: number;
 };
 
@@ -67,11 +65,6 @@ function averagePlacementFromCounts(counts: number[]): number | null {
   return weighted / total;
 }
 
-/**
- * Per-seat win rate, placement distribution, and score stats across every
- * submitted result for a game. A tie for first counts as a win for every
- * tied seat.
- */
 export function computeSeatStats(
   results: Result[],
   gameId: string,
@@ -125,11 +118,6 @@ export function computeSeatStats(
   });
 }
 
-/**
- * For each team that played a game, compares their actual average placement
- * against the average placement everyone else got from the same seats they
- * sat in — flags teams over/under-performing relative to their seating.
- */
 export function computeTeamSeatPerformance(
   results: Result[],
   tables: Table[],

@@ -11,7 +11,6 @@ import {
 
 export type PartialGame = Partial<Game> & { $id: string };
 
-/** @deprecated Use PartialGame */
 export type PartialTimerSettings = PartialGame;
 
 type GameInput = Omit<Game, keyof Models.Document | keyof Models.Row>;

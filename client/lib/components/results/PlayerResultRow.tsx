@@ -17,7 +17,6 @@ const PLACEMENTS = ["1", "2", "3", "4"] as const;
 
 export type PlayerResultRowHandle = {
   focusScore: () => void;
-  /** Web-only: focuses the chip row so keyboard input activates chips. */
   focusChips: () => void;
 };
 
@@ -28,33 +27,13 @@ type Props = {
   score: string;
   onSetPlacement: (value: string) => void;
   onSetScore: (value: string) => void;
-  /** Called when the mobile Return key is pressed on the score input. */
   onScoreSubmitEditing?: () => void;
-  /**
-   * Web-only: called when Tab is pressed in the score input.
-   * Use to advance focus to the next score input or first chip row.
-   */
   onScoreTabForward?: () => void;
-  /**
-   * Web-only: called when Shift+Tab is pressed in the score input.
-   * When undefined, the browser handles it naturally (exits the form).
-   */
   onScoreTabBackward?: () => void;
-  /**
-   * Web-only: called when Tab is pressed in the chip row, or when a
-   * placement key (1-4) is pressed. Use to advance focus to the next chip
-   * row or the note field.
-   */
   onChipTabForward?: () => void;
-  /**
-   * Web-only: called when Shift+Tab is pressed in the chip row.
-   * Use to go back to the previous chip row or last score input.
-   */
   onChipTabBackward?: () => void;
-  /** Rendered to the right of the placement chips. Caller owns signature UI. */
   signatureSlot: ReactNode;
   disabled?: boolean;
-  /** Highlight the row's placement chips in error colour (score/placement conflict). */
   placementError?: boolean;
 };
 
@@ -96,17 +75,11 @@ export const PlayerResultRow = forwardRef<PlayerResultRowHandle, Props>(
       },
     }));
 
-    // Keep latest callbacks in refs so the native listener (empty-dep useEffect) always
-    // calls the current version without needing to re-attach the listener.
     const scoreTabForwardRef = useRef(onScoreTabForward);
     const scoreTabBackwardRef = useRef(onScoreTabBackward);
     scoreTabForwardRef.current = onScoreTabForward;
     scoreTabBackwardRef.current = onScoreTabBackward;
 
-    // Native DOM addEventListener — the only approach that reliably prevents default
-    // Tab movement in RN Web. React's event delegation fires after the browser has
-    // already committed to moving focus, so synthetic onKeyDown + preventDefault fails.
-    // In RN Web, scoreInputRef.current IS the underlying HTMLInputElement.
     useEffect(() => {
       if (Platform.OS !== "web") return;
       const el = scoreInputRef.current as any;
@@ -123,7 +96,7 @@ export const PlayerResultRow = forwardRef<PlayerResultRowHandle, Props>(
       };
       el.addEventListener("keydown", handler);
       return () => el.removeEventListener("keydown", handler);
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleChipKeyDown = useCallback(
       (e: any) => {
@@ -143,7 +116,6 @@ export const PlayerResultRow = forwardRef<PlayerResultRowHandle, Props>(
       [placement, onSetPlacement, onChipTabForward, onChipTabBackward],
     );
 
-    // Chip row is focusable on web when tab callbacks are wired up.
     const chipRowIsInteractive = Platform.OS === "web" && (onChipTabForward != null || onChipTabBackward != null);
     const chipRowWebProps = chipRowIsInteractive
       ? ({
@@ -154,7 +126,7 @@ export const PlayerResultRow = forwardRef<PlayerResultRowHandle, Props>(
 
     return (
       <View style={[styles.container, disabled && styles.rowDisabled]}>
-        {/* Player info — own row above on small screens (name left, team right) */}
+        {}
         {isCompact && (
           <View style={styles.nameRow}>
             <Text style={styles.playerName} numberOfLines={1}>
@@ -169,7 +141,7 @@ export const PlayerResultRow = forwardRef<PlayerResultRowHandle, Props>(
         )}
 
         <View style={styles.row}>
-          {/* Player info — inline on wider screens */}
+          {}
           {!isCompact && (
             <View style={styles.playerInfo}>
               <Text style={styles.playerName} numberOfLines={1}>
@@ -183,7 +155,7 @@ export const PlayerResultRow = forwardRef<PlayerResultRowHandle, Props>(
             </View>
           )}
 
-          {/* Score input */}
+          {}
           <TextInput
             ref={scoreInputRef}
             style={[styles.scoreInput, disabled && styles.inputDisabled]}
@@ -202,7 +174,7 @@ export const PlayerResultRow = forwardRef<PlayerResultRowHandle, Props>(
             selectTextOnFocus
           />
 
-          {/* Placement chips — focusable container on web; individual chips excluded from tab */}
+          {}
           <View ref={chipRowRef} style={styles.chipsRow} {...chipRowWebProps}>
             {PLACEMENTS.map((p) => {
               const active = placement === p;
@@ -235,7 +207,7 @@ export const PlayerResultRow = forwardRef<PlayerResultRowHandle, Props>(
             })}
           </View>
 
-          {/* Signature slot — caller owns this */}
+          {}
           {signatureSlot}
         </View>
       </View>

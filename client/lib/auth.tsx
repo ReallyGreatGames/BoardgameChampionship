@@ -68,9 +68,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const raw = await SecureStore.getItemAsync(PIN_STORE_KEY);
         if (!raw) {
-          // No verified PIN — stay logged out, but still establish at least
-          // an anonymous session so pre-login reads (e.g. checking whether
-          // the tournament is active, on the login screen) work.
           await getOrCreateAnonymousSession();
           return;
         }
@@ -79,7 +76,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const now = Date.now();
 
         if (now - stored.lastVerified > ONE_DAY_MS) {
-          // Re-verify against DB — need a session to query
           const u = await getOrCreateAnonymousSession();
           const valid = await verifyPinInDb(stored.pin);
           if (!valid) {
@@ -148,10 +144,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { active: tournamentActive } = useTournament();
   const tournamentInitialized = useTournamentStore((s) => s.initialized);
 
-  // Force-logout: once the tournament is confirmed inactive, non-admin
-  // sessions can no longer stay logged in. Gated on tournamentInitialized so
-  // the still-empty store on a cold start (before its first realtime fetch
-  // resolves) isn't mistaken for "no active tournament".
   useEffect(() => {
     if (loading || !tournamentInitialized) {
       return;

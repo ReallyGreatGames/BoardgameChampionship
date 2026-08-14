@@ -26,13 +26,10 @@ type Props = {
   bellDisabled?: boolean;
   allPaused: boolean;
   onToggleAllPause: () => void;
+  tableElapsedLabel: string;
+  spamProtectionActive: boolean;
 };
 
-/**
- * Replaces the old small round menu-trigger button in the center of the
- * timer screen: a compact row of icon toggles (orientation, menu, pause
- * mode) on top of two full-width action bars (table bell, pause/resume all).
- */
 export function TimerControlPanel({
   onOpenMenu,
   orientationMode,
@@ -46,6 +43,8 @@ export function TimerControlPanel({
   bellDisabled,
   allPaused,
   onToggleAllPause,
+  tableElapsedLabel,
+  spamProtectionActive,
 }: Props) {
   const { colors } = useTheme();
   const { t } = useTranslation(["timer"]);
@@ -65,6 +64,23 @@ export function TimerControlPanel({
       ]}
       pointerEvents="box-none"
     >
+      {}
+      <View style={styles.tableElapsedRow}>
+        <Ionicons name="time-outline" size={14} color={colors.textMuted} />
+        <Text style={[type.eyebrow, { color: colors.textMuted }]}>
+          {t("tableTimeElapsed")} · {tableElapsedLabel}
+        </Text>
+      </View>
+
+      {spamProtectionActive && (
+        <View style={[styles.spamBanner, { backgroundColor: colors.error + "22", borderColor: colors.error }]}>
+          <Ionicons name="hourglass-outline" size={16} color={colors.error} />
+          <Text style={[type.bodySmall, { color: colors.error, flex: 1 }]} numberOfLines={2}>
+            {t("spamProtectionActive")}
+          </Text>
+        </View>
+      )}
+
       <View style={styles.iconRow}>
         <IconToggle
           icon={orientationMode === "center" ? "grid-outline" : "reorder-two-outline"}
@@ -96,6 +112,7 @@ export function TimerControlPanel({
         color={colors.text}
         label={allPaused ? t("resumeAll") : t("pauseAll")}
         onPress={onToggleAllPause}
+        disabled={spamProtectionActive}
       />
     </View>
   );
@@ -169,6 +186,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: inset.tight,
     gap: inset.tight,
+  },
+  tableElapsedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+  },
+  spamBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
   },
   iconRow: {
     flexDirection: "row",

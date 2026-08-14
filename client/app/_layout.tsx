@@ -14,6 +14,8 @@ import { Drawer } from "expo-router/drawer";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { StyleSheet } from "react-native";
 import "react-native-url-polyfill/auto";
 
 SplashScreen.preventAutoHideAsync();
@@ -170,8 +172,12 @@ export default function RootLayout() {
   }
 
   return (
-    <BootstrapProvider>
-      <AppNavigator />
-    </BootstrapProvider>
+    <GestureHandlerRootView style={styles.fill}>
+      <BootstrapProvider>
+        <AppNavigator />
+      </BootstrapProvider>
+    </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({ fill: { flex: 1 } });

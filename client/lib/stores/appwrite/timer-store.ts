@@ -25,6 +25,7 @@ export const useTimerStore = create<TimerState>((set) => {
     collection: [],
     key,
     realtimeSet: set,
+    relationshipFields: ["playerPositions"],
     init: async () => {
       await fetchCollection<Timer, TimerState>(
         key,
@@ -33,9 +34,6 @@ export const useTimerStore = create<TimerState>((set) => {
       );
     },
 
-    // Deterministic id (table + game) — two devices racing to start the same
-    // table's timer for the first time converge on one document instead of
-    // each creating their own (see timerRowId / addToCollection).
     add: async (data) =>
       await addToCollection(key, data, {
         rowId: timerRowId(data.table, resolveGameId(data.games)),

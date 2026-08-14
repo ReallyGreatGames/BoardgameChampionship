@@ -16,7 +16,6 @@ export type ParsedRow = {
   errors: string[];
 };
 
-/** Used when a row has no country code column, or it's left blank. */
 const DEFAULT_COUNTRY = "DE";
 
 export function parseTsv(raw: string): ParsedRow[] {
@@ -25,7 +24,6 @@ export function parseTsv(raw: string): ParsedRow[] {
     .map((line, i) => ({ raw: line, index: i }))
     .filter(({ raw }) => raw.trim().length > 0);
 
-  // Skip header row: code column (col 6) contains whitespace or the literal word "code"
   const firstCode = lines[0]?.raw.split("\t")[6]?.trim() ?? "";
   const start = /\s/.test(firstCode) || firstCode.toLowerCase() === "code" ? 1 : 0;
 
@@ -35,9 +33,6 @@ export function parseTsv(raw: string): ParsedRow[] {
 function parseRow(raw: string, line: number): ParsedRow {
   const cols = raw.split("\t");
 
-  // Columns 0-6 (name, country/city, 4 players, team code) are required.
-  // Column 7 (2-letter country code) is optional — some MANNSCHAFTEN exports
-  // omit it entirely, or leave it blank; both default to DEFAULT_COUNTRY.
   if (cols.length < 7) {
     return {
       line,

@@ -176,6 +176,8 @@ const translations = {
     pauseModeManual: "Pause Mode: Manual",
     pauseAll: "Pause All",
     resumeAll: "Resume All",
+    spamProtectionActive: "Too many taps",
+    tableTimeElapsed: "Table time",
     confirmRing: {
       title: "Ring Table Bell",
       message: "Alert the judges that your table needs assistance?",

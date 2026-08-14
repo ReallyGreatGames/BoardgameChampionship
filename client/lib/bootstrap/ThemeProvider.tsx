@@ -44,7 +44,6 @@ export const ThemeProvider: FC<PropsWithChildren> = ({ children }) => {
         setSchemeState(stored);
         return;
       }
-      // Migrate from legacy boolean key
       const legacy = await SecureStorage.getItemAsync(LEGACY_DARK_KEY);
       if (legacy !== null) {
         const migrated: ColorScheme = legacy === "true" ? "dark" : "light";
@@ -52,7 +51,6 @@ export const ThemeProvider: FC<PropsWithChildren> = ({ children }) => {
         await SecureStorage.setItemAsync(SCHEME_STORE_KEY, migrated);
         return;
       }
-      // No stored preference — follow system theme
       if (systemSchemeRef.current === "dark") {
         setSchemeState("dark");
       }

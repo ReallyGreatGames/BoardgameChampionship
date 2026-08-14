@@ -19,8 +19,6 @@ import { useTranslation } from "react-i18next";
 
 export default function TimerPage() {
   useRequireAuth();
-  const { colors } = useTheme();
-  const { t } = useTranslation(["timer"]);
   const { forceOrientation, unlockOrientation } = useScreenOrientation();
   const params = useLocalSearchParams<{ gameId?: string }>();
 
@@ -37,6 +35,25 @@ export default function TimerPage() {
     }, [forceOrientation, unlockOrientation]),
   );
 
+  return (
+    <TimerScreenContent
+      key={`${params.gameId ?? "none"}-${tableNumber ?? "loading"}`}
+      gameId={params.gameId}
+      tableNumber={tableNumber}
+    />
+  );
+}
+
+function TimerScreenContent({
+  gameId,
+  tableNumber,
+}: {
+  gameId: string | undefined;
+  tableNumber: number | null;
+}) {
+  const { colors } = useTheme();
+  const { t } = useTranslation(["timer"]);
+
   const tableBellStore = useTableBellStore();
   const bell = useMemo(
     () => tableBellStore.collection.find((x) => x.table === tableNumber),
@@ -44,7 +61,7 @@ export default function TimerPage() {
   );
 
   const { orientationMode, pauseMode, toggleOrientationMode, togglePauseMode } =
-    useTimerLocalSettings(params.gameId);
+    useTimerLocalSettings(gameId);
 
   const {
     times,
@@ -53,6 +70,7 @@ export default function TimerPage() {
     playersInOvertime,
     playersPaused,
     allPaused,
+    tableElapsedSeconds,
     depleteAnims,
     graceAnims,
     totalSeconds,
@@ -69,7 +87,8 @@ export default function TimerPage() {
     handleUseDefaultTimer,
     toggleAllPause,
     existingTimer,
-  } = useTimerState({ gameId: params.gameId, tableNumber, bell, pauseMode });
+    spamProtectionActive,
+  } = useTimerState({ gameId, tableNumber, bell, pauseMode });
 
   const playerNames = useMemo(
     () => existingTimer?.playerPositions?.map((p) => p.name) ?? [],
@@ -117,8 +136,6 @@ export default function TimerPage() {
     }
   };
 
-  // Top row = seats [0,1], bottom row = seats [3,2] — mirrors the seat/color
-  // setup grid in PlayerColorSetupModal.tsx.
   const seatOrder: number[][] = [
     [0, 1],
     [3, 2],
@@ -171,6 +188,8 @@ export default function TimerPage() {
           bellDisabled={bellActions.isLoading || (!!bell && !bellActions.canDelete(bell))}
           allPaused={allPaused}
           onToggleAllPause={toggleAllPause}
+          tableElapsedLabel={formatElapsedSeconds(tableElapsedSeconds)}
+          spamProtectionActive={spamProtectionActive}
         />
       </View>
 
@@ -197,19 +216,13 @@ export default function TimerPage() {
           setMenuOpen(false);
           handlePause();
           router.replace(
-            params.gameId
-              ? `/(pages)/(user)/game?gameId=${params.gameId}`
+            gameId
+              ? `/(pages)/(user)/game?gameId=${gameId}`
               : "/(pages)/(user)/schedule",
           );
         }}
         customTimerOpen={customTimerOpen}
         onCloseCustomTimer={() => setCustomTimerOpen(false)}
-        // Reuse the hook's already-resolved values instead of re-deriving
-        // them here — `hasCustomTimer` is what correctly distinguishes a
-        // deliberate per-table override (including an explicit `0` round
-        // time) from a table that was never customized, which comparing the
-        // raw stored numbers/strings against the game default can't (see
-        // useTimerState.ts).
         initialDuration={effectiveDuration}
         initialDirection={direction}
         initialRoundSeconds={roundSecondsTotal}

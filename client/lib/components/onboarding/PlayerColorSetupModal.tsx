@@ -17,7 +17,6 @@ import { BottomSheet, makeSheetStyles } from "@/lib/components/ui/BottomSheet";
 
 const SWATCHES = PLAYER_COLORS.map((c) => c.active);
 
-// Mirror the timer's grid layout: top row = [0,1], bottom row = [3,2]
 const GRID_ROWS = [
   [0, 1],
   [3, 2],

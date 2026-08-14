@@ -176,6 +176,8 @@ const translations = {
     pauseModeManual: "Pausenmodus: Manuell",
     pauseAll: "Alle pausieren",
     resumeAll: "Alle fortsetzen",
+    spamProtectionActive: "Zu viele Eingaben",
+    tableTimeElapsed: "Tischzeit",
     confirmRing: {
       title: "Tischklingel läuten",
       message: "Die Schiedsrichter:innen auf euren Tisch aufmerksam machen?",

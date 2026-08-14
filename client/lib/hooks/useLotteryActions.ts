@@ -53,20 +53,11 @@ export function useLotteryActions() {
         fileId: ID.unique(),
         file,
         permissions: [
-          // Native image loading (expo-image on iOS/Android) fetches the file
-          // URL directly, with no Appwrite session attached — Role.users()
-          // would reject that request, so read must be open to everyone.
           Permission.read(Role.any()),
           Permission.update(Role.label("admin")),
           Permission.delete(Role.label("admin")),
         ],
       });
-      // The camera/library picker backgrounds the app, which triggers its own
-      // "app foregrounded" reconnect+refetch as soon as the picker closes —
-      // that refetch can resolve before this upload finishes, missing both
-      // the fresh list entry and the realtime `create` event for it (no
-      // replay for events missed while the socket was down). Refresh here,
-      // strictly after the upload is confirmed, to close that race.
       await useLotteryStore.getState().init();
     } catch (e: any) {
       await confirm({

@@ -12,12 +12,6 @@ const parseOrientation = (v: string): TimerOrientationMode =>
 const parsePauseMode = (v: string): TimerPauseMode =>
   v === "manual" ? "manual" : DEFAULT_PAUSE_MODE;
 
-/**
- * Orientation and pause-mode are display/interaction preferences only — they
- * never sync to the Timer document. Stored locally per gameId (via
- * useSecureStoragePerGame — the same pattern as the player-color storage in
- * useTimerState.ts), since the seating/device setup is decided per game.
- */
 export function useTimerLocalSettings(gameId: string | undefined) {
   const [orientationMode, setOrientationMode] = useSecureStoragePerGame(
     "timerOrientation",

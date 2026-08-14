@@ -19,10 +19,8 @@ export type DialogOptions = {
   title: string;
   message?: string;
   confirmLabel?: string;
-  /** Pass null to hide the cancel button (info/alert mode). */
   cancelLabel?: string | null;
   destructive?: boolean;
-  /** Ionicons icon name shown above the message. */
   icon?: string;
 };
 

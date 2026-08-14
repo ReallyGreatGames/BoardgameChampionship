@@ -35,8 +35,6 @@ if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
 }
 
-// Animated.loop doesn't reset values between iterations, so we use a recursive
-// callback that explicitly resets scale/opacity before each cycle.
 function PulsingDot({
   isActive,
   isFinished,
@@ -403,7 +401,6 @@ export function ScheduleList() {
     () => [...collection].sort((a, b) => a.sortIndex - b.sortIndex),
     [collection],
   );
-  // If update buttons are clicked within 2 seconds of each other, the dedupe logic in the store causes only one update to be processed, which results in the sortIndex getting out of sync with the actual order. To mitigate this, we disable all buttons for 2 seconds after any update.
   const debounceTimeOut = 2000;
   const nextSortIndex = useMemo(
     () =>
@@ -703,7 +700,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     list: {
       paddingBottom: inset.screenBottom,
     },
-    // Timeline
     timelineRow: {
       flexDirection: "row",
       alignItems: "stretch",
@@ -740,7 +736,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     timelineCardGap: {
       paddingBottom: inset.list,
     },
-    // Card
     card: {
       backgroundColor: colors.surface,
       borderWidth: 1,
@@ -830,7 +825,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       color: colors.onAccent,
       fontWeight: "600",
     },
-    // Game section
     gameSection: {
       marginTop: inset.tight,
       borderWidth: 1,
@@ -867,7 +861,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       ...type.bodySmall,
       color: colors.textSecondary,
     },
-    // Admin bar
     adminBar: {
       flexDirection: "row",
       alignItems: "center",
@@ -887,7 +880,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     adminBarSpacer: {
       flex: 1,
     },
-    // Add item button
     addItemCard: {
       borderWidth: 1,
       borderColor: colors.border,

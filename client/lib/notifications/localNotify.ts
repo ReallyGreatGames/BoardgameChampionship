@@ -2,7 +2,6 @@ import * as Haptics from "expo-haptics";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
-// Show notifications even while the app is foregrounded (native only)
 if (Platform.OS !== "web") {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -34,7 +33,6 @@ function playWebNotificationSound() {
     const ctx = new Ctx();
     const now = ctx.currentTime;
 
-    // Two-tone chime: fundamental + harmonic
     [880, 1108].forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -50,7 +48,6 @@ function playWebNotificationSound() {
       osc.stop(now + 1.4);
     });
   } catch {
-    // AudioContext not available — silent fallback
   }
 }
 
@@ -68,7 +65,6 @@ export async function triggerLocalNotification(title: string, body: string) {
     return;
   }
 
-  // Native: haptic + local OS notification (includes sound)
   await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 
   await Notifications.scheduleNotificationAsync({

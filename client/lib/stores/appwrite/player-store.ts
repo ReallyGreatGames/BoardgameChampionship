@@ -15,6 +15,7 @@ export const usePlayerStore = create<PlayerState>((set) => {
     collection: [],
     key,
     realtimeSet: set as any,
+    relationshipFields: ["team"],
     initialized: false,
     init: async () => {
       await fetchCollection<Player>(key, set as any, [

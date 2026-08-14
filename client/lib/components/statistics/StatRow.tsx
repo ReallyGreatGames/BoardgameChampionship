@@ -10,7 +10,6 @@ type Props = {
   swatchColor?: string;
 };
 
-/** A compact label/value line — optionally with an identity swatch and a muted parenthetical. */
 export function StatRow({ label, value, sub, swatchColor }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);

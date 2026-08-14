@@ -76,9 +76,7 @@ export default function LotteryScreen() {
 
       {isAdmin && (
         <View style={styles.adminActions}>
-          {/* Desktop browsers have no camera-capture affordance — launchCameraAsync
-              falls back to the same file picker as the library, so showing both
-              buttons there is just confusing. Native (iOS/Android) gets both. */}
+          {}
           {Platform.OS === "web" ? (
             <Pressable
               style={styles.adminActionBtn}
