@@ -7,10 +7,17 @@
 Table of teams' actual vs. expected average placement (relative to their
 seating), with the delta highlighted green/red for over-/under-performance.
 
-## Props
+## Exports
 
-`{ teamPerformance: TeamSeatPerformance[] }` —
-[`TeamSeatPerformance`](../../utils/statistics.md) from `lib/utils/statistics.ts`.
+| Export | Signature | Purpose |
+|---|---|---|
+| `TeamPerformanceTable` (component) | `TeamPerformanceTable({ teamPerformance: TeamSeatPerformance[] }): JSX` | Renders the heading (with an info tooltip), an empty state when there's no data, or a table with one row per team showing actual/expected placement and the delta between them. |
+
+### Props (`Props`)
+
+| Prop | Type | Meaning |
+|---|---|---|
+| `teamPerformance` | [`TeamSeatPerformance[]`](../../utils/statistics.md) | One entry per team: `teamId` (row key), `teamName`/`teamCode` (identity column), `avgActualPlacement`/`avgExpectedPlacement` (the two numeric columns, formatted to 2 decimals), and `delta` (the difference, colored and sign-prefixed). An empty array renders the `EmptyState` message instead of the table. |
 
 ## How it works
 

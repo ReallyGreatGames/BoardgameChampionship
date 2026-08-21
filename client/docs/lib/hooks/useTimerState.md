@@ -20,14 +20,36 @@ is the single most complex piece of client-side logic in the app.
 | `bell` | [`TableBell`](../models/table-bell.md) `\| undefined` | This table's current bell, if any |
 | `pauseMode` | [`TimerPauseMode`](useTimerLocalSettings.md) | `"auto"` (one active seat at a time) or `"manual"` (independent seats) |
 
-Returns per-seat tick state (`times`, `roundTimesLeft`, `roundExpired`,
-`playersInOvertime`, `playersPaused`), `allPaused`, `spamProtectionActive`,
-`tableElapsedSeconds`, animation refs (`depleteAnims`, `graceAnims`),
-resolved settings (`totalSeconds`, `effectiveDuration`, `roundSecondsTotal`,
-`direction`, `playerColors`), layout state (`cellSize`, `handleCellLayout`),
-and the action handlers `handlePress`, `handlePause`, `handleReset`,
-`handleSaveCustomTimer`, `handleUseDefaultTimer`, `toggleAllPause`, plus the
-raw `existingTimer`/`timerSettings` documents.
+Returns an object (`PLAYER_COUNT = 4`, so every per-seat array below always
+has exactly 4 entries, indexed by seat):
+
+| Property | Type | Meaning |
+|---|---|---|
+| `times` | `number[]` | Each seat's remaining pool time, in seconds. |
+| `roundTimesLeft` | `number[]` | Each seat's remaining round time, in seconds (meaningless while `roundSecondsTotal === 0`). |
+| `roundExpired` | `boolean[]` | Whether each seat's round budget has hit zero (further ticks drain pool time instead). |
+| `playersInOvertime` | `boolean[]` | Whether each seat's pool time has hit zero. |
+| `playersPaused` | `boolean[]` | Whether each seat is currently paused (not ticking). |
+| `allPaused` | `boolean` | `playersPaused.every(Boolean)` — true only when every seat is paused. |
+| `spamProtectionActive` | `boolean` | `true` while input is being throttled after a burst of rapid presses (see How it works). |
+| `tableElapsedSeconds` | `number` | Total wall-clock seconds the table has been "active" (at least one seat running), computed from the table doc's accumulated-ms/resumed-at fields plus any currently-live running span. |
+| `depleteAnims` | `React.RefObject<Animated.Value[]>` | One `Animated.Value` per seat (0 → 1) driving the pool-time depletion bar; mutated directly, not through React state. |
+| `graceAnims` | `React.RefObject<Animated.Value[]>` | One `Animated.Value` per seat (0 → 1) driving the round-reset grace-period bar; see the grace-bar sync section below. |
+| `totalSeconds` | `number` | The full per-seat pool-time budget in seconds (`effectiveDuration` minutes split evenly across `PLAYER_COUNT`, or `DEFAULT_SECONDS` if no duration is configured). |
+| `effectiveDuration` | `number \| undefined` | The resolved total timer duration in minutes, from [`resolveEffectiveTimer`](../utils.md) — the custom-timer value if `hasCustomTimer`, else the game's configured default. |
+| `roundSecondsTotal` | `number` | The resolved per-round time budget in seconds; `0` means round-timing is disabled and only pool time counts down. |
+| `direction` | `"up" \| "down"` | Whether elapsed pool time should be *displayed* counting up or down (see [`TimerCell`](../components/timer/TimerCell.md)) — doesn't affect the underlying countdown mechanics. |
+| `playerColors` | `{ active: string; muted: string; elapsed: string; elapsedMuted: string }[]` | Per-seat color set (one entry per seat), from either this device's stored custom colors or the game's default palette. |
+| `cellSize` | `{ w: number; h: number }` | Last-measured size of a timer cell, updated via `handleCellLayout`; seeded from half the window dimensions before any layout event fires. |
+| `handleCellLayout` | `(e: LayoutChangeEvent) => void` | Layout-event handler wired to a timer cell's `onLayout`; updates `cellSize` from the fired event. |
+| `handlePress` | `(idx: number) => void` | Toggles seat `idx` between paused/running (see Actions below). |
+| `handlePause` | `() => void` | Force-pauses every running seat (see Actions below). |
+| `handleReset` | `() => Promise<boolean>` | Shows a confirm dialog, then (if confirmed) resets every seat back to the current duration/round budget and persists it; resolves `false` without any change if the user cancels, `true` otherwise. |
+| `handleSaveCustomTimer` | `(durationMinutes: number, dir: "up" \| "down", newRoundSeconds: number) => Promise<void>` | Resets every seat to a new custom budget and persists both the table's new `durationMinutesTotal`/`roundSecondsTotal`/`direction`/`hasCustomTimer: true` and every seat's fresh state. No confirmation dialog — the caller (a settings modal) is itself the confirmation step. |
+| `handleUseDefaultTimer` | `() => Promise<boolean>` | Shows a confirm dialog, then (if confirmed) resets every seat to the game's default duration/round budget and persists `hasCustomTimer: false` (without clearing the old custom values — see How it works). Resolves `false` without any change if cancelled, `true` otherwise. |
+| `toggleAllPause` | `() => void` | Unconditionally flips every seat between fully paused and fully running (see Actions below). |
+| `existingTimer` | [`Timer`](../models/timer.md) `\| undefined` | The raw table-wide Appwrite document for this table/game, if one has been created yet. |
+| `timerSettings` | `Game \| undefined` | The raw game document supplying this game's default timer duration/round/direction/colors, if the game is known to [`useTimerSettingsStore`](../stores/appwrite/timer-settings-store.md). |
 
 ## Data model recap
 

@@ -6,9 +6,14 @@
 
 Small badge summarizing a table's result status.
 
-## Props
+## Exports
 
-`{ result: Result | undefined, t: (key: string) => string }`
+### `StateBadge({ result, t }: Props): JSX.Element`
+
+| Prop | Type | Meaning |
+|---|---|---|
+| `result` | [`Result`](../../models/result.md) `\| undefined` | The table's result document, if one exists yet; `undefined` renders the "none" state. |
+| `t` | `(key: string) => string` | Translation function, passed down rather than calling `useTranslation` internally. |
 
 ## How it works
 

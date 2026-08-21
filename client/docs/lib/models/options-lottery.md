@@ -26,17 +26,35 @@ shape for everything outside the store layer.
 
 ### `type LotteryTableResult`
 
-`{ table: number; optionIds: string[] }` — one table's pulled result, referencing option ids by id (a live reference, not a snapshot — editing an option's title/description updates already-shown results immediately).
+One table's pulled result, referencing option ids by id (a live reference, not a snapshot — editing an option's title/description updates already-shown results immediately).
+
+| Field | Type | Meaning |
+|---|---|---|
+| `table` | `number` | Table number this result was drawn for |
+| `optionIds` | `string[]` | The `id`s of the options this table pulled, in draw order; length is normally `pullsPerTable` |
 
 ### `type OptionsLotteryRow`
 
-The raw Appwrite row: `{ gameId, name, pullsPerTable, optionsJson, resultsJson } & Models.Document`.
+The raw Appwrite row.
+
+| Field | Type | Meaning |
+|---|---|---|
+| `gameId` | `string` | The game this lottery instance belongs to |
+| `name` | `string` | Display name of the lottery instance (e.g. "Scenario Sheet") |
+| `pullsPerTable` | `number` | How many options each table draws when the lottery is run for it |
+| `optionsJson` | `string` | JSON-serialized `LotteryOption[]` — the option pool, stringified because Appwrite has no nested-object attribute type. Parsed via [`parseOptionsLottery`](../utils/options-lottery.md); an unparseable value falls back to `[]` |
+| `resultsJson` | `string` | JSON-serialized `LotteryTableResult[]` — the per-table draw results so far, same stringify-for-storage reasoning as `optionsJson`. Empty/falsy or unparseable falls back to `[]` |
 
 ### `type OptionsLottery`
 
-The derived, parsed shape used everywhere outside the store:
+The derived, parsed shape used everywhere outside the store —
 `Omit<OptionsLotteryRow, "optionsJson" | "resultsJson"> & { options: LotteryOption[]; results: LotteryTableResult[] }`.
-Produced by [`parseOptionsLottery`](../utils/options-lottery.md).
+Produced by [`parseOptionsLottery`](../utils/options-lottery.md), i.e. every `OptionsLotteryRow` field except `optionsJson`/`resultsJson`, plus:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `options` | [`LotteryOption[]`](#type-lotteryoption) | Parsed option pool (from `optionsJson`) |
+| `results` | [`LotteryTableResult[]`](#type-lotterytableresult) | Parsed per-table draw results so far (from `resultsJson`) |
 
 ## Used by
 

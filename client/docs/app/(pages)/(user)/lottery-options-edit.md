@@ -13,6 +13,58 @@ existing one: name, `pullsPerTable`, the option pool (title, optional
 description, weight, maxPerTable), save, pull-for-all-tables, a read-only
 per-table results breakdown, and delete.
 
+## Exports
+
+| Export | Signature | Purpose |
+| --- | --- | --- |
+| `LotteryOptionsEditScreen` (default) | `(): JSX.Element \| null` | Screen component for `/lottery-options-edit?gameId=...&instanceId=...&draft=...`. Resolves the existing instance (if any) and this game's table numbers, gates on admin status, then renders `LotteryOptionsEditForm` keyed to force a remount on each logically distinct visit. |
+
+### Internal: `emptyOption(): LotteryOption`
+
+Builds a fresh, blank `LotteryOption` row (`id: ID.unique()`, empty title/description, `weight: 1`, `maxPerTable: 1`) — used to seed a brand-new instance's option list and for "add option".
+
+### Internal: `LotteryOptionsEditForm(props): JSX.Element`
+
+The actual form: name/pullsPerTable fields, the option-row list with add/remove, save, and — once an `instance` exists — pull, delete, and the per-table results breakdown.
+
+| Prop | Type | Meaning |
+| --- | --- | --- |
+| `gameId` | `string` | Game this instance belongs (or will belong) to. |
+| `draft` | `string \| undefined` | Fresh id minted by `lottery-add.tsx` for a new-instance attempt; preserved through the create→edit-mode redirect. |
+| `instance` | `OptionsLottery \| null` | The parsed existing instance being edited, or `null` in create mode. |
+| `tableNumbers` | `number[]` | Every table number for this game, used for "pull for all tables" and to disable Pull when there are no tables yet. |
+| `colors` | `ReturnType<typeof useTheme>["colors"]` | Current theme colors. |
+| `styles` | `ReturnType<typeof makeStyles>` | Shared stylesheet. |
+| `backToLottery` | `() => void` | Navigates back to the lottery list; used by the back button and after a successful delete. |
+
+### `updateOption(id: string, patch: Partial<LotteryOption>): void`
+
+Merges `patch` into the option matching `id` within local `options` state, leaving other rows untouched.
+
+### `addOption(): void`
+
+Appends a fresh `emptyOption()` row to `options`.
+
+### `removeOption(id: string): Promise<void>`
+
+If editing an existing `instance` and `actions.canRemoveOption(instance, id)` is false (the option is still referenced by a saved result), shows a blocking explanatory dialog and leaves `options` unchanged; otherwise removes the row with that `id` from `options`.
+
+### `handleSave(): Promise<void>`
+
+No-ops if `validationError` is set. Otherwise builds a `LotteryConfigInput` (`{ name, pullsPerTable: pullsPerTableNumber, options }`) and either calls `actions.update(instance, config)` (editing) or `actions.create(gameId, config)` (creating); on successful create, replaces the route to the same screen with the new `instanceId` attached (keeping `draft` so the form doesn't remount — see "How it works").
+
+### `handlePull(): Promise<void>`
+
+No-ops if there's no `instance`. Calls `actions.pull(instance, tableNumbers, confirmOptions)`, where `confirmOptions` is a translated destructive re-pull confirmation if `instance.results.length > 0` (an existing pull would be overwritten), or `undefined` for a first pull (no confirmation needed).
+
+### `handleDelete(): Promise<void>`
+
+No-ops if there's no `instance`. Calls `actions.remove(instance, ...)` with a translated destructive confirm dialog; if it resolves truthy, calls `backToLottery()`.
+
+### `makeStyles(colors: ReturnType<typeof useTheme>["colors"]): StyleSheet`
+
+Builds all form/card/button/result-row styles from theme colors; memoized via `useMemo` on `colors`.
+
 ## How it works
 
 - Not admin → immediately `router.back()`, renders nothing.
@@ -39,6 +91,14 @@ per-table results breakdown, and delete.
   delegates the actual draw to `useOptionsLotteryActions().pull`.
 - The results breakdown (table → resolved option titles) is this screen's
   admin "board" — there's no separate all-tables view elsewhere in the app.
+
+### `key={draft ?? instanceId ?? "new"}` remount strategy
+
+`LotteryOptionsEditForm` is deliberately remounted (all local form state reset) whenever the visit is logically different: a different existing `instanceId`, or a fresh create attempt (`draft` is a new id minted by `lottery-add.tsx` on every tap of the "Options" tile, so two separate create attempts never collide even though both lack an `instanceId`). Crucially, `draft` is carried through the create→edit-mode redirect in `handleSave` (`&draft=${draft}&instanceId=${created.$id}`), so the key stays the same across that transition and the form does *not* remount — preserving whatever the admin just saved instead of discarding it back to a blank/seeded state.
+
+### Validation-gated Save
+
+`validationError` (`useMemo`, deps `[options, pullsPerTableNumber]`) runs `validateLotteryConfig` on every options/pulls-per-table change; a non-null result disables Save and Pull and renders a translated error string (`t(\`errors.${validationError.code}\`, validationError.meta)`) — this keeps the form from ever submitting a config the draw algorithm couldn't actually resolve (e.g. not enough total weight/capacity to satisfy `pullsPerTable` across all tables).
 
 ## Related
 

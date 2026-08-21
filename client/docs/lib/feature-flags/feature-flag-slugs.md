@@ -12,8 +12,8 @@ of the corresponding Appwrite document ([`FeatureFlag`](../models/feature-flag.m
 
 | Export | Type | Meaning |
 |---|---|---|
-| `FeatureFlagSlugs` | `const` object | `{ TABLE_BELL: "table_bell", TIMER: "timer", RESULTS: "results", LOTTERY: "lottery" }` |
-| `FeatureFlagSlug` | Type | Union of `FeatureFlagSlugs`' values |
+| `FeatureFlagSlugs` | `const` object (`as const`) | `{ TABLE_BELL: "table_bell", TIMER: "timer", RESULTS: "results", LOTTERY: "lottery" }`. Frozen at the type level so every property resolves to its literal string, not `string`. |
+| `FeatureFlagSlug` | `type FeatureFlagSlug = "table_bell" \| "timer" \| "results" \| "lottery"` | Union of `FeatureFlagSlugs`' values (`(typeof FeatureFlagSlugs)[keyof typeof FeatureFlagSlugs]`), used to type any parameter that must be one of the known slugs. |
 
 ## Used by
 

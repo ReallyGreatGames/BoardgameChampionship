@@ -13,10 +13,10 @@ a game's default timer settings, despite the file's name).
 
 | State/Method | Purpose |
 |---|---|
-| `collection: Game[]` | All `Game` documents |
-| `init()` | Loads the collection |
-| `add(data)` | Creates a `Game` |
-| `update(item, silent?)` | Partial update by `$id` |
+| `collection: Game[]` | All `Game` documents — default timer duration/round-time/direction/colors per game |
+| `init(): Promise<void>` | `fetchCollection(key, set)` — loads the full `games` collection with no query filter |
+| `add(data: GameInput): Promise<Game \| null>` | Creates a `Game` via `addToCollection<Game>(key, data)` with an auto-generated (`ID.unique()`) id, where `GameInput = Omit<Game, keyof Models.Document \| keyof Models.Row>`; returns the created document or `null` (with an `Alert`) on failure |
+| `update(item: PartialGame, silent?: boolean): Promise<boolean>` | `updateInCollection(key, item, silent)` — partial update by `item.$id`; `silent` (default `false`) suppresses the failure `Alert`; returns whether the update succeeded |
 
 ### Types
 

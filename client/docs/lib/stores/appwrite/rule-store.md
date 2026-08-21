@@ -13,10 +13,10 @@ Zustand store for the `rules` collection ([`Rule`](../../models/rule.md)).
 | State/Method | Purpose |
 |---|---|
 | `collection: Rule[]` | All `Rule` documents |
-| `init()` | Loads the collection |
-| `add(data)` | Creates a `Rule` |
-| `update(item)` | Partial update by `$id` |
-| `delete(data)` | Deletes a `Rule` |
+| `init(): Promise<void>` | `fetchCollection(key, set)` — loads the full `rules` collection with no query filter |
+| `add(data: Omit<Rule, keyof Models.Document>): Promise<Rule \| null>` | Creates a `Rule` via `addToCollection(key, data)` with an auto-generated (`ID.unique()`) id; returns the created document or `null` (with an `Alert`) on failure |
+| `update(item: PartialRule): Promise<boolean>` | `updateInCollection(key, item)` — partial update by `item.$id`; returns whether the update succeeded |
+| `delete(data: PartialRule): Promise<boolean>` | `removeFromCollection(key, data)` — deletes the `Rule` by `data.$id`; returns whether the delete succeeded |
 
 ### `type PartialRule`
 

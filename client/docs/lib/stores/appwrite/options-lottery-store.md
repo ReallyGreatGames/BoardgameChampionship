@@ -16,11 +16,15 @@ Standard DB-row store: default realtime channel, generic CRUD helpers.
 
 | State/Method | Purpose |
 |---|---|
-| `collection: OptionsLotteryRow[]` | All options-lottery rows across every game |
-| `init()` | Loads the full collection |
-| `add(data)` | Creates a row (`ID.unique()` id — a game can have several instances) |
-| `update(item)` | Partial update (used for both config edits and writing a fresh `resultsJson` after a pull) |
-| `delete(item)` | Deletes the row — since results are embedded JSON on the same row, this is the entire cascade-delete: one row, everything gone |
+| `collection: OptionsLotteryRow[]` | All options-lottery rows (`Models.Document` + `name`, `optionsJson`, `resultsJson`, etc.) across every game |
+| `init(): Promise<void>` | `fetchCollection(key, set)` — loads the full `options-lotteries` collection with no query filter |
+| `add(data: Omit<OptionsLotteryRow, keyof Models.Document>): Promise<OptionsLotteryRow \| null>` | Creates a row via `addToCollection(key, data)` with an auto-generated (`ID.unique()`) id — a game can have several instances; returns the created row, or `null` (and shows an `Alert`) on failure |
+| `update(item: PartialOptionsLotteryRow): Promise<boolean>` | `updateInCollection(key, item)` — partial update by `item.$id` (used for both config edits and writing a fresh `resultsJson` after a pull); returns whether the update succeeded |
+| `delete(data: PartialOptionsLotteryRow): Promise<boolean>` | `removeFromCollection(key, data)` — deletes the row by `data.$id`; since results are embedded JSON on the same row, this is the entire cascade-delete: one row, everything gone; returns whether the delete succeeded |
+
+### `type PartialOptionsLotteryRow`
+
+`Partial<OptionsLotteryRow> & { $id: string }` — the shape `update`/`delete` expect.
 
 ## Used by
 

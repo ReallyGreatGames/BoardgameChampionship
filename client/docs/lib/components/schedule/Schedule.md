@@ -10,14 +10,53 @@ and deletion. The single richest component in the schedule feature.
 
 ## Exports
 
-| Export | Purpose |
-|---|---|
-| `ScheduleList` (component) | No props — reads the schedule store itself; the component actually mounted by screens |
-| `ScheduleItem` (component) | Props: `{ schedule: Schedule, admin?: AdminActions }` — one timeline row, exported so it can in principle be reused standalone |
+| Export | Signature | Purpose |
+|---|---|---|
+| `ScheduleList` (component) | `ScheduleList(): JSX` | No props — reads the schedule/result/table stores itself. Renders the full timeline, the two modals (item edit, timer settings), and (for admins) the trailing "add item" row. The component actually mounted by screens. |
+| `ScheduleItem` (component) | `ScheduleItem({ schedule: Schedule, admin?: AdminActions }): JSX` | One timeline row: header (icon, title, time, expand chevron), expandable body (time range, duration, "go to game" button, embedded `Table`, markdown description), and an optional admin action bar. Exported so it can in principle be reused standalone. |
 
-`AdminActions` (not exported, but part of `ScheduleItem`'s prop shape):
-`{ onMoveUp, onMoveDown, onSetActive, onEdit, onDelete, isFirst, isLast,
-disabled, canSetActive }`.
+### `AdminActions` (not exported, but part of `ScheduleItem`'s `admin` prop type)
+
+| Property | Type | Meaning |
+|---|---|---|
+| `onMoveUp` | `() => void` | Invoked when the "move up" button is pressed; swaps this item's `sortIndex` with its predecessor. |
+| `onMoveDown` | `() => void` | Invoked when the "move down" button is pressed; swaps this item's `sortIndex` with its successor. |
+| `onSetActive` | `() => void` | Invoked when the "set active" button is pressed; makes this item the active schedule item. |
+| `onEdit` | `() => void` | Opens the edit modal for this item. |
+| `onDelete` | `() => void` | Deletes this item (after confirmation). |
+| `isFirst` | `boolean` | Whether this is the first item in sort order; disables the "move up" button. |
+| `isLast` | `boolean` | Whether this is the last item in sort order; disables the "move down" button. |
+| `disabled` | `boolean` | Whether admin controls are disabled (an update is in flight, per `ScheduleList`'s `isLoading`/debounce). |
+| `canSetActive` | `boolean` | Whether the "set active" button should render for this item — true only for the item immediately before/after the currently active one, or the first item if none is active. |
+
+### `ScheduleItem` internal state and handlers
+
+| Name | Signature/Type | Behavior |
+|---|---|---|
+| `expanded` | `useState<boolean>`, initial `schedule.isActive` | Whether the item's body is shown. |
+| `endTime` | `string` | `addMinutesToTime(schedule.startTimePlanned, schedule.durationPlanned)`, recomputed every render (not memoized). |
+| `handleToggle` | `handleToggle(): void` | Toggles `expanded`, wrapped in a `LayoutAnimation.configureNext` for a smooth expand/collapse, and animates the chevron rotation to match. |
+
+### `ScheduleList` internal functions
+
+| Function | Signature | Behavior |
+|---|---|---|
+| `handleMoveUp` | `handleMoveUp(index: number): Promise<void>` | Swaps `sortIndex` between `sortedScheduleItems[index]` and its predecessor via two parallel `update` calls; sets `isLoading` for the duration plus a trailing `debounceTimeOut` (2s) after completion. |
+| `handleMoveDown` | `handleMoveDown(index: number): Promise<void>` | Symmetric to `handleMoveUp`, swapping with the successor instead. |
+| `handleSetActive` | `handleSetActive(storeIndex: number): Promise<void>` | Determines whether the currently active item's game has fully-signed/submitted results (see "Setting the active item" below); shows one or two confirmation dialogs accordingly; on confirm, marks the previously active item `isFinished`/inactive as appropriate and sets `sortedScheduleItems[storeIndex]` active, all via parallel `update` calls. |
+| `handleDelete` | `handleDelete(storeIndex: number): Promise<void>` | Confirms (destructive) via `useDialog().confirm`, then deletes `sortedScheduleItems[storeIndex]` through `deleteItem`, toggling `isLoading` around the call. |
+| `handleEdit` | `handleEdit(storeIndex: number): void` | Clones `sortedScheduleItems[storeIndex]` into `editingItem` and opens the item modal. |
+| `addSchedule` | `addSchedule(): void` | Clears `editingItem` (add mode) and opens the item modal. |
+| `handleModalSave` | `handleModalSave(data: ScheduleFormData): Promise<void>` | Passed as `onSave` to `ScheduleItemModal`. Updates `editingItem` merged with `data` if editing, otherwise calls `add(data)`; throws if the store call reports failure. |
+
+### `ScheduleList` derived values
+
+| Value | Type | Computed as |
+|---|---|---|
+| `sortedScheduleItems` | `Schedule[]` | `collection` copied and sorted ascending by `sortIndex`. Recomputed on `[collection]`. |
+| `nextSortIndex` | `number` | `0` if there are no items, otherwise `max(sortIndex) + 1` — passed to `ScheduleItemModal` as the new item's default `sortIndex`. Recomputed on `[sortedScheduleItems]`. |
+| `lastIndex` | `number` | `sortedScheduleItems.length - 1`, computed inline each render. |
+| `activeIndex` | `number` | Index of the currently active item in `sortedScheduleItems` (`-1` if none), computed inline each render — feeds `canSetActive` for every row. |
 
 ## How it works
 

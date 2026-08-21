@@ -11,6 +11,26 @@
 Tab switcher hosting the six admin surfaces: results, rankings,
 statistics, schedule, tournament settings (+ feature flags), and data import.
 
+## Exports
+
+| Export | Signature | Purpose |
+| --- | --- | --- |
+| `AdminDashboard` (default) | `(): JSX.Element` | Screen component for `/admin`. Wraps `AdminDashboardContent` in `ImportActivityProvider` so import/delete activity state is available to both the tab bar and the import tab. |
+
+### Internal: `AdminDashboardContent(): JSX.Element`
+
+Renders the horizontal tab bar and the active tab's content. Holds `activeTab: Tab` (`useState`, default `"results"`) and reads `busy` from `useImportActivity()` to disable switching to any tab other than the currently-active one while an import/delete run is in progress.
+
+### Types
+
+| Type | Definition | Meaning |
+| --- | --- | --- |
+| `Tab` | `"results" \| "rankings" \| "statistics" \| "schedule" \| "tournamentSettings" \| "import"` | The six admin dashboard sections; also the key type for `TABS` and `activeTab`. |
+
+### `makeStyles(colors: ReturnType<typeof useTheme>["colors"]): StyleSheet`
+
+Builds all dashboard styles (tab bar, tab states, content area, settings scroll section) from theme colors; memoized via `useMemo` on `colors`.
+
 ## How it works
 
 Wraps its content in

@@ -6,9 +6,15 @@
 
 Tiny per-seat icon summarizing signature status on a [`TableCard`](TableCard.md).
 
-## Props
+## Exports
 
-`{ index: number, sigIds: string[], isSubmitted: boolean }`
+### `SignatureStatusIcon({ index, sigIds, isSubmitted }: Props): JSX.Element | null`
+
+| Prop | Type | Meaning |
+|---|---|---|
+| `index` | `number` | Seat index to check within `sigIds`. |
+| `sigIds` | `string[]` | The table's signature file ids, one slot per seat (falsy/empty entries mean unsigned). |
+| `isSubmitted` | `boolean` | Whether the table's result has been submitted. |
 
 ## How it works
 

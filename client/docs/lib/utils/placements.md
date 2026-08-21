@@ -18,6 +18,30 @@ team rankings for a 4-player table.
 | `PlayerStat` | Type | Aggregated per-player statistic, input to `rankTeams` |
 | `TeamRanking` | Type | Resulting ranking of one team |
 
+`PlayerStat` properties:
+
+| Property | Type | Meaning |
+|---|---|---|
+| `playerId` | `string` | Player's document id |
+| `playerName` | `string` | Display name |
+| `teamId` | `string` | Id of the team this player is grouped into by `rankTeams` |
+| `tournamentPoints` | `number` | Total points already earned by this player across all played games |
+| `placements` | `number[]` | Every raw placement (1st/2nd/3rd/4th) this player has recorded, one per game played |
+
+`TeamRanking` properties:
+
+| Property | Type | Meaning |
+|---|---|---|
+| `rank` | `number` | 1-based position in the final sorted ranking |
+| `teamId` | `string` | Team document id |
+| `teamName` | `string` | Team display name |
+| `teamCode` | `string` | Team's short code |
+| `totalPoints` | `number` | Sum of `tournamentPoints` across all of the team's players |
+| `avgPlacement` | `number` | Mean of every placement recorded by any player on the team (`999` if the team has none, so it sorts last) |
+| `secondPlaces` | `number` | Count of `2` values across all of the team's players' `placements` |
+| `thirdPlaces` | `number` | Count of `3` values across all of the team's players' `placements` |
+| `players` | `PlayerStat[]` | The team's constituent player stats, unmodified |
+
 ## How it works
 
 ### `isValidPlacementCombo`

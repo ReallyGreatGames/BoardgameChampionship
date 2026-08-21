@@ -12,10 +12,10 @@ Zustand store for the `results` collection ([`Result`](../../models/result.md)).
 
 | State/Method | Purpose |
 |---|---|
-| `collection: Result[]` | All `Result` documents |
-| `init()` | Loads the collection |
-| `add(data)` | Creates a `Result` |
-| `update(item, silent?)` | Partial update by `$id` |
+| `collection: Result[]` | All `Result` documents — one per team-per-game score/placement entry |
+| `init(): Promise<void>` | `fetchCollection(key, set)` — loads the full `results` collection with no query filter |
+| `add(data: Omit<Result, keyof Models.Document>): Promise<Result \| null>` | Creates a `Result` via `addToCollection(key, data)` with an auto-generated (`ID.unique()`) id; returns the created document or `null` (with an `Alert`) on failure |
+| `update(item: PartialResult, silent?: boolean): Promise<boolean>` | `updateInCollection(key, item, silent)` — partial update by `item.$id`; `silent` (default `false`) suppresses the failure `Alert`, useful for best-effort background writes; returns whether the update succeeded |
 
 ### `type PartialResult`
 

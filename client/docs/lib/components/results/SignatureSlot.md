@@ -7,9 +7,13 @@
 Small thumbnail for one player's signature — loads and renders the SVG
 from Appwrite storage, or a placeholder/error icon.
 
-## Props
+## Exports
 
-`{ fileId: string | undefined | null }`
+### `SignatureSlot({ fileId }: Props): JSX.Element`
+
+| Prop | Type | Meaning |
+|---|---|---|
+| `fileId` | `string \| undefined \| null` | Appwrite storage file id of the player's signature SVG; `undefined`/`null`/`""` means "not yet signed" and skips the fetch. |
 
 ## How it works
 

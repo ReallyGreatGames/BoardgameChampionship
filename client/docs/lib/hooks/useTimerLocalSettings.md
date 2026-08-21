@@ -18,8 +18,18 @@ pause mode are a seating/device-setup decision, not shared tournament state.
 
 ### `useTimerLocalSettings(gameId: string | undefined)`
 
-Returns `{ orientationMode, pauseMode, setOrientationMode, setPauseMode,
-toggleOrientationMode, togglePauseMode }`.
+`gameId` — the current game; when `undefined` both underlying storages
+reset to their defaults (see [`useSecureStoragePerGame`](useSecureStoragePerGame.md)).
+Returns:
+
+| Property | Type | Meaning |
+|---|---|---|
+| `orientationMode` | `TimerOrientationMode` (`"center" \| "side"`) | Whether timer cells are laid out facing the center of the table or along its side; defaults to `"center"`. |
+| `pauseMode` | `TimerPauseMode` (`"auto" \| "manual"`) | Whether tapping a seat auto-pauses the previously active seat or requires an explicit manual pause; defaults to `"auto"`. |
+| `setOrientationMode` | `(next: TimerOrientationMode) => void` | Sets and persists `orientationMode` for this `gameId`. |
+| `setPauseMode` | `(next: TimerPauseMode) => void` | Sets and persists `pauseMode` for this `gameId`. |
+| `toggleOrientationMode` | `() => void` | Flips `orientationMode` between `"center"` and `"side"`. |
+| `togglePauseMode` | `() => void` | Flips `pauseMode` between `"auto"` and `"manual"`. |
 
 ## How it works
 

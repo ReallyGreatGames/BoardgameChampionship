@@ -8,10 +8,27 @@ Cross-platform primitives for triggering a local notification with sound/haptics
 
 ## Exports
 
-| Export | Signature | Purpose |
+### `requestNotificationPermissions(): Promise<void>`
+
+No parameters. On web, only calls `Notification.requestPermission()` when the
+browser's `Notification` API exists and permission is still in the `"default"`
+(unasked) state — it never re-prompts if the user already granted or denied.
+On native, delegates unconditionally to `Notifications.requestPermissionsAsync()`
+from `expo-notifications`, which shows the OS permission dialog if needed.
+Resolves once the permission decision (or no-op) completes; does not return
+the resulting permission status.
+
+### `triggerLocalNotification(title: string, body: string): Promise<void>`
+
+| Parameter | Type | Description |
 |---|---|---|
-| `requestNotificationPermissions()` | `() => Promise<void>` | Requests notification permission (browser `Notification` API on web, `expo-notifications` on native) |
-| `triggerLocalNotification(title, body)` | `(string, string) => Promise<void>` | Fires a local notification with sound/vibration |
+| `title` | `string` | Notification title text. |
+| `body` | `string` | Notification body/message text. |
+
+Fires a single local notification with sound and haptic/vibration feedback,
+branching by `Platform.OS`. Returns a promise that resolves once the
+platform-specific notification call has been issued (native) or synchronously
+kicked off (web). See "How it works" for the platform-specific behavior.
 
 ## How it works
 
@@ -21,11 +38,17 @@ configured so notifications still show while the app is foregrounded
 
 `triggerLocalNotification` branches by platform:
 - **Web**: plays a synthesized two-tone chime via the Web Audio API
-  (`playWebNotificationSound`, silently no-ops if `AudioContext` is
-  unavailable), vibrates the device if supported, and shows a browser
-  `Notification` if permission was already granted.
-- **Native**: fires a warning-level haptic (`expo-haptics`) and schedules an
-  immediate local OS notification with sound via `expo-notifications`.
+  (internal, non-exported helper `playWebNotificationSound()` — two sine
+  oscillators at 880Hz/1108Hz with an exponential pitch/gain decay over
+  ~1.4s; silently no-ops if `AudioContext`/`webkitAudioContext` is
+  unavailable or throws), vibrates the device with the pattern
+  `[300, 100, 300, 100, 300]` ms if `navigator.vibrate` is supported, and
+  shows a browser `Notification(title, { body, icon })` only if permission
+  is already `"granted"` (it never prompts here — prompting is
+  `requestNotificationPermissions`'s job).
+- **Native**: fires a `Warning`-level haptic (`Haptics.notificationAsync`)
+  and schedules an immediate local OS notification (`trigger: null`) with
+  `sound: true` via `Notifications.scheduleNotificationAsync`.
 
 ## Used by
 

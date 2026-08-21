@@ -11,6 +11,17 @@ quirks common in spreadsheet exports.
 
 ### `readTextFile(uri: string): Promise<string>`
 
+| Parameter | Type | Description |
+|---|---|---|
+| `uri` | `string` | File URI to read — a `blob:`/`http(s):` URL on web, a native file path/`content://` URI elsewhere (as returned by `expo-document-picker`) |
+
+Reads the file at `uri` in full and returns its contents decoded to a
+plain JS string, transparently handling the BOM-stripping, UTF-8 validity
+check, Windows-1252 fallback, and mojibake-repair steps described below.
+Returns a rejected promise if the underlying `fetch` (web) fails with a
+non-OK HTTP status; native reads propagate whatever `expo-file-system`
+throws.
+
 ## How it works
 
 1. Reads the raw bytes (`fetch` + `arrayBuffer` on web, `expo-file-system`'s

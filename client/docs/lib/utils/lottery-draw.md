@@ -17,6 +17,24 @@ close to the configured weight ratio.
 | `computeDraw(options, pullsPerTable, tableNumbers)` | `(LotteryOption[], number, number[]) => LotteryTableResult[]` | Computes a fresh draw |
 | `LotteryValidationError` | Type | `{ code: "no-options" \| "invalid-pulls-per-table" \| "missing-title" \| "invalid-weight" \| "invalid-max-per-table" \| "insufficient-capacity"; meta? }` |
 
+`LotteryValidationError` properties:
+
+| Property | Type | Meaning |
+|---|---|---|
+| `code` | `"no-options" \| "invalid-pulls-per-table" \| "missing-title" \| "invalid-weight" \| "invalid-max-per-table" \| "insufficient-capacity"` | Which validation rule failed, used as an i18n lookup key by callers |
+| `meta` | `Record<string, string \| number>` (optional) | Extra context for the message, e.g. the offending option's `title`, or `capacity`/`pullsPerTable` for `insufficient-capacity` |
+
+Validation rule per `code`:
+
+| `code` | Triggered when |
+|---|---|
+| `no-options` | `options` is empty |
+| `invalid-pulls-per-table` | `pullsPerTable` isn't a positive integer |
+| `missing-title` | An option's `title` is blank |
+| `invalid-weight` | An option's `weight` isn't a positive integer |
+| `invalid-max-per-table` | An option's `maxPerTable` isn't a positive integer |
+| `insufficient-capacity` | `sum(maxPerTable)` across all options is less than `pullsPerTable` |
+
 ## How it works
 
 1. **Apportion**: `totalSlots = tableNumbers.length * pullsPerTable` is split

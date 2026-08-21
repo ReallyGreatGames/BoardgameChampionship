@@ -19,6 +19,67 @@ teams/players or table-seatings file doesn't leave stale rows behind.
 | `WipeGroup` | Type | `{ key, label, tableId, items: WipeItem[] }` |
 | `WipeItemStatus` | Type | `{ state: "pending" \| "deleting" \| "success" } \| { state: "error"; message: string }` |
 
+### `listAllRows<T>(tableId: string): Promise<(T & { $id: string })[]>`
+
+| Parameter | Type | Description |
+|---|---|---|
+| `tableId` | `string` | The Appwrite table/collection id to fully page through (e.g. `"teams"`, `"tables"`, `"timers"`) |
+
+Generic helper that repeatedly calls `tablesDB.listRows` with `Query.limit`
++ `Query.offset`, advancing the offset by `PAGE_SIZE` (500) each iteration
+until a page comes back with fewer than `PAGE_SIZE` rows. Returns every row
+in the table (typed as `T` plus the Appwrite `$id` field), regardless of
+how many pages that takes.
+
+### `deleteItems(tableId, items, onStatus, isMounted): Promise<void>`
+
+| Parameter | Type | Description |
+|---|---|---|
+| `tableId` | `string` | The Appwrite table/collection id the items belong to |
+| `items` | `WipeItem[]` | The rows to delete, in order |
+| `onStatus` | `(itemId: string, status: WipeItemStatus) => void` | Per-item progress callback |
+| `isMounted` | `() => boolean` | Polled before each item; deletion stops early if it returns `false` |
+
+Deletes `items` one at a time from `tableId`, reporting `deleting` then
+`success`/`error` per item via `onStatus`. See "How it works" below for the
+pacing and not-found handling.
+
+### `listPlayersWipePlan(): Promise<WipeGroup[]>`
+
+No parameters. Builds the confirmation/wipe plan shown before a teams/players
+re-import: fetches all teams, tables, and timers, and groups them into three
+`WipeGroup`s (`teams`, `tables`, `timers`) for display and subsequent
+deletion via `deleteItems`.
+
+### `listTablesWipePlan(): Promise<WipeGroup[]>`
+
+No parameters. Builds the confirmation/wipe plan shown before a
+table-seatings re-import: fetches all tables and timers and groups them
+into two `WipeGroup`s (`tables`, `timers`).
+
+### `WipeItem`
+
+| Property | Type | Description |
+|---|---|---|
+| `id` | `string` | Row id to delete |
+| `label` | `string` | Human-readable label shown in the wipe confirmation UI |
+
+### `WipeGroup`
+
+| Property | Type | Description |
+|---|---|---|
+| `key` | `string` | Stable identifier for the group (`"teams"`, `"tables"`, `"timers"`) |
+| `label` | `string` | Human-readable group heading |
+| `tableId` | `string` | The Appwrite table/collection id `deleteItems` should target for this group's items |
+| `items` | `WipeItem[]` | The rows in this group |
+
+### `WipeItemStatus`
+
+A discriminated union describing one item's live deletion progress —
+`{ state: "pending" }`, `{ state: "deleting" }`, `{ state: "success" }`, or
+`{ state: "error"; message: string }` — mirroring `ImportRowStatus` in the
+other import-service modules.
+
 ## How it works
 
 ### `listAllRows`

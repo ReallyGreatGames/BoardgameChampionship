@@ -16,6 +16,20 @@ state and actions from
 [`useTimerState`](../../../lib/hooks/useTimerState.md), which owns
 essentially all of the actual logic.
 
+## Exports
+
+| Export | Signature | Purpose |
+| --- | --- | --- |
+| `TimerPage` (default) | `(): JSX.Element` | Screen component for `/timer?gameId=...`. Gates on `useRequireAuth()`, resolves the current player's `tableNumber` via `usePlayerTable(params.gameId)`, forces landscape orientation + keep-awake while focused (`useFocusEffect`), and renders `TimerScreenContent` keyed by `(gameId, tableNumber)`. |
+
+### Internal: `TimerScreenContent({ gameId, tableNumber }: { gameId: string \| undefined; tableNumber: number \| null }): JSX.Element`
+
+The actual timer UI: four `TimerCell`s in a 2x2 grid, a center `TimerControlPanel` overlay, and a `TimerMenu` for reset/custom-timer/close actions. Owns local UI state (`menuOpen`, `customTimerOpen`, `elapsedSeconds`) and delegates all timer logic to [`useTimerState`](../../../lib/hooks/useTimerState.md).
+
+### `handleToggleBell(): Promise<void>`
+
+If a bell is currently ringing for this table, calls `bellActions.dismiss(bell, ...)` with a translated confirm dialog; otherwise, if `tableNumber` is known, calls `bellActions.ring(tableNumber, undefined, ...)` with its own confirm dialog. Closes the menu (`setMenuOpen(false)`) only if the action actually completed (`done` is truthy), so a cancelled confirm dialog leaves the menu open.
+
 ## How it works
 
 ### `TimerScreenContent`, keyed by `(gameId, tableNumber)`
@@ -61,6 +75,10 @@ re-deriving them from the raw stored fields — `hasCustomTimer` (used inside
 per-table override (including an explicit `0` round time) from a table
 that was never customized; comparing raw numbers/strings against the
 game's default directly can't make that distinction.
+
+### Bell elapsed-time ticker
+
+A `useEffect` keyed on `[bell]` resets `elapsedSeconds` to `0` and clears any running interval when there's no active bell; when a bell exists, it computes elapsed seconds from `bell.startTime` immediately and then every second via `setInterval`, cleaning up the interval on unmount or when `bell` changes (e.g. dismissed, or a different bell object arrives from the store).
 
 ### Leaving the screen
 

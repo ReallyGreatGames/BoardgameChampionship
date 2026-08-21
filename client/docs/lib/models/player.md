@@ -15,7 +15,7 @@ Appwrite document type `Player` — a tournament player.
 | `name` | `string` | Display name |
 | `team` | [`Team`](team.md) | Associated team (Appwrite relation) |
 | `playerNumber` | `number` | Start number |
-| `playerCode` | `string` | Unique code (e.g. for import/matching) |
+| `playerCode` | `string` | Unique code of the form `{team.code}-{playerNumber}` (e.g. `"GER-2"`), assigned during TSV import (see [`lib/import/player-import-service.ts`](../../import/player-import-service.md)) and later used to match players into tables when importing table assignments by code (see [`lib/import/table-import-service.ts`](../../import/table-import-service.md)) |
 
 ## Used by
 

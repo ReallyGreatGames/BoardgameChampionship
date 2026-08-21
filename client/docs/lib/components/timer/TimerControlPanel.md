@@ -9,12 +9,44 @@ readout, a row of icon toggles (orientation, overflow menu, pause mode),
 and two full-width action bars (table bell, pause/resume all). Replaces an
 older, smaller round menu-trigger button.
 
-## Props
+## Exports
 
-`{ onOpenMenu, orientationMode, onToggleOrientation, pauseMode,
-onTogglePauseMode, bell, bellElapsedLabel, onToggleBell, bellLoading?,
-bellDisabled?, allPaused, onToggleAllPause, tableElapsedLabel,
-spamProtectionActive }`
+### `TimerControlPanel(props: Props): JSX.Element`
+
+| Prop | Type | Meaning |
+| --- | --- | --- |
+| `onOpenMenu` | `() => void` | Opens the [`TimerMenu`](TimerMenu.md) overflow menu. |
+| `orientationMode` | `TimerOrientationMode` | `"center"` or `"side"`; selects which icon is shown for the orientation toggle. |
+| `onToggleOrientation` | `() => void` | Flips `orientationMode`. |
+| `pauseMode` | `TimerPauseMode` | `"auto"` or `"manual"`; selects which icon is shown for the pause-mode toggle. |
+| `onTogglePauseMode` | `() => void` | Flips `pauseMode`. |
+| `bell` | `TableBell \| undefined` | Current table-bell record, if any; drives the bell bar's color and label. |
+| `bellElapsedLabel` | `string \| undefined` | Formatted elapsed-time-since-rung label, shown as the bell bar's trailing text. |
+| `onToggleBell` | `() => void` | Rings the bell (if none exists) or dismisses it. |
+| `bellLoading?` | `boolean` | Shows a spinner in place of the bell icon while the ring/dismiss request is in flight. |
+| `bellDisabled?` | `boolean` | Disables the bell bar (e.g. while a request is already pending). |
+| `allPaused` | `boolean` | Whether every seat is currently paused; selects the pause/resume-all bar's icon and label. |
+| `onToggleAllPause` | `() => void` | Pauses or resumes every seat at once. |
+| `tableElapsedLabel` | `string` | Formatted total-table-elapsed-time text shown in the small header row. |
+| `spamProtectionActive` | `boolean` | Whether rapid seat/pause-all presses have tripped the anti-spam guard; shows a warning banner and disables the pause/resume-all bar. |
+
+### `IconToggle({ icon, accessibilityLabel, onPress }: IconToggleProps): JSX.Element`
+
+Unexported helper rendering one square icon button in the top icon row.
+`icon: React.ComponentProps<typeof Ionicons>["name"]` selects the glyph,
+`accessibilityLabel: string` is the screen-reader label (also used as
+visual context for which state — e.g. `"center"` vs `"side"` — the icon
+represents), and `onPress: () => void` fires on tap.
+
+### `PanelBar({ icon, color, label, trailingLabel, onPress, loading, disabled }: PanelBarProps): JSX.Element`
+
+Unexported helper rendering one full-width bar (bell / pause-all).
+`icon` and `color` (`string`) set the leading glyph and shared
+icon/text color; `label: string` is the primary text; `trailingLabel?:
+string` is optional right-aligned text (e.g. the bell's elapsed time);
+`onPress: () => void` fires on tap; `loading?: boolean` swaps the icon for
+an `ActivityIndicator`; `disabled?: boolean` dims the bar and blocks
+`onPress`.
 
 ## How it works
 

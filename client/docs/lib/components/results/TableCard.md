@@ -9,13 +9,25 @@ One table's card in the admin overview grid: read-only live timer state
 plus bell and signature status. The read-only "dashboard" counterpart to
 the interactive [`TimerCell`](../timer/TimerCell.md).
 
-## Props
+## Exports
 
-`{ entry: TableEntry, cardWidth: number, now: number, onPress?: () => void,
-onBellPress?: () => void, bellLoading?: boolean }` — `now` is passed in
-(rather than read internally) so every card on screen re-renders off the
-same shared per-second tick from the parent, instead of each card running
-its own timer.
+### `TableCard(props: Props): JSX.Element`
+
+| Prop | Type | Meaning |
+|---|---|---|
+| `entry` | [`TableEntry`](types.md) | The table's fully resolved state — players, timer, seats, result, bell. |
+| `cardWidth` | `number` | Explicit card width in the overview grid; `0` (or any falsy/`<= 0` value) makes the card take `100%` width instead, for single-column layouts. |
+| `now` | `number` | Shared millisecond timestamp used for all live time derivations. Passed in (rather than read internally) so every card on screen re-renders off the same per-second tick from the parent, instead of each card running its own timer. |
+| `onPress` | `() => void` (optional) | If provided, the whole card becomes a `TouchableOpacity` that calls this on tap; otherwise it's a plain non-interactive `View`. |
+| `onBellPress` | `() => void` (optional) | If provided, shows an acknowledge/dismiss button on an active bell row. |
+| `bellLoading` | `boolean` (optional, default `false`) | Shows a spinner in place of the bell action button's label and disables it while an acknowledge/dismiss request is in flight. |
+
+### Internal derived values
+
+| Value | Signature | Behavior |
+|---|---|---|
+| `displayTime` | `(seconds: number): number` | Converts a raw pool-seconds value into what should be shown, flipping to "counting up from 0" (`total - seconds`) when `entry.timerDirection === "up"`; otherwise returns `seconds` unchanged (counting down). |
+| `formatPlayerTime` | `(seconds: number, isOvertime: boolean): string` | Formats a seat's time for display: `+MM:SS` (via `formatTime(-seconds)`) once in overtime regardless of direction, otherwise `formatTime(displayTime(seconds))`. See "Overage display for both directions" below. |
 
 ## How it works
 

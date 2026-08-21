@@ -13,11 +13,11 @@ Zustand store for the `table-bell` collection
 
 | State/Method | Purpose |
 |---|---|
-| `collection: TableBell[]` | All `TableBell` documents |
-| `init()` | Loads the collection |
-| `add(data)` | Creates a `TableBell` with a deterministic id (see below) |
-| `update(item)` | Partial update by `$id` |
-| `delete(data)` | Deletes a `TableBell` |
+| `collection: TableBell[]` | All `TableBell` documents — `{ table, startTime, acknowledgeTime?, locked?, reason? }` rows |
+| `init(): Promise<void>` | `fetchCollection(key, set)` — loads the full `table-bell` collection with no query filter |
+| `add(data: Omit<TableBell, keyof Models.Document>): Promise<TableBell \| null>` | Creates a `TableBell` via `addToCollection(key, data, { rowId: bellRowId(data.table), silentOnConflict: true })` — `data.table` (the table number) drives a deterministic id (see below); returns the created/existing document or `null` on a non-conflict failure |
+| `update(item: PartialTableBell): Promise<boolean>` | `updateInCollection(key, item)` — partial update by `item.$id` (e.g. setting `acknowledgeTime` or `locked`); returns whether the update succeeded |
+| `delete(data: PartialTableBell): Promise<boolean>` | `removeFromCollection(key, data)` — deletes the `TableBell` by `data.$id`; returns whether the delete succeeded |
 
 ### `type PartialTableBell`
 
@@ -25,11 +25,13 @@ Zustand store for the `table-bell` collection
 
 ## How it works
 
-`add` uses [`bellRowId(table)`](../../models/table-bell.md) as a
-deterministic per-table document id with `silentOnConflict: true` — only
-one active bell may exist per table, so two simultaneous ring attempts
-(staff, or auto-ring racing across devices) converge on one row instead of
-each creating their own.
+`add` uses [`bellRowId(table: number): string`](../../models/table-bell.md)
+(returns `` `bell-${table}` ``) as a deterministic per-table document id with
+`silentOnConflict: true` — only one active bell may exist per table, so two
+simultaneous ring attempts (staff, or auto-ring racing across devices)
+converge on one row instead of each creating their own; on a 409 conflict
+`addToCollection` transparently fetches and returns the existing row instead
+of erroring.
 
 ## Used by
 

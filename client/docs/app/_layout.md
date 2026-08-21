@@ -8,6 +8,16 @@ The app's root layout: loads fonts, initializes i18next, wraps everything
 in the gesture-handler root view and [`BootstrapProvider`](../lib/bootstrap/BootstrapProvider.md),
 and defines the drawer navigator with every route's title/visibility.
 
+## Exports
+
+| Export | Signature | Purpose |
+| --- | --- | --- |
+| `RootLayout` (default) | `(): JSX.Element \| null` | The app's root component. Loads custom fonts via `useFonts()`, returns `null` until they're ready, then hides the splash screen and renders `GestureHandlerRootView` → `BootstrapProvider` → `AppNavigator`. |
+
+### Internal: `AppNavigator(): JSX.Element`
+
+Renders the `Drawer` navigator with `AppDrawer` as its custom drawer content and one `<Drawer.Screen>` per route, each with a translated `title`/`drawerLabel` and, for deep-link-only screens, `drawerItemStyle: { display: "none" }` to hide them from the drawer menu. Builds `screenOptions` (header styling, drawer tint colors) via `useMemo` keyed on `colors`.
+
 ## How it works
 
 ### Startup gate
@@ -36,6 +46,8 @@ visibility (`drawerItemStyle: { display: "none" }` for screens reached by
 deep-linking rather than the drawer menu itself, e.g. timer/results/
 signature/lottery/legal). The drawer's own content is rendered by
 [`AppDrawer`](../lib/components/shell/AppDrawer.md).
+
+`screenOptions` is memoized (`useMemo`, deps `[colors]`) because it's passed as a single object to `<Drawer>` on every render; recomputing it only when the theme's colors change avoids handing the navigator a new options object (and triggering its internal re-render machinery) on every unrelated re-render of `AppNavigator`.
 
 ## Registers
 

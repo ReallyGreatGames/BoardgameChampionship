@@ -13,10 +13,25 @@ the pure draw algorithm in
 
 ### `useOptionsLotteryActions()`
 
-Returns `{ isAdmin, saving, canRemoveOption(instance, optionId),
-create(gameId, config), update(instance, config), pull(instance,
-tableNumbers, confirmOpts?), remove(instance, confirmOpts?),
-isPulling(id), isDeleting(id) }`.
+Takes no parameters. Wires together [`useAuth`](../auth.md) (`isAdmin`),
+[`useOptionsLotteryStore`](../stores/appwrite/options-lottery-store.md),
+[`useDialog`](../components/ui/Dialog.md), and three local loading flags
+(`saving`, `pullingId`, `deletingId`). `LotteryConfigInput` is
+`{ name: string; pullsPerTable: number; options: LotteryOption[] }`, the
+shape a caller edits in the config form before it's serialized for storage.
+Returns:
+
+| Property | Signature | Meaning |
+|---|---|---|
+| `isAdmin` | `boolean` | Passthrough from `useAuth` — gates every mutation below. |
+| `saving` | `boolean` | `true` while `create` or `update` is in flight. |
+| `canRemoveOption` | `(instance: OptionsLottery, optionId: string) => boolean` | `true` if no existing `LotteryTableResult` in `instance.results` references `optionId` — used to disable removing an option that's already been drawn. |
+| `create` | `(gameId: string, config: LotteryConfigInput) => Promise<OptionsLottery \| null>` | Returns `null` immediately if not admin or `validateLotteryConfig` rejects the config. Otherwise creates a new row (`resultsJson: "[]"`, i.e. no draw yet), tracking `saving`, and returns the parsed `OptionsLottery` on success or `null` if the store write failed. |
+| `update` | `(instance: OptionsLottery, config: LotteryConfigInput) => Promise<boolean>` | Returns `false` if not admin, the config fails validation, or the new `config.options` would drop an option id still referenced by `instance.results` (see How it works). Otherwise writes the updated name/pullsPerTable/options, tracking `saving`, and returns whether the store update succeeded. |
+| `pull` | `(instance: OptionsLottery, tableNumbers: number[], confirmOpts?: DialogOptions) => Promise<boolean>` | Returns `false` if not admin. If `instance.results` is non-empty and `confirmOpts` is given, confirms before overwriting. Computes a fresh draw with `computeDraw(instance.options, instance.pullsPerTable, tableNumbers)` and writes it to `resultsJson`, tracking `pullingId`. Returns `false` (after showing an error dialog) if `computeDraw` throws, or the store update's success flag otherwise. |
+| `remove` | `(instance: OptionsLottery, confirmOpts?: DialogOptions) => Promise<boolean>` | Returns `false` if not admin. Optionally confirms, then deletes the entire lottery row (which cascades to every table's embedded result — see How it works), tracking `deletingId`, and returns the store delete's success flag. |
+| `isPulling` | `(id: string) => boolean` | `true` if `id` is the lottery instance currently mid-`pull`. |
+| `isDeleting` | `(id: string) => boolean` | `true` if `id` is the lottery instance currently mid-`remove`. |
 
 ## How it works
 

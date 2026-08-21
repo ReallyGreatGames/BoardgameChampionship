@@ -13,6 +13,15 @@ Player-color palettes for the timer display (active/dimmed/elapsed).
 | `PLAYER_COLORS` | `const` array (4 entries) | Default color palettes for the 4 seats, each `{ active, muted, elapsed, elapsedMuted }` |
 | `buildPlayerColor(hex)` | `(string) => { active, muted, elapsed, elapsedMuted }` | Derives a full color palette from a single hex color (for custom player colors) |
 
+Shape returned by every palette entry / `buildPlayerColor`:
+
+| Property | Type | Meaning |
+|---|---|---|
+| `active` | `string` (hex) | Color shown for this seat while its timer is running |
+| `muted` | `string` (hex) | Dimmed color shown for this seat when it's not running and time hasn't elapsed |
+| `elapsed` | `string` (hex) | Color shown for this seat once its time has run out while it's the running/current seat |
+| `elapsedMuted` | `string` (hex) | Dimmed color shown for this seat once its time has run out and it isn't the running seat |
+
 ## How it works
 
 `buildPlayerColor` first lifts very dark/near-black colors

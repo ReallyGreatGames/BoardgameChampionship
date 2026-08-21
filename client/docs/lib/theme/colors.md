@@ -19,10 +19,26 @@ Defines the app's four color palettes as static objects (brand tones).
 | `palettes` | `Record<ColorScheme, Palette>` | All four palettes, addressable by name |
 | `colors` | `= dark` | Static fallback; use **outside** React components only (see below) |
 
-Every palette defines the same fields: `background`, `surface`,
-`surfaceHigh`, `border`, `borderMuted`, `divider`, `text`, `textSecondary`,
-`textMuted`, `textPlaceholder`, `primary`, `secondary`, `accent`, `error`,
-`success`, `onAccent`.
+Every palette defines the same fields, all typed `string` (hex or `rgba()`):
+
+| Field | Meaning |
+|---|---|
+| `background` | Screen/root background, the lowest layer |
+| `surface` | Cards, list rows, and other content one layer above `background` |
+| `surfaceHigh` | Raised surfaces above `surface` — modals, sheets, table headers, pressed/selected rows |
+| `border` | Default hairline border color |
+| `borderMuted` | Subtler border, for less prominent dividers/outlines |
+| `divider` | Horizontal rule / separator lines between list rows or sections |
+| `text` | Primary foreground text color |
+| `textSecondary` | De-emphasized but still readable text (subtitles, helper text) |
+| `textMuted` | Low-emphasis text (timestamps, disabled-adjacent labels) |
+| `textPlaceholder` | Placeholder text in inputs |
+| `primary` | Interactive chrome — links, back buttons, icons, focused states, identifiers |
+| `secondary` | Supporting highlights, tags, section labels |
+| `accent` | CTAs, high-emphasis moments, badges, competitive highlights |
+| `error` | Destructive actions, validation failures |
+| `success` | Positive/confirmed states — acknowledged bells, admin-enabled toggles, success badges |
+| `onAccent` | Foreground color to use on top of `accent`/filled buttons (e.g. spinner/icon/text color inside a solid accent button) |
 
 **Usage convention:**
 - `primary` → interactive chrome (links, back buttons, icons, focused states, identifiers)

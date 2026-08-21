@@ -34,6 +34,61 @@ section tells you the blast radius of a change before you make it —
 something grep alone won't reliably surface (re-exports, dynamic routes,
 etc.).
 
+## Level of detail an Exports entry needs
+
+Every export — and every significant internal function/handler/derived
+value the doc already narrates — gets:
+
+- **Full signature**: the name, every parameter's name *and* type, and the
+  return type (`JSX.Element` for components, `void`/"no return value" for
+  side-effect-only functions).
+- **Behavior, not a restated type**: one or two sentences on what each
+  parameter actually controls and what the function does and returns.
+  "`gameId: string` — the game to filter by" is not enough; say what
+  filtering it actually performs and what shape comes back.
+- **Every property of an exported type/interface**: name, type, and a
+  one-line description in domain terms (not "a string" — say what the
+  string *is*, e.g. "ISO timestamp of when the bell rang").
+
+Shape the listing to match whichever pattern already dominates that
+doc/directory:
+
+- A **component's Props type** → a `| Prop | Type | Meaning |` table.
+- A **hook's returned object** → a `| Property | Signature | Meaning |`
+  table covering every returned function/value (see
+  `docs/lib/hooks/*.md` for the convention).
+- A **zustand store** → the existing `### useXStore (zustand hook)`
+  subsection with a `| State/Method | Purpose |` table.
+- A **simple util module** → the existing `| Export | Signature | Purpose |`
+  table.
+- Anything with enough nuance to need prose (validation rules, multi-branch
+  behavior, an algorithm) → a `### \`functionName(param: Type, ...): ReturnType\``
+  subsection with 1-3 sentences underneath, table optional.
+
+## When to add "How it works" prose
+
+Add a short paragraph (or a new subsection, for a whole mechanism) when:
+an effect's dependency array or an early-return guard isn't self-evident
+from reading it; a `ref` is used instead of `state` (or vice versa) for a
+specific reason; a `useMemo`/`useCallback` exists specifically to prevent
+identity-churn from re-triggering a subscription/effect; there's a
+retry/dedup/race-condition guard; or a `key`-driven remount strategy is
+used deliberately (e.g. to reset form state on navigation). Explain *why*
+it's built that way and what edge case it's guarding against — not a
+line-by-line narration of what's already visible in the code. Skip this
+for trivial one-line effects/memos that are self-evident.
+
+## Enrichment is additive, not a rewrite
+
+- Never delete or restructure existing accurate Purpose/How it
+  works/Used by content to make room for the above — extend it in place.
+- If something existing is stale relative to the current source, fix it,
+  but don't reformat sections that are already correct just for style.
+- Directory `README.md` files are indexes, not per-file docs — they list
+  other files in a table and never get the per-function/per-property
+  treatment above. Only touch a `README.md` when a file is added/removed
+  (see below); don't try to expand it into per-function detail.
+
 ## After changing code
 
 Whenever you add, remove, or change a `.ts`/`.tsx` file under `app/` or

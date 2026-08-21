@@ -6,9 +6,18 @@
 
 Centered placeholder message for empty lists/sections.
 
-## Props
+## Exports
 
-`{ message: string, style?: ViewStyle }`
+| Export | Signature | Purpose |
+|---|---|---|
+| `EmptyState` | `(props: Props): JSX` | Renders `message` centered (both axes) in a `flex: 1` container, in muted text. |
+
+### Props
+
+| Property | Type | Meaning |
+|---|---|---|
+| `message` | `string` | Placeholder text shown to the user. |
+| `style` | `ViewStyle?` | Extra style merged onto the outer container. |
 
 ## Used by
 

@@ -11,11 +11,23 @@ login screen itself) can read from Appwrite.
 
 ## Exports
 
-| Export | Purpose |
-|---|---|
-| `PIN_STORE_KEY` | Key under which the verified PIN + timestamp is persisted in [`secureStorage`](secureStorage.md) |
-| `AuthProvider` | React context provider that supplies the entire auth state |
-| `useAuth()` | Hook for reading `{ user, loading, login, loginWithPin, logout, isAdmin, isPinVerified }` |
+| Export | Signature | Purpose |
+|---|---|---|
+| `PIN_STORE_KEY` | `string` (`"bgcs_pin_auth"`) | Key under which the verified PIN + timestamp is persisted in [`secureStorage`](secureStorage.md) |
+| `AuthProvider` | `({ children: ReactNode }) => JSX.Element` | React context provider that supplies the entire auth state |
+| `useAuth()` | `() => AuthContextType` | Hook for reading the auth context; throws if called outside `AuthProvider` |
+
+`useAuth()`'s return shape (`AuthContextType`, internal type):
+
+| Property | Type | Meaning |
+|---|---|---|
+| `user` | `Models.User<Models.Preferences> \| null` | The current Appwrite user (anonymous, PIN-verified, or admin session), `null` before the initial session resolves or when unauthenticated |
+| `loading` | `boolean` | `true` until the initial session-resolution effect (`init`) has finished |
+| `login` | `(email: string, password: string) => Promise<void>` | Classic email/password admin login |
+| `loginWithPin` | `(pin: string) => Promise<void>` | Participant PIN login |
+| `logout` | `() => Promise<void>` | Clears the stored PIN, deletes all Appwrite sessions, resets `user`/`isPinVerified` |
+| `isAdmin` | `boolean` | Whether `user` carries the Appwrite `"admin"` label |
+| `isPinVerified` | `boolean` | Whether a non-admin PIN session is currently verified |
 
 ## How it works
 

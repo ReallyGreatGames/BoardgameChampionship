@@ -16,9 +16,9 @@ store's own methods).
 
 | State/Method | Purpose |
 |---|---|
-| `collection: FeatureFlag[]` | All `FeatureFlag` documents |
+| `collection: FeatureFlag[]` | All `FeatureFlag` documents — each one a `{ slug, enabled }` row |
 | `flags: Record<string, boolean>` | `slug → enabled` lookup map (see below) |
-| `init()` | Loads the collection |
+| `init(): Promise<void>` | Fetches all `FeatureFlag` documents (no query filter) and populates `collection`/`flags`; call once on app start |
 
 ## How it works
 

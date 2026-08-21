@@ -15,8 +15,8 @@ default timer settings.
 |---|---|---|
 | `durationMinutesTotal` | `number` | Default total duration in minutes |
 | `roundSecondsTotal` | `number` | Default round/turn time budget per seat, in seconds. `0` disables the round-timer feature for tables using this game's default settings |
-| `direction` | `"up" \| "down"` | Default display direction |
-| `colors` | `string[]` | Default player colors |
+| `direction` | `"up" \| "down"` | Default timer display direction (counting up from 0, or down from the pool duration) |
+| `colors` | `string[]` | Default per-seat player colors (hex strings), indexed by seat position; overridden per-device by a locally-stored per-(game, table) color choice — see `storedHexColors`/`playerColors` in [`useTimerState`](../hooks/useTimerState.md) |
 
 ## Used by
 
