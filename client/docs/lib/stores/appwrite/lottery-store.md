@@ -29,6 +29,5 @@ the bucket's own realtime events rather than a database collection's.
 ## Used by
 
 - [`lib/hooks/useLotteryActions.ts`](../../hooks/useLotteryActions.md)
-- [`lib/notifications/useLotteryNotifications.ts`](../../notifications/useLotteryNotifications.md)
 - [`lib/bootstrap/RealTimeStoreProvider.tsx`](../../bootstrap/RealTimeStoreProvider.md)
 - Screens: [`game.tsx`](../../../app/(pages)/(user)/game.md), [`lottery.tsx`](../../../app/(pages)/(user)/lottery.md)

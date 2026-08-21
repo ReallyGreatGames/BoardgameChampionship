@@ -29,5 +29,4 @@ configured so notifications still show while the app is foregrounded
 
 ## Used by
 
-- [`lib/notifications/useLotteryNotifications.ts`](useLotteryNotifications.md)
 - [`lib/notifications/useTableBellNotifications.ts`](useTableBellNotifications.md)

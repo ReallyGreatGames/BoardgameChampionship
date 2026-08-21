@@ -15,9 +15,8 @@ No return value — a side-effect-only hook, mounted once near the app root
 
 ## How it works
 
-Mirrors [`useLotteryNotifications`](useLotteryNotifications.md)'s structure,
-but inverted — only runs **for** admins (`isAdmin === true`), since bells
-are a staff-facing concern.
+Only runs **for** admins (`isAdmin === true`), since bells are a
+staff-facing concern.
 
 - On mount, records the mount time and requests notification permission once.
 - Watches [`useTableBellStore`](../stores/appwrite/table-bell-store.md)'s

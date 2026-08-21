@@ -46,8 +46,17 @@ own bell styling logic (duplicated here rather than shared, since the two
 screens' surrounding layout differs enough that extracting a shared
 component wasn't worth it).
 
+### Lottery badge
+
+The lottery action button's numeric badge is `getLotteryPhotosForGame(...).length`
+plus the count of options-lottery instances (from
+[`getOptionsLotteriesForGame`](../../../lib/utils/options-lottery.md)) that
+have a pulled result for the player's own table
+(`getResultForTable(instance, tableNumber) !== null`) — a player with no
+table yet contributes `0` from that half.
+
 ## Related
 
 - [`lib/hooks/usePlayerTable.ts`](../../../lib/hooks/usePlayerTable.md), [`useTableBellActions.ts`](../../../lib/hooks/useTableBellActions.md)
 - [`lib/components/game/Table.tsx`](../../../lib/components/game/Table.md)
-- [`lib/stores/appwrite/timer-store.ts`](../../../lib/stores/appwrite/timer-store.md)
+- [`lib/stores/appwrite/timer-store.ts`](../../../lib/stores/appwrite/timer-store.md), [`options-lottery-store.ts`](../../../lib/stores/appwrite/options-lottery-store.md)

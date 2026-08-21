@@ -23,4 +23,3 @@ source of truth.
 - [`app/(pages)/(user)/game.tsx`](../../app/(pages)/(user)/game.md)
 - [`app/(pages)/(user)/lottery.tsx`](../../app/(pages)/(user)/lottery.md)
 - [`lib/hooks/useLotteryActions.ts`](../hooks/useLotteryActions.md)
-- [`lib/notifications/useLotteryNotifications.ts`](../notifications/useLotteryNotifications.md)

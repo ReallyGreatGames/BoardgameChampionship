@@ -2,10 +2,10 @@ import NetInfo from "@react-native-community/netinfo";
 import { useCallback, useEffect, useRef } from "react";
 import { AppState, AppStateStatus } from "react-native";
 import { useAuth } from "../auth";
-import { useLotteryNotifications } from "../notifications/useLotteryNotifications";
 import { useTableBellNotifications } from "../notifications/useTableBellNotifications";
 import { useFeatureFlagStore } from "../stores/appwrite/feature-flag-store";
 import { useLotteryStore } from "../stores/appwrite/lottery-store";
+import { useOptionsLotteryStore } from "../stores/appwrite/options-lottery-store";
 import { usePlayerStore } from "../stores/appwrite/player-store";
 import { useResultStore } from "../stores/appwrite/result-store";
 import { useRuleStore } from "../stores/appwrite/rule-store";
@@ -34,6 +34,7 @@ const userInits = [
   useTeamStore,
   usePlayerStore,
   useLotteryStore,
+  useOptionsLotteryStore,
 ];
 
 const adminInits: any[] = [];
@@ -61,7 +62,6 @@ export function RealTimeStoreProvider() {
   const isAuthenticated = isAdmin || isPinVerified;
 
   useTableBellNotifications(isAdmin);
-  useLotteryNotifications(isAdmin);
 
   const tierUnsubscribes = useRef<Record<Tier, (() => void) | null>>({
     global: null,

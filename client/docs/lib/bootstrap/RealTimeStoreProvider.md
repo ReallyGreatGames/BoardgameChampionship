@@ -25,8 +25,9 @@ Stores are grouped into three tiers based on what they require:
   [`useTournamentStore`](../stores/appwrite/tournament-store.md). Opens
   immediately, no auth required (needed even on the pre-login screen).
 - **`userInits`** — every other store (schedule, table-bell, rule, timer,
-  timer-seat, timer-settings, result, table, team, player, lottery). Opens
-  once any authenticated user (PIN-verified or admin) is ready.
+  timer-seat, timer-settings, result, table, team, player, lottery,
+  options-lottery). Opens once any authenticated user (PIN-verified or
+  admin) is ready.
 - **`adminInits`** — currently empty; reserved for admin-only stores.
 
 Each tier's stores fetch their own initial data independently (each store's
@@ -56,10 +57,11 @@ Triggered by two listeners:
 
 ### Notifications
 
-Also mounts [`useTableBellNotifications(isAdmin)`](../notifications/useTableBellNotifications.md)
-and [`useLotteryNotifications(isAdmin)`](../notifications/useLotteryNotifications.md) —
-both are side-effect-only hooks that need the same stores this provider
-already initializes, so they're mounted here rather than duplicated per screen.
+Also mounts [`useTableBellNotifications(isAdmin)`](../notifications/useTableBellNotifications.md) —
+a side-effect-only hook that needs the same stores this provider already
+initializes, so it's mounted here rather than duplicated per screen. Lottery
+photos and options-lottery pulls have no notification hook (removed by
+request).
 
 ## Used by
 

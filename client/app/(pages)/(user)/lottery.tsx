@@ -4,12 +4,16 @@ import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BackButton } from "@/lib/components/ui/BackButton";
 import { EmptyState } from "@/lib/components/ui/EmptyState";
 import { useLotteryActions } from "@/lib/hooks/useLotteryActions";
+import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
+import { OptionsLottery } from "@/lib/models/options-lottery";
 import { useLotteryStore } from "@/lib/stores/appwrite/lottery-store";
+import { useOptionsLotteryStore } from "@/lib/stores/appwrite/options-lottery-store";
 import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
 import { getLotteryPhotosForGame } from "@/lib/utils/lottery";
+import { getOptionsLotteriesForGame, getResultForTable } from "@/lib/utils/options-lottery";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
@@ -19,7 +23,6 @@ import {
   ActivityIndicator,
   FlatList,
   Modal,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -29,6 +32,68 @@ import {
 
 function fileUrl(fileId: string): string {
   return storage.getFileViewURL(LOTTERY_BUCKET_ID, fileId).toString();
+}
+
+function OptionsLotterySection({
+  instance,
+  playerTable,
+  isAdmin,
+  gameId,
+  styles,
+  colors,
+  t,
+}: {
+  instance: OptionsLottery;
+  playerTable: number | null;
+  isAdmin: boolean;
+  gameId: string;
+  styles: ReturnType<typeof makeStyles>;
+  colors: ReturnType<typeof useTheme>["colors"];
+  t: (key: string, opts?: any) => string;
+}) {
+  const result = playerTable !== null ? getResultForTable(instance, playerTable) : null;
+  const pulledOptions = result
+    ? result.optionIds.map((id) => instance.options.find((o) => o.id === id))
+    : [];
+
+  const content = (
+    <View style={styles.optionsSection}>
+      <View style={styles.optionsSectionHeader}>
+        <Text style={styles.sectionTitle}>{instance.name}</Text>
+        {isAdmin && <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />}
+      </View>
+      {instance.results.length === 0 ? (
+        <Text style={styles.optionsPending}>{t("notPulledYet")}</Text>
+      ) : playerTable === null ? (
+        <Text style={styles.optionsPending}>{t("notAssignedToTable")}</Text>
+      ) : (
+        pulledOptions.map((option, i) => (
+          <View key={`${option?.id ?? "?"}-${i}`} style={styles.optionsResultItem}>
+            <Text style={styles.optionsResultTitle}>{option?.title ?? "?"}</Text>
+            {option?.description ? (
+              <Text style={styles.optionsResultDescription}>{option.description}</Text>
+            ) : null}
+          </View>
+        ))
+      )}
+    </View>
+  );
+
+  if (!isAdmin) {
+    return content;
+  }
+
+  return (
+    <Pressable
+      onPress={() =>
+        router.push(
+          `/(pages)/(user)/lottery-options-edit?gameId=${gameId}&instanceId=${instance.$id}`,
+        )
+      }
+    >
+      {content}
+    </Pressable>
+  );
 }
 
 export default function LotteryScreen() {
@@ -41,15 +106,26 @@ export default function LotteryScreen() {
   const numColumns = isCompact ? 2 : 3;
   const styles = useMemo(() => makeStyles(colors, numColumns), [colors, numColumns]);
   const { t } = useTranslation(["lottery"]);
+  const { t: tOptions } = useTranslation(["lotteryOptions"]);
 
   const collection = useLotteryStore((s) => s.collection);
+  const optionsLotteryRows = useOptionsLotteryStore((s) => s.collection);
   const actions = useLotteryActions();
+  const playerTable = usePlayerTable(gameId);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   const photos = useMemo(
     () => getLotteryPhotosForGame(collection, gameId),
     [collection, gameId],
   );
+
+  const visibleOptionsLotteries = useMemo(() => {
+    const instances = getOptionsLotteriesForGame(optionsLotteryRows, gameId);
+    // Players only ever see a lottery once it's been pulled; admins also
+    // need to see not-yet-pulled instances so they can find their way back
+    // to pull or delete them (there's no other list of drafts anywhere).
+    return isAdmin ? instances : instances.filter((instance) => instance.results.length > 0);
+  }, [optionsLotteryRows, gameId, isAdmin]);
 
   const handleBack = () => {
     if (gameId) {
@@ -69,57 +145,47 @@ export default function LotteryScreen() {
     });
   };
 
+  const hasAnyContent = photos.length > 0 || visibleOptionsLotteries.length > 0;
+  const showSectionHeaders = visibleOptionsLotteries.length > 0;
+
+  const optionsSections = visibleOptionsLotteries.length > 0 && (
+    <View style={styles.optionsSections}>
+      <Text style={styles.sectionTitle}>{tOptions("typeOptions")}</Text>
+      {visibleOptionsLotteries.map((instance) => (
+        <OptionsLotterySection
+          key={instance.$id}
+          instance={instance}
+          playerTable={playerTable}
+          isAdmin={isAdmin}
+          gameId={gameId}
+          styles={styles}
+          colors={colors}
+          t={tOptions}
+        />
+      ))}
+    </View>
+  );
+
   return (
     <View style={styles.container}>
-      <BackButton onPress={handleBack} />
+      <View style={styles.header}>
+        <BackButton onPress={handleBack} />
+        {isAdmin && (
+          <Pressable
+            style={styles.addBtn}
+            onPress={() => router.push(`/(pages)/(user)/lottery-add?gameId=${gameId}`)}
+            hitSlop={8}
+          >
+            <Ionicons name="add" size={22} color={colors.primary} />
+          </Pressable>
+        )}
+      </View>
       <Text style={styles.title}>{t("title")}</Text>
 
-      {isAdmin && (
-        <View style={styles.adminActions}>
-          {}
-          {Platform.OS === "web" ? (
-            <Pressable
-              style={styles.adminActionBtn}
-              onPress={() => actions.pickFromLibrary(gameId)}
-              disabled={actions.uploading}
-            >
-              <Ionicons name="images-outline" size={20} color={colors.onAccent} />
-              <Text style={styles.adminActionText}>{t("addPhoto")}</Text>
-            </Pressable>
-          ) : (
-            <>
-              <Pressable
-                style={styles.adminActionBtn}
-                onPress={() => actions.takePhoto(gameId)}
-                disabled={actions.uploading}
-              >
-                <Ionicons name="camera-outline" size={20} color={colors.onAccent} />
-                <Text style={styles.adminActionText}>{t("takePhoto")}</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.adminActionBtn, styles.adminActionBtnSecondary]}
-                onPress={() => actions.pickFromLibrary(gameId)}
-                disabled={actions.uploading}
-              >
-                <Ionicons name="images-outline" size={20} color={colors.primary} />
-                <Text style={[styles.adminActionText, { color: colors.primary }]}>
-                  {t("chooseFromLibrary")}
-                </Text>
-              </Pressable>
-            </>
-          )}
-        </View>
-      )}
-
-      {actions.uploading && (
-        <View style={styles.uploadingRow}>
-          <ActivityIndicator size="small" color={colors.primary} />
-          <Text style={styles.uploadingText}>{t("uploading")}</Text>
-        </View>
-      )}
-
-      {photos.length === 0 ? (
+      {!hasAnyContent ? (
         <EmptyState message={t("empty")} />
+      ) : photos.length === 0 ? (
+        <View style={styles.gridContent}>{optionsSections}</View>
       ) : (
         <FlatList
           key={numColumns}
@@ -129,6 +195,12 @@ export default function LotteryScreen() {
           contentContainerStyle={styles.gridContent}
           columnWrapperStyle={numColumns > 1 ? styles.gridRow : undefined}
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            showSectionHeaders ? (
+              <Text style={styles.sectionTitle}>{tOptions("typePhoto")}</Text>
+            ) : null
+          }
+          ListFooterComponent={optionsSections || null}
           renderItem={({ item, index }) => (
             <Pressable style={styles.tile} onPress={() => setViewerIndex(index)}>
               <Image source={{ uri: fileUrl(item.fileId) }} style={styles.thumbnail} contentFit="cover" />
@@ -197,43 +269,54 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"], numColumns: n
       padding: inset.screen,
       paddingTop: inset.group,
     },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    addBtn: {
+      padding: 4,
+    },
     title: {
       ...type.h1,
       color: colors.text,
       marginTop: inset.tight,
       marginBottom: inset.card,
     },
-    adminActions: {
-      flexDirection: "row",
-      gap: inset.tight,
-      marginBottom: inset.card,
+    sectionTitle: {
+      ...type.h3,
+      color: colors.text,
     },
-    adminActionBtn: {
-      flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 6,
-      backgroundColor: colors.accent,
-      borderRadius: ui.buttonRadius,
-      paddingVertical: 12,
+    optionsSections: {
+      gap: inset.list,
+      marginTop: inset.card,
     },
-    adminActionBtnSecondary: {
+    optionsSection: {
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
+      borderRadius: ui.cardRadius,
+      padding: inset.card,
+      gap: 6,
     },
-    adminActionText: {
-      ...type.button,
-      color: colors.onAccent,
-    },
-    uploadingRow: {
+    optionsSectionHeader: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 8,
-      marginBottom: inset.card,
+      justifyContent: "space-between",
     },
-    uploadingText: {
+    optionsPending: {
+      ...type.bodySmall,
+      color: colors.textMuted,
+    },
+    optionsResultItem: {
+      gap: 2,
+    },
+    optionsResultTitle: {
+      ...type.body,
+      fontFamily: type.button.fontFamily,
+      color: colors.text,
+    },
+    optionsResultDescription: {
       ...type.bodySmall,
       color: colors.textSecondary,
     },
