@@ -13,6 +13,7 @@ import { useState } from "react";
 export type LotteryConfigInput = {
   name: string;
   pullsPerTable: number;
+  sameForAllTables: boolean;
   options: LotteryOption[];
 };
 
@@ -41,6 +42,7 @@ export function useOptionsLotteryActions() {
         gameId,
         name: config.name,
         pullsPerTable: config.pullsPerTable,
+        sameForAllTables: config.sameForAllTables,
         optionsJson: serializeOptions(config.options),
         resultsJson: "[]",
       });
@@ -66,6 +68,7 @@ export function useOptionsLotteryActions() {
         $id: instance.$id,
         name: config.name,
         pullsPerTable: config.pullsPerTable,
+        sameForAllTables: config.sameForAllTables,
         optionsJson: serializeOptions(config.options),
       });
     } finally {
@@ -89,7 +92,12 @@ export function useOptionsLotteryActions() {
     }
     setPullingId(instance.$id);
     try {
-      const results = computeDraw(instance.options, instance.pullsPerTable, tableNumbers);
+      const results = computeDraw(
+        instance.options,
+        instance.pullsPerTable,
+        tableNumbers,
+        instance.sameForAllTables,
+      );
       return await store.update({ $id: instance.$id, resultsJson: serializeResults(results) });
     } catch (e: any) {
       await confirm({

@@ -309,10 +309,10 @@ export default function SignaturePage() {
           activeOpacity={0.7}
         >
           {saving ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color={colors.onAccent} />
           ) : (
             <>
-              <Ionicons name="checkmark-outline" size={18} color="#fff" />
+              <Ionicons name="checkmark-outline" size={18} color={colors.onAccent} />
               <Text style={styles.saveBtnText}>{t("save")}</Text>
             </>
           )}

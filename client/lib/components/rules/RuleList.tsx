@@ -230,7 +230,7 @@ export function RuleList({ gameId, isAdmin }: Props) {
           onPress={handleAdd}
           activeOpacity={0.85}
         >
-          <Ionicons name="add" size={28} color="#fff" />
+          <Ionicons name="add" size={28} color={colors.onAccent} />
         </TouchableOpacity>
       )}
     </>

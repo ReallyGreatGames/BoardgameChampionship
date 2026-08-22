@@ -188,7 +188,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     continueBtnLabel: {
       ...type.body,
       fontFamily: "DMSans_700Bold",
-      color: "#fff",
+      color: colors.onAccent,
     },
   });
 }

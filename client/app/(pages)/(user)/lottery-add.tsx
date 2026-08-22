@@ -17,7 +17,7 @@ type LotteryType = "photo" | "options";
 
 export default function LotteryAddScreen() {
   useRequireAuth();
-  const { gameId } = useLocalSearchParams<{ gameId: string }>();
+  const { gameId, from } = useLocalSearchParams<{ gameId: string; from?: string }>();
   const { isAdmin } = useAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -26,7 +26,8 @@ export default function LotteryAddScreen() {
   const photoActions = useLotteryActions();
   const [selectedType, setSelectedType] = useState<LotteryType | null>(null);
 
-  const backToLottery = () => router.replace(`/(pages)/(user)/lottery?gameId=${gameId}`);
+  const backToLottery = () =>
+    router.replace((from as any) ?? `/(pages)/(user)/lottery?gameId=${gameId}`);
 
   const handleBack = () => {
     if (selectedType) {
@@ -67,7 +68,8 @@ export default function LotteryAddScreen() {
             style={styles.tile}
             onPress={() =>
               router.push(
-                `/(pages)/(user)/lottery-options-edit?gameId=${gameId}&draft=${ID.unique()}`,
+                (`/(pages)/(user)/lottery-options-edit?gameId=${gameId}&draft=${ID.unique()}` +
+                  (from ? `&from=${encodeURIComponent(from)}` : "")) as any,
               )
             }
           >

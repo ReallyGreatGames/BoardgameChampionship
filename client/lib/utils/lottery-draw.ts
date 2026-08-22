@@ -110,16 +110,39 @@ function tryDeal(
   return results;
 }
 
-/**
- * Computes a fresh draw: apportions options by weight across every table,
- * then deals each table its `pullsPerTable` items respecting maxPerTable.
- * Throws if the config is invalid or no valid deal was found within the
- * retry budget (only reachable with maxPerTable configs pushed to the edge).
- */
+function weightedRandomPick(candidates: LotteryOption[]): LotteryOption {
+  const totalWeight = candidates.reduce((sum, o) => sum + o.weight, 0);
+  let r = Math.random() * totalWeight;
+  for (const option of candidates) {
+    r -= option.weight;
+    if (r < 0) {
+      return option;
+    }
+  }
+  return candidates[candidates.length - 1];
+}
+
+function drawSharedHand(options: LotteryOption[], pullsPerTable: number): string[] {
+  const usedCount = new Map<string, number>();
+  const hand: string[] = [];
+
+  for (let i = 0; i < pullsPerTable; i++) {
+    const eligible = options.filter(
+      (o) => (usedCount.get(o.id) ?? 0) < o.maxPerTable,
+    );
+    const pick = weightedRandomPick(eligible);
+    hand.push(pick.id);
+    usedCount.set(pick.id, (usedCount.get(pick.id) ?? 0) + 1);
+  }
+
+  return hand;
+}
+
 export function computeDraw(
   options: LotteryOption[],
   pullsPerTable: number,
   tableNumbers: number[],
+  sameForAllTables: boolean = false,
 ): LotteryTableResult[] {
   const validationError = validateLotteryConfig(options, pullsPerTable);
   if (validationError) {
@@ -127,6 +150,11 @@ export function computeDraw(
   }
   if (tableNumbers.length === 0) {
     return [];
+  }
+
+  if (sameForAllTables) {
+    const sharedHand = drawSharedHand(options, pullsPerTable);
+    return tableNumbers.map((table) => ({ table, optionIds: sharedHand }));
   }
 
   const totalSlots = tableNumbers.length * pullsPerTable;

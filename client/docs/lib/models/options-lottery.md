@@ -42,6 +42,7 @@ The raw Appwrite row.
 | `gameId` | `string` | The game this lottery instance belongs to |
 | `name` | `string` | Display name of the lottery instance (e.g. "Scenario Sheet") |
 | `pullsPerTable` | `number` | How many options each table draws when the lottery is run for it |
+| `sameForAllTables` | `boolean` | `false` (default): each table gets an independently-dealt hand (room-wide mix close to the weight ratio). `true`: one hand is drawn via weighted-random selection and copied to every table — see [`computeDraw`](../utils/lottery-draw.md) |
 | `optionsJson` | `string` | JSON-serialized `LotteryOption[]` — the option pool, stringified because Appwrite has no nested-object attribute type. Parsed via [`parseOptionsLottery`](../utils/options-lottery.md); an unparseable value falls back to `[]` |
 | `resultsJson` | `string` | JSON-serialized `LotteryTableResult[]` — the per-table draw results so far, same stringify-for-storage reasoning as `optionsJson`. Empty/falsy or unparseable falls back to `[]` |
 

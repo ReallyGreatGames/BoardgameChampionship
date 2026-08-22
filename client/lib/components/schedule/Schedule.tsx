@@ -282,7 +282,7 @@ export function ScheduleItem({
                   <Text style={styles.goToGameButtonText}>
                     {t("schedule.goToGameButton")}
                   </Text>
-                  <Ionicons name="arrow-forward" size={16} color="#fff" />
+                  <Ionicons name="arrow-forward" size={16} color={colors.onAccent} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -572,6 +572,14 @@ export function ScheduleList() {
         onSave={handleModalSave}
         onRules={(gameId) => {
           router.push(`/rules?gameId=${gameId}`);
+          setModalVisible(false);
+        }}
+        onLotteries={(gameId) => {
+          router.push(
+            `/(pages)/(user)/lottery-add?gameId=${gameId}&from=${encodeURIComponent(
+              "/(pages)/(user)/schedule",
+            )}`,
+          );
           setModalVisible(false);
         }}
         onTimer={(gameId) => {

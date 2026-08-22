@@ -418,6 +418,9 @@ const translations = {
     nameLabel: "Name",
     namePlaceholder: "z. B. Szenarienblatt",
     pullsPerTableLabel: "Ziehungen pro Tisch",
+    sameForAllTablesLabel: "Gleiches Ergebnis für alle Tische",
+    sameForAllTablesDescription:
+      "Zieht ein zufälliges Ergebnis und gibt es jedem Tisch, statt für jeden Tisch einzeln zu ziehen.",
     optionsSectionTitle: "Optionen",
     optionTitleLabel: "Titel",
     optionDescriptionLabel: "Beschreibung (optional)",

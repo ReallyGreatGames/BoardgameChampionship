@@ -106,7 +106,19 @@ later one finished).
 Renders both [`ScheduleItemModal`](ScheduleItemModal.md) (add/edit an
 item) and [`TimerSettingsModal`](TimerSettingsModal.md) (opened via the
 item modal's "timer" action) as children, wiring their save callbacks back
-into this component's own store calls.
+into this component's own store calls. `onRules` pushes
+`/rules?gameId=...` and closes the modal; `onLotteries` pushes
+`/(pages)/(user)/lottery-add?gameId=...&from=/(pages)/(user)/schedule`
+(URL-encoded) and closes the modal — the same screen tapping the "+"
+button on [`lottery.tsx`](../../../app/(pages)/(user)/lottery.md)
+navigates to, but with `from` set so that screen's back button returns
+here instead of detouring through a lottery list this entry point never
+visited (see [`lottery-add.tsx`'s "Why `from` exists"](../../../app/(pages)/(user)/lottery-add.md#why-from-exists)).
+`ScheduleList` is also embedded in the admin dashboard's schedule tab
+(`app/(pages)/(admin)/admin/index.tsx`), but this hardcoded `from` value
+always points at the standalone `/schedule` route regardless of which
+embedding the admin actually came from — a pre-existing simplification
+also present in the "go to game" navigation a few lines up.
 
 ## Used by
 

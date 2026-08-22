@@ -25,6 +25,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -36,10 +37,11 @@ function emptyOption(): LotteryOption {
 
 export default function LotteryOptionsEditScreen() {
   useRequireAuth();
-  const { gameId, instanceId, draft } = useLocalSearchParams<{
+  const { gameId, instanceId, draft, from } = useLocalSearchParams<{
     gameId: string;
     instanceId?: string;
     draft?: string;
+    from?: string;
   }>();
   const { isAdmin } = useAuth();
   const { colors } = useTheme();
@@ -60,7 +62,8 @@ export default function LotteryOptionsEditScreen() {
     [tables, gameId],
   );
 
-  const backToLottery = () => router.replace(`/(pages)/(user)/lottery?gameId=${gameId}`);
+  const backToLottery = () =>
+    router.replace((from as any) ?? `/(pages)/(user)/lottery?gameId=${gameId}`);
 
   if (!isAdmin) {
     backToLottery();
@@ -80,6 +83,7 @@ export default function LotteryOptionsEditScreen() {
       key={draft ?? instanceId ?? "new"}
       gameId={gameId}
       draft={draft}
+      from={from}
       instance={instance}
       tableNumbers={tableNumbers}
       colors={colors}
@@ -92,6 +96,7 @@ export default function LotteryOptionsEditScreen() {
 function LotteryOptionsEditForm({
   gameId,
   draft,
+  from,
   instance,
   tableNumbers,
   colors,
@@ -100,6 +105,7 @@ function LotteryOptionsEditForm({
 }: {
   gameId: string;
   draft?: string;
+  from?: string;
   instance: OptionsLottery | null;
   tableNumbers: number[];
   colors: ReturnType<typeof useTheme>["colors"];
@@ -112,6 +118,7 @@ function LotteryOptionsEditForm({
 
   const [name, setName] = useState(instance?.name ?? "");
   const [pullsPerTable, setPullsPerTable] = useState(String(instance?.pullsPerTable ?? 1));
+  const [sameForAllTables, setSameForAllTables] = useState(instance?.sameForAllTables ?? false);
   const [options, setOptions] = useState<LotteryOption[]>(instance?.options ?? [emptyOption()]);
 
   const pullsPerTableNumber = parseInt(pullsPerTable, 10) || 0;
@@ -144,14 +151,20 @@ function LotteryOptionsEditForm({
     if (validationError) {
       return;
     }
-    const config: LotteryConfigInput = { name, pullsPerTable: pullsPerTableNumber, options };
+    const config: LotteryConfigInput = {
+      name,
+      pullsPerTable: pullsPerTableNumber,
+      sameForAllTables,
+      options,
+    };
     if (instance) {
       await actions.update(instance, config);
     } else {
       const created = await actions.create(gameId, config);
       if (created) {
         router.replace(
-          `/(pages)/(user)/lottery-options-edit?gameId=${gameId}&draft=${draft}&instanceId=${created.$id}`,
+          (`/(pages)/(user)/lottery-options-edit?gameId=${gameId}&draft=${draft}&instanceId=${created.$id}` +
+            (from ? `&from=${encodeURIComponent(from)}` : "")) as any,
         );
       }
     }
@@ -216,6 +229,19 @@ function LotteryOptionsEditForm({
             value={pullsPerTable}
             onChangeText={setPullsPerTable}
             keyboardType="number-pad"
+          />
+        </View>
+
+        <View style={styles.switchRow}>
+          <View style={styles.switchLabels}>
+            <Text style={styles.fieldLabel}>{t("sameForAllTablesLabel")}</Text>
+            <Text style={styles.switchDescription}>{t("sameForAllTablesDescription")}</Text>
+          </View>
+          <Switch
+            value={sameForAllTables}
+            onValueChange={setSameForAllTables}
+            trackColor={{ false: colors.border, true: colors.accent }}
+            thumbColor={colors.text}
           />
         </View>
 
@@ -327,21 +353,33 @@ function LotteryOptionsEditForm({
             {instance.results.length === 0 ? (
               <Text style={styles.emptyResults}>{t("notPulledYet")}</Text>
             ) : (
-              instance.results
-                .slice()
-                .sort((a, b) => a.table - b.table)
-                .map((result) => (
-                  <View key={result.table} style={styles.resultRow}>
-                    <Text style={styles.resultTable}>
-                      {t("resultsTableLabel", { table: result.table })}
-                    </Text>
-                    <Text style={styles.resultOptions}>
-                      {result.optionIds
-                        .map((id) => instance.options.find((o) => o.id === id)?.title ?? "?")
-                        .join(", ")}
-                    </Text>
-                  </View>
-                ))
+              <View style={styles.resultsGrid}>
+                {instance.results
+                  .slice()
+                  .sort((a, b) => a.table - b.table)
+                  .map((result) => {
+                    const pulled = result.optionIds.map((id) =>
+                      instance.options.find((o) => o.id === id),
+                    );
+                    const titles = pulled.map((o) => o?.title ?? "?").join(", ");
+                    const descriptions = pulled
+                      .map((o) => o?.description)
+                      .filter((d): d is string => !!d)
+                      .join(" · ");
+                    return (
+                      <View key={result.table} style={styles.resultCard}>
+                        <Text style={styles.resultCardTitle} numberOfLines={1}>
+                          {t("resultsTableLabel", { table: result.table })}: {titles}
+                        </Text>
+                        {descriptions ? (
+                          <Text style={styles.resultCardDescription} numberOfLines={1}>
+                            {descriptions}
+                          </Text>
+                        ) : null}
+                      </View>
+                    );
+                  })}
+              </View>
             )}
           </>
         )}
@@ -375,6 +413,20 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     field: {
       gap: 6,
+    },
+    switchRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: inset.tight,
+    },
+    switchLabels: {
+      flex: 1,
+      gap: 2,
+    },
+    switchDescription: {
+      ...type.bodySmall,
+      color: colors.textSecondary,
     },
     fieldLabel: {
       ...type.caption,
@@ -452,22 +504,30 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       ...type.bodySmall,
       color: colors.textMuted,
     },
-    resultRow: {
+    resultsGrid: {
       flexDirection: "row",
-      justifyContent: "space-between",
+      flexWrap: "wrap",
+      gap: 6,
+    },
+    resultCard: {
+      flexBasis: "31%",
+      flexGrow: 1,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
       paddingVertical: 6,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.divider,
+      paddingHorizontal: 8,
+      gap: 2,
     },
-    resultTable: {
+    resultCardTitle: {
       ...type.bodySmall,
-      color: colors.textSecondary,
-    },
-    resultOptions: {
-      ...type.bodySmall,
+      fontFamily: type.button.fontFamily,
       color: colors.text,
-      flexShrink: 1,
-      textAlign: "right",
+    },
+    resultCardDescription: {
+      ...type.caption,
+      color: colors.textSecondary,
     },
     deleteBtn: {
       borderWidth: 1,

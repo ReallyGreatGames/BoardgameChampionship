@@ -17,6 +17,7 @@ export type OptionsLotteryRow = {
   gameId: string;
   name: string;
   pullsPerTable: number;
+  sameForAllTables: boolean;
   optionsJson: string;
   resultsJson: string;
 } & Models.Document;

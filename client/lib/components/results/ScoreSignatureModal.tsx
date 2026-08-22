@@ -5,6 +5,7 @@ import { SvgXml } from "react-native-svg";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
+import { ui } from "@/lib/theme/ui";
 import { injectViewBox } from "@/lib/utils";
 
 type Props = {
@@ -72,7 +73,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
   return StyleSheet.create({
     backdrop: {
       flex: 1,
-      backgroundColor: "rgba(0,0,0,0.5)",
+      backgroundColor: ui.backdropColor,
       alignItems: "center",
       justifyContent: "center",
       padding: inset.screen,
@@ -114,6 +115,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       backgroundColor: colors.error,
       alignItems: "center",
     },
-    resetLabel: { ...type.body, color: "#ffffff", fontWeight: "600" },
+    resetLabel: { ...type.body, color: colors.onAccent, fontWeight: "600" },
   });
 }

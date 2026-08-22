@@ -416,6 +416,9 @@ const translations = {
     nameLabel: "Name",
     namePlaceholder: "e.g. Scenario Sheet",
     pullsPerTableLabel: "Pulls per table",
+    sameForAllTablesLabel: "Same result for all tables",
+    sameForAllTablesDescription:
+      "Draw one random result and give it to every table, instead of a different result per table.",
     optionsSectionTitle: "Options",
     optionTitleLabel: "Title",
     optionDescriptionLabel: "Description (optional)",

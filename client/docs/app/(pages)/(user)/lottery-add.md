@@ -4,19 +4,20 @@
 
 ## Route
 
-`/lottery-add?gameId=...`
+`/lottery-add?gameId=...&from=...`
 
 ## Purpose
 
 Admin-only type picker reached from the "+" button on
-[`lottery.tsx`](lottery.md): choose "Photos" or "Options" for what kind of
-lottery to add.
+[`lottery.tsx`](lottery.md), or directly from the schedule item modal's
+"lotteries" action (see [`Schedule.tsx`](../../../lib/components/schedule/Schedule.md)):
+choose "Photos" or "Options" for what kind of lottery to add.
 
 ## Exports
 
 | Export | Signature | Purpose |
 | --- | --- | --- |
-| `LotteryAddScreen` (default) | `(): JSX.Element \| null` | Screen component for `/lottery-add?gameId=...`. Gates on `useRequireAuth()` and admin status, then shows a two-tile type picker ("Photos" / "Options"); selecting "Photos" reveals upload buttons, selecting "Options" navigates to `lottery-options-edit` in create mode. |
+| `LotteryAddScreen` (default) | `(): JSX.Element \| null` | Screen component for `/lottery-add?gameId=...&from=...`. Gates on `useRequireAuth()` and admin status, then shows a two-tile type picker ("Photos" / "Options"); selecting "Photos" reveals upload buttons, selecting "Options" navigates to `lottery-options-edit` in create mode. |
 
 ### Types
 
@@ -26,7 +27,11 @@ lottery to add.
 
 ### `backToLottery(): void`
 
-Replaces the route with `/(pages)/(user)/lottery?gameId=${gameId}`, returning to the lottery list for the current game. Used after a non-admin bounce, after a photo upload resolves, and as the fallback for the back button.
+Replaces the route with the `from` query param if present, otherwise
+`/(pages)/(user)/lottery?gameId=${gameId}` (the lottery list for the
+current game). Used after a non-admin bounce, after a photo upload
+resolves, and as the fallback for the back button — see "How it works" for
+why `from` exists.
 
 ### `handleBack(): void`
 
@@ -46,16 +51,32 @@ Builds the tile-picker and upload-action-button styles (container, title, tiles,
 
 ## How it works
 
-- Not admin → immediately `router.back()`, renders nothing.
+- Not admin → immediately calls `backToLottery()`, renders nothing.
 - "Photos" tile reveals the same Take Photo / Choose From Library buttons
   the old inline lottery.tsx admin row used (same
   [`useLotteryActions`](../../../lib/hooks/useLotteryActions.md) hook, same
   web/native branching — moved here verbatim, not duplicated logic); after
   the upload call resolves (success, failure, or cancel) it navigates back
-  to the lottery list.
-- "Options" tile navigates straight to
-  [`lottery-options-edit.tsx`](lottery-options-edit.md) in create mode (no
-  `instanceId`).
+  via `backToLottery()`.
+- "Options" tile navigates to [`lottery-options-edit.tsx`](lottery-options-edit.md)
+  in create mode (no `instanceId`, a fresh `draft` id), forwarding `from`
+  (URL-encoded) if one was passed to this screen.
+
+### Why `from` exists
+
+This screen has two entry points with different "back" expectations: the
+"+" button on [`lottery.tsx`](lottery.md) (no `from` — back should return
+to that game's lottery list, the historical default) and the schedule item
+modal's "lotteries" action (`from=/(pages)/(user)/schedule` — back should
+return to the schedule, not detour through a lottery list the admin never
+visited). Without `from`, `backToLottery()` always went to
+`/(pages)/(user)/lottery?gameId=...`, which for the schedule entry point
+made "back" land on that game's hub screen after one more back-press
+instead of the schedule the admin actually came from — the same `?from=...`
+pattern [`game.tsx`](game.md) already uses for the same reason. `from` is
+also carried through to `lottery-options-edit.tsx` (both on navigating to
+it and through its own create→edit-mode redirect) so the whole chain
+reachable from this screen returns to the correct origin.
 
 ## Related
 
