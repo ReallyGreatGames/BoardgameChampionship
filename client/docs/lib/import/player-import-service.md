@@ -74,9 +74,14 @@ Every Appwrite call is wrapped in `retry`, which uses
 "rate limit" errors are retried (with exponential backoff); other errors
 propagate immediately and are caught by `importTeam`, which reports them
 via `onStatus({ state: "error", message })` instead of throwing (so one
-team's failure doesn't stop the rest of the import). A fixed `sleep(300)`
-between writes paces requests to avoid tripping the rate limit in the
-first place.
+team's failure doesn't stop the rest of the import). A fixed
+[`sleep(WRITE_PACING_MS)`](../utils.md) (750ms) between writes paces
+requests to avoid tripping the rate limit in the first place —
+`WRITE_PACING_MS` is shared with [`wipe-service.ts`](wipe-service.md) and
+[`table-import-service.ts`](table-import-service.md) so a wipe pass and
+the import that follows it are throttled the same amount; pacing writes
+faster in one phase than the other would just relocate where the
+rate-limit error shows up.
 
 ## Used by
 

@@ -118,6 +118,7 @@ export function ImportPlayers() {
         setWipeStatuses({ ...local });
       },
       () => mountedRef.current && !cancelRequestedRef.current,
+      group.kind,
     );
   }
 
@@ -227,8 +228,8 @@ export function ImportPlayers() {
       title: "Replace all teams & players?",
       message:
         `This will permanently delete all existing teams, players, table ` +
-        `seatings, and timers, then import ${rows.length} team(s) from this ` +
-        `file. This cannot be undone.`,
+        `seatings, timers, lottery photos, and lottery options, then import ` +
+        `${rows.length} team(s) from this file. This cannot be undone.`,
       confirmLabel: "Delete & Import",
       destructive: true,
     });

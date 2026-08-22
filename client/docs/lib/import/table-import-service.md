@@ -92,14 +92,16 @@ Loads all existing tables once, then for each entry in each group: resolves
 player codes to ids, and either **updates** the matching existing table
 (matched by `tableNumber` + `game.$id`) or **creates** a new one. An update
 is deliberately done in two steps — first clearing `players: []`, then
-setting the new `players` list — rather than one direct overwrite,
-presumably to avoid an Appwrite relationship-attribute quirk with
-replacing a to-many relation's contents in a single write. `isMounted()` is
-checked before each entry so an unmounted screen (component navigated away
-mid-import) stops issuing further writes. Same retry/pacing strategy as
-[`player-import-service.ts`](player-import-service.md) (`retry` +
-`sleep(300)`), and errors are reported per-entry via `onStatus` rather than
-aborting the whole import.
+setting the new `players` list, with a `sleep(WRITE_PACING_MS)` between
+the two writes (not just after the entry) — rather than one direct
+overwrite, presumably to avoid an Appwrite relationship-attribute quirk
+with replacing a to-many relation's contents in a single write. `isMounted()`
+is checked before each entry so an unmounted screen (component navigated
+away mid-import) stops issuing further writes. Same retry/pacing strategy
+as [`player-import-service.ts`](player-import-service.md) (`retry` +
+[`sleep(WRITE_PACING_MS)`](../utils.md), 750ms — the same shared constant
+[`wipe-service.ts`](wipe-service.md) paces deletes with), and errors are
+reported per-entry via `onStatus` rather than aborting the whole import.
 
 ## Used by
 

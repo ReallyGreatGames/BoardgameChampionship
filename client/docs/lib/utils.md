@@ -14,6 +14,7 @@ specialized utility modules).
 | Export | Signature | Purpose |
 |---|---|---|
 | `EMPTY` | `Symbol` | Sentinel value for "no value" (distinguishable from `undefined`/`null`) |
+| `WRITE_PACING_MS` | `number` (`750`) | Shared delay between consecutive Appwrite write calls in the import/wipe services, to stay under Appwrite's rate limit during bulk operations |
 | `sleep(ms)` | `(number) => Promise<void>` | Promise-based delay |
 | `withRetry(fn, options)` | `<T>(() => Promise<T>, opts) => Promise<T>` | Re-runs `fn` with exponential backoff as long as `shouldRetry(error)` is true (default: always, max 4 attempts, initial delay 1000ms, doubling each attempt) |
 | — `options.maxRetries` | `number` (default `4`) | Max number of retries after the first attempt |

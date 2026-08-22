@@ -137,6 +137,7 @@ export function ImportTables() {
         setWipeStatuses({ ...local });
       },
       () => mountedRef.current && !cancelRequestedRef.current,
+      group.kind,
     );
   }
 
@@ -243,9 +244,9 @@ export function ImportTables() {
     const ok = await confirm({
       title: "Replace all table seatings?",
       message:
-        "This will permanently delete all existing table seatings and " +
-        "timers, then import the seating assignments from this file. This " +
-        "cannot be undone.",
+        "This will permanently delete all existing table seatings, timers, " +
+        "lottery photos, and lottery options, then import the seating " +
+        "assignments from this file. This cannot be undone.",
       confirmLabel: "Delete & Import",
       destructive: true,
     });

@@ -12,7 +12,7 @@
 Admin-only screen for both creating a new options lottery and managing an
 existing one: name, `pullsPerTable`, a "same result for all tables" switch,
 the option pool (title, optional description, weight, maxPerTable), save,
-pull-for-all-tables, a read-only per-table results breakdown, and delete.
+pull-for-all-tables, a button to the full-screen results board, and delete.
 
 ## Exports
 
@@ -26,7 +26,7 @@ Builds a fresh, blank `LotteryOption` row (`id: ID.unique()`, empty title/descri
 
 ### Internal: `LotteryOptionsEditForm(props): JSX.Element`
 
-The actual form: name/pullsPerTable fields, the option-row list with add/remove, save, and — once an `instance` exists — pull, delete, and the per-table results breakdown.
+The actual form: name/pullsPerTable fields, the option-row list with add/remove, save, and — once an `instance` exists — pull, delete, and (once results exist) a button to [`lottery-results.tsx`](lottery-results.md), the full-screen results board.
 
 | Prop | Type | Meaning |
 | --- | --- | --- |
@@ -65,7 +65,7 @@ No-ops if there's no `instance`. Calls `actions.remove(instance, ...)` with a tr
 
 ### `makeStyles(colors: ReturnType<typeof useTheme>["colors"]): StyleSheet`
 
-Builds all form/card/button/results-grid styles from theme colors; memoized via `useMemo` on `colors`.
+Builds all form/card/button styles from theme colors; memoized via `useMemo` on `colors`.
 
 ## How it works
 
@@ -97,13 +97,14 @@ Builds all form/card/button/results-grid styles from theme colors; memoized via 
   [`usePlayerTable`](../../../lib/hooks/usePlayerTable.md)), confirms
   first only if results already exist (re-pull overwrites everything), and
   delegates the actual draw to `useOptionsLotteryActions().pull`.
-- The results breakdown (table → resolved option titles/descriptions) is
-  this screen's admin "board" — there's no separate all-tables view
-  elsewhere in the app. It renders as a wrapping grid of compact two-line
-  cards (title(s) line, description(s) line, each `numberOfLines={1}` so a
-  card's height stays fixed even if truncated) rather than a vertical list,
-  so a game with many tables stays glanceable on one screen — e.g. for
-  projecting the results onto a wall.
+- Once `instance.results.length > 0`, a "view fullscreen" button replaces
+  the "not pulled yet" placeholder and navigates to
+  [`lottery-results.tsx`](lottery-results.md) (`?gameId=...` — no
+  `instanceId`, since that page is game-scoped and merges every pulled
+  instance for the game, not just this one). The actual per-table results
+  board lives entirely on that dedicated full-screen page now, not inline
+  here, so it can use the whole screen (e.g. for projecting onto a wall)
+  without competing for space with the config form above it.
 
 ### `key={draft ?? instanceId ?? "new"}` remount strategy
 
@@ -117,4 +118,4 @@ Builds all form/card/button/results-grid styles from theme colors; memoized via 
 
 - [`lib/hooks/useOptionsLotteryActions.ts`](../../../lib/hooks/useOptionsLotteryActions.md)
 - [`lib/utils/lottery-draw.ts`](../../../lib/utils/lottery-draw.md), [`options-lottery.ts`](../../../lib/utils/options-lottery.md)
-- [`lottery.tsx`](lottery.md), [`lottery-add.tsx`](lottery-add.md)
+- [`lottery.tsx`](lottery.md), [`lottery-add.tsx`](lottery-add.md), [`lottery-results.tsx`](lottery-results.md)

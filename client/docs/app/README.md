@@ -47,6 +47,7 @@ name="...">` entries reference sibling routes by their path string instead.
 | [(pages)/(user)/lottery.md]((pages)/(user)/lottery.md) | `/lottery` | Sectioned lottery list: photo gallery + per-table options-lottery results |
 | [(pages)/(user)/lottery-add.md]((pages)/(user)/lottery-add.md) | `/lottery-add` | Admin type picker: photos or options |
 | [(pages)/(user)/lottery-options-edit.md]((pages)/(user)/lottery-options-edit.md) | `/lottery-options-edit` | Admin: create/edit/pull/delete an options lottery |
+| [(pages)/(user)/lottery-results.md]((pages)/(user)/lottery-results.md) | `/lottery-results` | Admin: full-screen per-table results board for one options lottery |
 | [(pages)/(user)/results.md]((pages)/(user)/results.md) | `/results` | Participant self-service result entry + signatures |
 | [(pages)/(user)/rules.md]((pages)/(user)/rules.md) | `/rules` | Per-game rules screen wrapper |
 | [(pages)/(user)/schedule.md]((pages)/(user)/schedule.md) | `/schedule` | Schedule screen wrapper |

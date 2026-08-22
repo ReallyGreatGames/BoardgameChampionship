@@ -353,33 +353,15 @@ function LotteryOptionsEditForm({
             {instance.results.length === 0 ? (
               <Text style={styles.emptyResults}>{t("notPulledYet")}</Text>
             ) : (
-              <View style={styles.resultsGrid}>
-                {instance.results
-                  .slice()
-                  .sort((a, b) => a.table - b.table)
-                  .map((result) => {
-                    const pulled = result.optionIds.map((id) =>
-                      instance.options.find((o) => o.id === id),
-                    );
-                    const titles = pulled.map((o) => o?.title ?? "?").join(", ");
-                    const descriptions = pulled
-                      .map((o) => o?.description)
-                      .filter((d): d is string => !!d)
-                      .join(" · ");
-                    return (
-                      <View key={result.table} style={styles.resultCard}>
-                        <Text style={styles.resultCardTitle} numberOfLines={1}>
-                          {t("resultsTableLabel", { table: result.table })}: {titles}
-                        </Text>
-                        {descriptions ? (
-                          <Text style={styles.resultCardDescription} numberOfLines={1}>
-                            {descriptions}
-                          </Text>
-                        ) : null}
-                      </View>
-                    );
-                  })}
-              </View>
+              <Pressable
+                style={styles.viewResultsBtn}
+                onPress={() =>
+                  router.push(`/(pages)/(user)/lottery-results?gameId=${gameId}`)
+                }
+              >
+                <Ionicons name="expand-outline" size={18} color={colors.primary} />
+                <Text style={styles.viewResultsBtnText}>{t("viewResultsFullscreen")}</Text>
+              </Pressable>
             )}
           </>
         )}
@@ -504,30 +486,19 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       ...type.bodySmall,
       color: colors.textMuted,
     },
-    resultsGrid: {
+    viewResultsBtn: {
       flexDirection: "row",
-      flexWrap: "wrap",
+      alignItems: "center",
+      justifyContent: "center",
       gap: 6,
-    },
-    resultCard: {
-      flexBasis: "31%",
-      flexGrow: 1,
-      backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: 8,
-      paddingVertical: 6,
-      paddingHorizontal: 8,
-      gap: 2,
+      borderRadius: ui.buttonRadius,
+      paddingVertical: 10,
     },
-    resultCardTitle: {
-      ...type.bodySmall,
-      fontFamily: type.button.fontFamily,
-      color: colors.text,
-    },
-    resultCardDescription: {
-      ...type.caption,
-      color: colors.textSecondary,
+    viewResultsBtnText: {
+      ...type.button,
+      color: colors.primary,
     },
     deleteBtn: {
       borderWidth: 1,
