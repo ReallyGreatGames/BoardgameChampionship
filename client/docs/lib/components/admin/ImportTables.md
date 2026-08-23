@@ -65,6 +65,15 @@ are specific to this domain:
 - `GameGroup` (local component) renders one game's entries as its own
   labeled table section within the shared scroll view.
 
+### Localized strings
+
+Same as [`ImportPlayers`](ImportPlayers.md#localized-strings): all UI copy
+comes from `useTranslation(["importTab"])`, here under `tables.*` +
+`shared.*`. `GameGroup` is a separate function component (not just a
+render helper closing over the parent's scope), so it calls its own
+`useTranslation(["importTab"])` for its column headers rather than
+receiving `t` as a prop.
+
 ## Used by
 
 - [`lib/components/admin/ImportTab.tsx`](ImportTab.md)

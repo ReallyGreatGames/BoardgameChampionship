@@ -26,4 +26,4 @@ away from it mid-run (unmounting mid-run would silently abort it).
 
 - [`app/(pages)/(admin)/admin/index.tsx`](../../../app/(pages)/(admin)/admin/index.md) — provider mount point
 - [`lib/components/admin/ImportTab.tsx`](ImportTab.md) — disables switching sub-tabs while busy
-- [`lib/components/admin/ImportPlayers.tsx`](ImportPlayers.md), [`ImportTables.tsx`](ImportTables.md) — set `busy` during delete/import
+- [`lib/components/admin/ImportPlayers.tsx`](ImportPlayers.md), [`ImportTables.tsx`](ImportTables.md), [`ImportRules.tsx`](ImportRules.md) — set `busy` during delete/import

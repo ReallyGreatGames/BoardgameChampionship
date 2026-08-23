@@ -26,3 +26,5 @@ Appwrite document type `Rule` — a rule change/addition/clarification for a gam
 - [`lib/components/rules/RuleList.tsx`](../components/rules/RuleList.md)
 - [`lib/components/rules/RuleModal.tsx`](../components/rules/RuleModal.md)
 - [`lib/stores/appwrite/rule-store.ts`](../stores/appwrite/rule-store.md)
+- [`lib/import/rule-parser.ts`](../import/rule-parser.md), [`rule-import-service.ts`](../import/rule-import-service.md)
+- [`lib/components/admin/ImportRules.tsx`](../components/admin/ImportRules.md)

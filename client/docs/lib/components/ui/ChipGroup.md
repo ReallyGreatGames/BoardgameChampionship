@@ -56,3 +56,4 @@ option as "neutral" rather than crashing on a `-1` index.
 
 - [`lib/components/results/ResultsAdminTab.tsx`](../results/ResultsAdminTab.md)
 - [`lib/components/results/ResultsFilterDialog.tsx`](../results/ResultsFilterDialog.md)
+- [`lib/components/admin/ImportRules.tsx`](../admin/ImportRules.md) — `"select"` mode, per-row rule-type editor in the import preview

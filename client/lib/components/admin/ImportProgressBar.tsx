@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { space } from "@/lib/theme/spacing";
@@ -29,6 +30,7 @@ export function ImportProgressBar({
 }: ImportProgressBarProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t } = useTranslation(["importTab"]);
 
   const failed = failedItems.length;
   const done = succeeded + failed;
@@ -63,7 +65,9 @@ export function ImportProgressBar({
 
       {failed > 0 && onRetry && (
         <Pressable style={styles.retryButton} onPress={onRetry}>
-          <Text style={styles.retryButtonText}>Retry {failed} failed</Text>
+          <Text style={styles.retryButtonText}>
+            {t("shared.retryFailed", { count: failed })}
+          </Text>
         </Pressable>
       )}
 

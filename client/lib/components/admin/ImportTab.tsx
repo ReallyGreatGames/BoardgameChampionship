@@ -1,22 +1,26 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { ImportPlayers } from "@/lib/components/admin/ImportPlayers";
 import { ImportTables } from "@/lib/components/admin/ImportTables";
+import { ImportRules } from "@/lib/components/admin/ImportRules";
 import { useImportActivity } from "@/lib/components/admin/ImportActivityContext";
 
-type SubTab = "players" | "tables";
+type SubTab = "players" | "tables" | "rules";
 
-const SUB_TABS: { key: SubTab; label: string }[] = [
-  { key: "players", label: "Players & Teams" },
-  { key: "tables", label: "Table Seating" },
+const SUB_TABS: { key: SubTab; labelKey: string }[] = [
+  { key: "players", labelKey: "subTabs.players" },
+  { key: "tables", labelKey: "subTabs.tables" },
+  { key: "rules", labelKey: "subTabs.rules" },
 ];
 
 export function ImportTab() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t } = useTranslation(["importTab"]);
   const [active, setActive] = useState<SubTab>("players");
   const { busy } = useImportActivity();
 
@@ -42,7 +46,7 @@ export function ImportTab() {
                   active === tab.key && styles.subTabLabelActive,
                 ]}
               >
-                {tab.label}
+                {t(tab.labelKey)}
               </Text>
             </Pressable>
           );
@@ -52,6 +56,7 @@ export function ImportTab() {
       <View style={styles.content}>
         {active === "players" && <ImportPlayers />}
         {active === "tables" && <ImportTables />}
+        {active === "rules" && <ImportRules />}
       </View>
     </View>
   );

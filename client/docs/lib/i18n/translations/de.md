@@ -18,6 +18,7 @@ shape used to drive a confirmation dialog.
 | Namespace | Contents | Used by |
 |---|---|---|
 | `adminDashboard` | Tab labels for the admin dashboard (`results`, `rankings`, `statistics`, `schedule`, `tournamentSettings`, `import`) | Admin dashboard tab bar |
+| `importTab` | The Import tab's three bulk-import wizards: `subTabs` (sub-tab bar labels), `shared` (strings common to all three: pick/cancel/retry/deletion-progress copy), `wipe` (progress-bar labels for [`wipe-service.ts`](../../import/wipe-service.md) group keys), `players`/`tables`/`rules` (per-wizard headings, confirm dialogs, column headers, and — for `rules` only — the delete-existing-first toggle/confirm copy) | [`ImportTab`](../../components/admin/ImportTab.md) and its three child wizards ([`ImportPlayers`](../../components/admin/ImportPlayers.md), [`ImportTables`](../../components/admin/ImportTables.md), [`ImportRules`](../../components/admin/ImportRules.md)) |
 | `home` | Welcome text and the "up next" schedule summary (`now`, `upNext`, `goToGame`, `startsAt`, `noSchedule`, `eventNotActive`) | Home screen |
 | `login` | PIN/password entry text, event-inactive messaging | Login screen |
 | `menu` | App title, one entry label per app screen (`entries.*`), plus `dmmib`/`europemasters` branding footer strings | Main navigation drawer/menu |

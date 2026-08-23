@@ -27,3 +27,4 @@ Zustand store for the `rules` collection ([`Rule`](../../models/rule.md)).
 - [`lib/components/rules/RuleList.tsx`](../../components/rules/RuleList.md)
 - [`lib/components/rules/RuleModal.tsx`](../../components/rules/RuleModal.md)
 - [`lib/bootstrap/RealTimeStoreProvider.tsx`](../../bootstrap/RealTimeStoreProvider.md)
+- [`lib/components/admin/ImportRules.tsx`](../../components/admin/ImportRules.md) — reads `collection` only, to match pasted titles against existing rules; writes go directly through [`rule-import-service.ts`](../../import/rule-import-service.md)'s own `tablesDB` calls, not through this store's `add`/`update`/`delete`

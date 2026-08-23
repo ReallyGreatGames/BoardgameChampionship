@@ -10,10 +10,10 @@ top-level namespace keys, same nesting, same interpolation placeholders
 
 ## Structure (top-level namespaces)
 
-`adminDashboard`, `home`, `login`, `menu`, `settings`, `game`, `navigation`,
-`activeBells`, `rules`, `timer`, `results`, `scoreOverview`, `rankings`,
-`statistics`, `tableOverview`, `signature`, `lottery`, `lotteryOptions`,
-`components`, `info`, `legal`.
+`adminDashboard`, `importTab`, `home`, `login`, `menu`, `settings`, `game`,
+`navigation`, `activeBells`, `rules`, `timer`, `results`, `scoreOverview`,
+`rankings`, `statistics`, `tableOverview`, `signature`, `lottery`,
+`lotteryOptions`, `components`, `info`, `legal`.
 
 See [de.md](de.md#structure-top-level-namespaces) for the full table of
 what each namespace contains and which screen/component uses it — the

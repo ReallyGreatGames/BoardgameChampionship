@@ -50,3 +50,4 @@ unrelated to any in-progress gesture.
 
 - [`lib/components/rules/RuleModal.tsx`](../rules/RuleModal.md)
 - [`lib/components/schedule/ScheduleItemModal.tsx`](../schedule/ScheduleItemModal.md)
+- [`lib/components/admin/ImportRules.tsx`](../admin/ImportRules.md) — the paste box, and each preview row's editable rule text

@@ -84,6 +84,18 @@ incomplete cleanup.
 cancelled run's state is visually indistinguishable from "some items
 failed," and can be retried the same way.
 
+### Localized strings
+
+All UI copy (headings, buttons, table columns, the destructive-confirm
+dialog) comes from `useTranslation(["importTab"])`, under the `players.*`
+and shared `shared.*` keys — see
+[`lib/i18n/translations/de.ts`](../../i18n/translations/de.md#structure-top-level-namespaces)'s
+`importTab` namespace. Wipe-group progress-bar labels are translated by
+key (`t(\`wipe.${group.key}\`, { defaultValue: group.label })`) rather than
+using [`wipe-service.ts`](../../import/wipe-service.md)'s own `group.label`
+directly, since that service is plain data with no i18n access; per-item
+wipe labels (e.g. `"Table 5"`) are left as `wipe-service.ts` produces them.
+
 ## Used by
 
 - [`lib/components/admin/ImportTab.tsx`](ImportTab.md)

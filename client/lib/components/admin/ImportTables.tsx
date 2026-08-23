@@ -1,5 +1,6 @@
 import * as DocumentPicker from "expo-document-picker";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Pressable,
@@ -57,6 +58,7 @@ function allWipeItemsSucceeded(
 export function ImportTables() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t } = useTranslation(["importTab"]);
   const { confirm } = useDialog();
   const { setBusy } = useImportActivity();
 
@@ -123,7 +125,7 @@ export function ImportTables() {
       setPhase("preview");
     } catch (e: unknown) {
       setLoading(false);
-      setPickError(e instanceof Error ? e.message : "Failed to read file");
+      setPickError(e instanceof Error ? e.message : t("shared.readError"));
     }
   }
 
@@ -143,13 +145,14 @@ export function ImportTables() {
 
   function cancelDeleting() {
     cancelRequestedRef.current = true;
+    const cancelledMessage = t("shared.cancelled");
     setWipeStatuses((prev) => {
       const next: WipeStatusMap = {};
       for (const g of wipeGroups) {
         next[g.key] = { ...prev[g.key] };
         for (const item of g.items) {
           if (next[g.key][item.id]?.state === "pending") {
-            next[g.key][item.id] = { state: "error", message: "Cancelled" };
+            next[g.key][item.id] = { state: "error", message: cancelledMessage };
           }
         }
       }
@@ -159,11 +162,12 @@ export function ImportTables() {
 
   function cancelImporting() {
     cancelRequestedRef.current = true;
+    const cancelledMessage = t("shared.cancelled");
     setStatuses((prev) =>
       prev.map((row) =>
         row.map((s) =>
           s.state === "pending"
-            ? { state: "error", message: "Cancelled" }
+            ? { state: "error", message: cancelledMessage }
             : s,
         ),
       ),
@@ -242,12 +246,9 @@ export function ImportTables() {
 
   async function handleImportClick() {
     const ok = await confirm({
-      title: "Replace all table seatings?",
-      message:
-        "This will permanently delete all existing table seatings, timers, " +
-        "lottery photos, and lottery options, then import the seating " +
-        "assignments from this file. This cannot be undone.",
-      confirmLabel: "Delete & Import",
+      title: t("tables.confirmReplaceTitle"),
+      message: t("tables.confirmReplaceMessage"),
+      confirmLabel: t("shared.deleteAndImport"),
       destructive: true,
     });
     if (!ok) {
@@ -326,11 +327,8 @@ export function ImportTables() {
   if (phase === "pick") {
     return (
       <View style={styles.centered}>
-        <Text style={styles.pickTitle}>Import table seating</Text>
-        <Text style={styles.pickSubtitle}>
-          Select a text file where each line has the format:{"\n"}
-          {"  1 |  1  AT2-4 BE2-1 GB2-1 FI3-3"}
-        </Text>
+        <Text style={styles.pickTitle}>{t("tables.pickTitle")}</Text>
+        <Text style={styles.pickSubtitle}>{t("tables.pickSubtitle")}</Text>
         <Pressable
           style={[styles.pickButton, loading && styles.pickButtonDisabled]}
           onPress={handlePickFile}
@@ -339,7 +337,7 @@ export function ImportTables() {
           {loading ? (
             <ActivityIndicator size="small" color={colors.onAccent} />
           ) : (
-            <Text style={styles.pickButtonText}>Pick file</Text>
+            <Text style={styles.pickButtonText}>{t("shared.pickFile")}</Text>
           )}
         </Pressable>
         {pickError && <Text style={styles.pickError}>{pickError}</Text>}
@@ -356,7 +354,7 @@ export function ImportTables() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Deleting existing data…</Text>
+          <Text style={styles.headerTitle}>{t("shared.deleting")}</Text>
           <View style={styles.headerActions}>
             {wipeIdle && hasWipeFailures && (
               <Pressable
@@ -364,12 +362,12 @@ export function ImportTables() {
                 onPress={handleImportAnyway}
               >
                 <Text style={styles.bypassButtonText}>
-                  Skip failed deletions & import anyway
+                  {t("shared.bypass")}
                 </Text>
               </Pressable>
             )}
             <Pressable style={styles.cancelButton} onPress={cancelDeleting}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>{t("shared.cancel")}</Text>
             </Pressable>
           </View>
         </View>
@@ -392,7 +390,7 @@ export function ImportTables() {
             return (
               <ImportProgressBar
                 key={group.key}
-                label={group.label}
+                label={t(`wipe.${group.key}`, { defaultValue: group.label })}
                 total={group.items.length}
                 succeeded={succeeded}
                 failedItems={failedItems}
@@ -419,18 +417,26 @@ export function ImportTables() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>
           {phase === "preview" &&
-            `Preview — ${groups.length} games, ${totalEntries} tables`}
+            t("tables.previewTitle", {
+              games: groups.length,
+              tables: totalEntries,
+            })}
           {phase === "importing" &&
-            `Importing… ${successCount + errorCount}/${totalEntries}`}
+            t("tables.importingTitle", {
+              done: successCount + errorCount,
+              total: totalEntries,
+            })}
           {phase === "done" &&
-            `Done — ${successCount} succeeded, ${errorCount} failed`}
+            t("tables.doneTitle", { success: successCount, failed: errorCount })}
         </Text>
 
         <View style={styles.headerActions}>
           {phase === "preview" && (
             <>
               <Pressable style={styles.secondaryButton} onPress={handleReset}>
-                <Text style={styles.secondaryButtonText}>Pick another</Text>
+                <Text style={styles.secondaryButtonText}>
+                  {t("shared.pickAnother")}
+                </Text>
               </Pressable>
               <Pressable
                 style={[
@@ -442,21 +448,21 @@ export function ImportTables() {
               >
                 <Text style={styles.importButtonText}>
                   {hasErrors
-                    ? "Fix errors first"
-                    : `Import ${totalEntries} tables`}
+                    ? t("shared.fixErrorsFirst")
+                    : t("tables.importButton", { count: totalEntries })}
                 </Text>
               </Pressable>
             </>
           )}
           {phase === "importing" && (
             <Pressable style={styles.cancelButton} onPress={cancelImporting}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>{t("shared.cancel")}</Text>
             </Pressable>
           )}
           {phase === "done" && (
             <Pressable style={styles.secondaryButton} onPress={handleReset}>
               <Text style={styles.secondaryButtonText}>
-                Import another file
+                {t("shared.importAnotherFile")}
               </Text>
             </Pressable>
           )}
@@ -540,14 +546,19 @@ function GameGroup({
   styles: ReturnType<typeof makeStyles>;
   primaryColor: string;
 }) {
+  const { t } = useTranslation(["importTab"]);
   return (
     <View style={styles.gameGroup}>
       <Text style={styles.gameGroupTitle}>{group.gameTitle}</Text>
 
       <View style={styles.tableHeader}>
         <Text style={[styles.colStatus, styles.colHeaderText]}></Text>
-        <Text style={[styles.colTable, styles.colHeaderText]}>Table</Text>
-        <Text style={[styles.colPlayers, styles.colHeaderText]}>Players</Text>
+        <Text style={[styles.colTable, styles.colHeaderText]}>
+          {t("tables.colTable")}
+        </Text>
+        <Text style={[styles.colPlayers, styles.colHeaderText]}>
+          {t("tables.colPlayers")}
+        </Text>
       </View>
 
       {group.entries.map((entry, e) => {

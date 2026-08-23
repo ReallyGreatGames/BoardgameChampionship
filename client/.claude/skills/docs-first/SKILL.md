@@ -1,6 +1,6 @@
 ---
 name: docs-first
-description: Use whenever working in this repo's app/ or lib/ folders — before reading source code to understand what a file/component/hook does, check its matching docs/ file first. Also enforces that any code change under app/ or lib/ updates the matching docs/ file in the same change. Trigger on requests like "how does X work", "where is X used", "add/change a feature in app or lib", or any edit to a .ts/.tsx file under app/ or lib/.
+description: MANDATORY for this repo — load at the START of any task that will read or write a .ts/.tsx file under app/ or lib/, not just when the user asks about docs. Before reading source code to understand what a file/component/hook does, check its matching docs/ file first. Also enforces that any code change under app/ or lib/ updates the matching docs/ file in the SAME change, before the task is reported done. Trigger on requests like "how does X work", "where is X used", "add/change a feature", "add an import/export/tab/screen", a bug fix, or any Edit/Write touching app/ or lib/ — including when that's only part of a larger task (e.g. a feature request that happens to need a new admin-panel file). If a task ends with source files under app/ or lib/ added/changed/deleted and this skill was never loaded, that is a bug in how the task was run — load it retroactively and add the missing docs before calling the task finished.
 ---
 
 # Docs-first for this repo
@@ -9,6 +9,16 @@ This repo has a full one-to-one code documentation tree under `docs/`,
 mirroring `app/` and `lib/`: every `Foo.tsx`/`Foo.ts` has a matching
 `docs/<same path>/Foo.md`, plus a `README.md` per folder that indexes it.
 `docs/README.md` is the entry point.
+
+**This applies even when the user's request doesn't mention docs at all.**
+"Add a feature," "fix this bug," "build an import flow" — any of these
+that end up touching a file under `app/` or `lib/` are in scope. Load this
+skill as soon as you know a task will touch `app/`/`lib/`, not after the
+code is already written. Before reporting any such task as finished, do a
+final check: every `.ts`/`.tsx` file you added/changed/deleted under
+`app/`/`lib/` needs its `docs/` counterpart added/updated/deleted in the
+same turn — see "After changing code" below for exactly what that means
+per case.
 
 ## Before reading source code
 

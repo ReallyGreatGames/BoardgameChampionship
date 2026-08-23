@@ -29,3 +29,4 @@ Simple dropdown select rendered as a centered modal list.
 
 - [`app/(pages)/(team-player)/choose-your-character.tsx`](../../../app/(pages)/(team-player)/choose-your-character.md)
 - [`app/(pages)/settings.tsx`](../../../app/(pages)/settings.md)
+- [`lib/components/admin/ImportRules.tsx`](../admin/ImportRules.md) — game picker on the paste screen

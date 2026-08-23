@@ -27,7 +27,14 @@ fill track, a count summary, and an optional retry button + per-item error list.
 
 `done` is derived as `succeeded + failedItems.length`, and `isDone` as `total > 0 && done === total` — used to stop showing the spinner once every item has resolved one way or the other.
 
+The retry button's label (`"Retry N failed"`) comes from
+`t("shared.retryFailed", { count: failed })` via
+`useTranslation(["importTab"])` — the `label`/error `message` text passed
+in via props is not translated here, since those are caller-supplied
+(team names, table numbers, rule titles, Appwrite error messages).
+
 ## Used by
 
 - [`lib/components/admin/ImportPlayers.tsx`](ImportPlayers.md)
 - [`lib/components/admin/ImportTables.tsx`](ImportTables.md)
+- [`lib/components/admin/ImportRules.tsx`](ImportRules.md)
