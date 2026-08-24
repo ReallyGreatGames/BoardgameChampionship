@@ -13,8 +13,8 @@ Zustand store for the `players` collection ([`Player`](../../models/player.md)).
 | State/Method | Purpose |
 |---|---|
 | `collection: Player[]` | All `Player` documents, with `team` hydrated |
-| `initialized: boolean` | `true` once the initial fetch has resolved |
-| `init()` | Loads the collection with `team.*` selected |
+| `initialized: boolean` | `true` once the initial fetch has resolved; `false` beforehand so consumers can distinguish "still loading" from "empty" |
+| `init(): Promise<void>` | `fetchCollection<Player>(key, set, [Query.select(["*", "team.*"])])` — loads every `Player` with the related `team` document's fields inlined, then flips `initialized` to `true` |
 
 ## How it works
 

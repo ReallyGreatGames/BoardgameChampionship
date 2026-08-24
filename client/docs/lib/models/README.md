@@ -18,6 +18,7 @@ about Appwrite data.
 |---|---|---|
 | [feature-flag.md](feature-flag.md) | `FeatureFlag` | A feature flag (on/off) |
 | [game.md](game.md) | `Game` | A game/title with its default timer settings |
+| [options-lottery.md](options-lottery.md) | `OptionsLottery`, `OptionsLotteryRow`, `LotteryOption`, `LotteryTableResult` | A named, weighted pool drawn once per table |
 | [player.md](player.md) | `Player` | A player, with their team |
 | [result.md](result.md) | `Result` | Result of a table round (placements, scores, signatures) |
 | [rule.md](rule.md) | `Rule`, `RuleType` | A rule change/addition/clarification for a game |

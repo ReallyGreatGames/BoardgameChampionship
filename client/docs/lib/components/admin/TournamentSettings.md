@@ -9,11 +9,23 @@ PIN, type) — lists the 25 most recent rows, each independently editable/saveab
 
 ## Exports
 
-| Export | Purpose |
-|---|---|
-| `TournamentSettings` (component) | The tab itself |
+| Export | Signature | Purpose |
+|---|---|---|
+| `TournamentSettings` | `(): JSX.Element` | No props. Fetches the 25 most-recent [`Tournament`](../../models/tournament.md) rows and renders one `TournamentCard` per row (loading/error/empty states handled inline). |
 
-(`TournamentCard`, the per-row editor, is a local, unexported helper.)
+### Internal helper (not exported)
+
+| Function | Signature | Behavior |
+|---|---|---|
+| `TournamentCard` | `({ row: Tournament; onSaved: () => void }): JSX.Element` | Per-row editor. Holds local `active`/`pin`/`tournamentType` state seeded from `row`, computes `dirty` by comparing that state to `row`'s last-known values, and saves via a `useMutation` that calls `tablesDB.updateRow` with the edited fields and calls `onSaved()` on success. |
+| `handleSaved` | `(): void` | Passed to every `TournamentCard` as `onSaved`; calls `queryClient.invalidateQueries({ queryKey: ["tournament"] })` after a successful row save. |
+
+### `TournamentCardProps`
+
+| Property | Type | Meaning |
+|---|---|---|
+| `row` | `Tournament` | The tournament row this card edits; its `active`, `pin`, and `type` fields seed the card's local editable state. |
+| `onSaved` | `() => void` | Called after a successful save, so the parent can invalidate other queries that depend on tournament data. |
 
 ## How it works
 

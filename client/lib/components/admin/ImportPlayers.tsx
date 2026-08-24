@@ -16,6 +16,7 @@ import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import * as DocumentPicker from "expo-document-picker";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Pressable,
@@ -55,6 +56,7 @@ function allWipeItemsSucceeded(
 export function ImportPlayers() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { t } = useTranslation(["importTab"]);
   const { confirm } = useDialog();
   const { setBusy } = useImportActivity();
 
@@ -104,7 +106,7 @@ export function ImportPlayers() {
       setStatuses(parsed.map(() => ({ state: "pending" })));
       setPhase("preview");
     } catch (e: unknown) {
-      setPickError(e instanceof Error ? e.message : "Failed to read file");
+      setPickError(e instanceof Error ? e.message : t("shared.readError"));
     }
   }
 
@@ -118,18 +120,20 @@ export function ImportPlayers() {
         setWipeStatuses({ ...local });
       },
       () => mountedRef.current && !cancelRequestedRef.current,
+      group.kind,
     );
   }
 
   function cancelDeleting() {
     cancelRequestedRef.current = true;
+    const cancelledMessage = t("shared.cancelled");
     setWipeStatuses((prev) => {
       const next: WipeStatusMap = {};
       for (const g of wipeGroups) {
         next[g.key] = { ...prev[g.key] };
         for (const item of g.items) {
           if (next[g.key][item.id]?.state === "pending") {
-            next[g.key][item.id] = { state: "error", message: "Cancelled" };
+            next[g.key][item.id] = { state: "error", message: cancelledMessage };
           }
         }
       }
@@ -139,9 +143,10 @@ export function ImportPlayers() {
 
   function cancelImporting() {
     cancelRequestedRef.current = true;
+    const cancelledMessage = t("shared.cancelled");
     setStatuses((prev) =>
       prev.map((s) =>
-        s.state === "pending" ? { state: "error", message: "Cancelled" } : s,
+        s.state === "pending" ? { state: "error", message: cancelledMessage } : s,
       ),
     );
     setPhase("done");
@@ -224,12 +229,9 @@ export function ImportPlayers() {
 
   async function handleImportClick() {
     const ok = await confirm({
-      title: "Replace all teams & players?",
-      message:
-        `This will permanently delete all existing teams, players, table ` +
-        `seatings, and timers, then import ${rows.length} team(s) from this ` +
-        `file. This cannot be undone.`,
-      confirmLabel: "Delete & Import",
+      title: t("players.confirmReplaceTitle"),
+      message: t("players.confirmReplaceMessage", { count: rows.length }),
+      confirmLabel: t("shared.deleteAndImport"),
       destructive: true,
     });
     if (!ok) {
@@ -307,14 +309,10 @@ export function ImportPlayers() {
   if (phase === "pick") {
     return (
       <View style={styles.centered}>
-        <Text style={styles.pickTitle}>Import teams & players</Text>
-        <Text style={styles.pickSubtitle}>
-          Select a tab-separated file (.tsv, .txt, .csv) with: team name,
-          country, player 1–4, team code, and optionally a 2-letter country
-          code (defaults to &quot;DE&quot; if left out)
-        </Text>
+        <Text style={styles.pickTitle}>{t("players.pickTitle")}</Text>
+        <Text style={styles.pickSubtitle}>{t("players.pickSubtitle")}</Text>
         <Pressable style={styles.pickButton} onPress={handlePickFile}>
-          <Text style={styles.pickButtonText}>Pick file</Text>
+          <Text style={styles.pickButtonText}>{t("shared.pickFile")}</Text>
         </Pressable>
         {pickError && <Text style={styles.pickError}>{pickError}</Text>}
       </View>
@@ -330,7 +328,7 @@ export function ImportPlayers() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Deleting existing data…</Text>
+          <Text style={styles.headerTitle}>{t("shared.deleting")}</Text>
           <View style={styles.headerActions}>
             {wipeIdle && hasWipeFailures && (
               <Pressable
@@ -338,12 +336,12 @@ export function ImportPlayers() {
                 onPress={handleImportAnyway}
               >
                 <Text style={styles.bypassButtonText}>
-                  Skip failed deletions & import anyway
+                  {t("shared.bypass")}
                 </Text>
               </Pressable>
             )}
             <Pressable style={styles.cancelButton} onPress={cancelDeleting}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>{t("shared.cancel")}</Text>
             </Pressable>
           </View>
         </View>
@@ -366,7 +364,7 @@ export function ImportPlayers() {
             return (
               <ImportProgressBar
                 key={group.key}
-                label={group.label}
+                label={t(`wipe.${group.key}`, { defaultValue: group.label })}
                 total={group.items.length}
                 succeeded={succeeded}
                 failedItems={failedItems}
@@ -391,18 +389,24 @@ export function ImportPlayers() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>
-          {phase === "preview" && `Preview — ${rows.length} teams`}
+          {phase === "preview" &&
+            t("players.previewTitle", { count: rows.length })}
           {phase === "importing" &&
-            `Importing… ${successCount + errorCount}/${rows.length}`}
+            t("players.importingTitle", {
+              done: successCount + errorCount,
+              total: rows.length,
+            })}
           {phase === "done" &&
-            `Done — ${successCount} succeeded, ${errorCount} failed`}
+            t("players.doneTitle", { success: successCount, failed: errorCount })}
         </Text>
 
         <View style={styles.headerActions}>
           {phase === "preview" && (
             <>
               <Pressable style={styles.secondaryButton} onPress={handleReset}>
-                <Text style={styles.secondaryButtonText}>Pick another</Text>
+                <Text style={styles.secondaryButtonText}>
+                  {t("shared.pickAnother")}
+                </Text>
               </Pressable>
               <Pressable
                 style={[
@@ -414,21 +418,21 @@ export function ImportPlayers() {
               >
                 <Text style={styles.importButtonText}>
                   {hasErrors
-                    ? "Fix errors first"
-                    : `Import ${rows.length} teams`}
+                    ? t("shared.fixErrorsFirst")
+                    : t("players.importButton", { count: rows.length })}
                 </Text>
               </Pressable>
             </>
           )}
           {phase === "importing" && (
             <Pressable style={styles.cancelButton} onPress={cancelImporting}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>{t("shared.cancel")}</Text>
             </Pressable>
           )}
           {phase === "done" && (
             <Pressable style={styles.secondaryButton} onPress={handleReset}>
               <Text style={styles.secondaryButtonText}>
-                Import another file
+                {t("shared.importAnotherFile")}
               </Text>
             </Pressable>
           )}
@@ -438,7 +442,7 @@ export function ImportPlayers() {
       {(phase === "importing" || phase === "done") && (
         <View style={styles.wipeList}>
           <ImportProgressBar
-            label="Teams"
+            label={t("players.progressLabel")}
             total={rows.length}
             succeeded={successCount}
             failedItems={rows.flatMap((row, i) => {
@@ -459,10 +463,18 @@ export function ImportPlayers() {
       >
         <View style={styles.tableHeader}>
           <Text style={[styles.colStatus, styles.colHeaderText]}></Text>
-          <Text style={[styles.colCode, styles.colHeaderText]}>Code</Text>
-          <Text style={[styles.colName, styles.colHeaderText]}>Team</Text>
-          <Text style={[styles.colCountry, styles.colHeaderText]}>CC</Text>
-          <Text style={[styles.colPlayers, styles.colHeaderText]}>Players</Text>
+          <Text style={[styles.colCode, styles.colHeaderText]}>
+            {t("players.colCode")}
+          </Text>
+          <Text style={[styles.colName, styles.colHeaderText]}>
+            {t("players.colTeam")}
+          </Text>
+          <Text style={[styles.colCountry, styles.colHeaderText]}>
+            {t("players.colCountry")}
+          </Text>
+          <Text style={[styles.colPlayers, styles.colHeaderText]}>
+            {t("players.colPlayers")}
+          </Text>
         </View>
 
         {rows.map((row, i) => {

@@ -12,6 +12,7 @@ biggest single piece of client-side state: the timer.
 |---|---|
 | [useDurationRoundFields.md](useDurationRoundFields.md) | Shared form state/validation for duration + round-time + direction fields |
 | [useLotteryActions.md](useLotteryActions.md) | Take/pick/upload/delete lottery photos |
+| [useOptionsLotteryActions.md](useOptionsLotteryActions.md) | Create/edit/pull/delete actions for options lotteries |
 | [usePlayerTable.md](usePlayerTable.md) | Looks up which table the current player sits at for a game |
 | [useRequireAuth.md](useRequireAuth.md) | Redirects to login if there's no authenticated user |
 | [useSecureStoragePerGame.md](useSecureStoragePerGame.md) | Generic per-game, per-device preference storage |

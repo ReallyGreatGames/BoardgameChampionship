@@ -17,6 +17,7 @@ All stores are initialized together by
 |---|---|---|---|
 | [feature-flag-store.md](feature-flag-store.md) | `feature_flags` | read-only via hook | Derives a `slug → enabled` lookup map |
 | [lottery-store.md](lottery-store.md) | bucket `lottery` | read-only | Mirrors a storage bucket, not a database collection |
+| [options-lottery-store.md](options-lottery-store.md) | `options-lotteries` | add, update, delete | Options/results kept as JSON strings on the row |
 | [player-store.md](player-store.md) | `players` | read-only | Hydrates the `team` relation |
 | [result-store.md](result-store.md) | `results` | add, update | |
 | [rule-store.md](rule-store.md) | `rules` | add, update, delete | |

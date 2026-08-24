@@ -19,6 +19,29 @@ query param:
    confirm, returns to settings (`router.back()`) or to the game screen
    with `gameId` re-attached, respectively.
 
+## Exports
+
+| Export | Signature | Purpose |
+| --- | --- | --- |
+| `ChooseYourCharacter` (default) | `(): JSX.Element` | Screen component for `/choose-your-character`. Renders either `PlayerPickerForm` (picker step) or a settings step (color scheme, language, account, continue), depending on `pickerVisible` and the `from` query param. Also sets `Drawer.Screen` options to suppress swipe/back navigation while active. |
+
+### Types
+
+| Type | Definition | Meaning |
+| --- | --- | --- |
+| `Language` | `"en" \| "de"` | Supported UI language codes, used to type `LANGUAGES` and the language `SelectPicker`'s value. |
+
+### Module constants
+
+| Constant | Type | Meaning |
+| --- | --- | --- |
+| `LANGUAGES` | `Language[]` | `["en", "de"]` — options offered in the language picker. |
+| `SCHEMES` | `ColorScheme[]` | `["light", "dark", "oled", "highContrast"]` — options offered in the color-scheme picker. |
+
+### `handleConfirm(selectedPlayer: Player): Promise<void>`
+
+Calls `assignPlayer(selectedPlayer)` to persist the chosen player, then routes based on `from`: `"game"` with a `gameId` present replaces to `/(pages)/(user)/game?gameId=...`; `"settings"` calls `router.back()`; otherwise (setup flow) sets `pickerVisible` to `false` to advance to the settings step in-place.
+
 ## How it works
 
 `canContinue` (setup flow's continue button) is gated on either the player

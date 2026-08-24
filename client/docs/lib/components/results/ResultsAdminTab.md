@@ -23,6 +23,21 @@ These filter/sort types are re-exported for
 [`ResultsFilterDialog`](ResultsFilterDialog.md), which is otherwise a pure
 controlled-props component with no store access of its own.
 
+### Internal handlers and helpers
+
+| Function | Signature | Behavior |
+|---|---|---|
+| `globalPos` | `(tableNumber: number): number` | Converts a per-game table number into its position across the whole tournament (`tableNumber + tablesPerGame * gameIndex`), used for the `globalLabel` header text in input mode. |
+| `resultForTable` | `(tableNumber: number): Result \| undefined` | Looks up the `Result` document for a table number within `selectedGameId`; called from several memos so it's a stable `useCallback`. |
+| `resetFilters` | `(): void` | Resets `bellFilter`/`submitFilter`/`timerFilter`/`sortOrder` to their defaults; wired to the filter dialog's Reset button. |
+| `handleSave` | `(): Promise<void>` | Confirms via `useDialog()`, then builds a `Result` payload from the current form state (`placements`, `scores` parsed with `parseFloat(s) \|\| 0`, trimmed `note`, existing or blank `signatureIds`, `submitted`) and either `update`s or `add`s it through `resultStore`, guarded by `saving` against double-submit. No-ops if there's no current table/game or a save is already in flight. |
+| `handleSetPlacement` | `(seatIdx: number, value: string): void` | Sets seat `seatIdx`'s entry in the `placements` array. |
+| `handleSetScore` | `(idx: number, value: string): void` | Sets seat `idx`'s entry in the `scores` array (string form; parsed to a number only at save time). |
+| `handleJump` | `(): void` | Parses `jumpText` as an integer, finds the matching table by `tableNumber` in `gameTables`, and jumps `currentTableIdx` to it, clearing `jumpText`; silently no-ops if the text isn't a valid number or no table matches. |
+| `handleBellPress` | `(bell: TableBell): Promise<void>` | Dismisses (if already acknowledged) or acknowledges (otherwise) the bell via [`useTableBellActions`](../../hooks/useTableBellActions.md), each with its own confirmation dialog copy; dismiss is marked `destructive`. |
+| `handleCloseModal` | `(): void` | Closes the signature modal and resets `confirmingReset` to `false`. |
+| `handleResetSingleSignature` | `(): Promise<void>` | Clears the signature at `sigModalIdx` in `currentResult.signatureIds` and persists the update via `resultStore.update`, then closes the modal. No-ops if there's no current result or no signature slot selected. |
+
 ## How it works
 
 ### Two modes, one header
@@ -66,6 +81,18 @@ focus) lets ←/→ step between tables. Within a row,
 row's score field and chip group into a single tab sequence across all 4
 seats via `rowRefs` (an array of imperative handles) — see that
 component's docs for why native DOM listeners are needed for this on web.
+
+### Resetting the input form on table change
+
+A `useEffect` keyed on `[currentResult, currentTableIdx]` re-seeds
+`placements`/`scores`/`note`/`submitted` from `currentResult` (or blanks
+them if there's none) every time either changes. `currentTableIdx` is
+included even though `currentResult` is the actual data source, because
+`currentResult` can be `undefined` for two different tables in a row (no
+result saved yet) — without `currentTableIdx` in the dependency array,
+switching from one empty table to another empty table wouldn't re-fire the
+effect, and the previous table's already-blank-but-since-edited form state
+would silently carry over into the new one.
 
 ### Saving a result
 

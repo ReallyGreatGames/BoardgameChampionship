@@ -15,7 +15,7 @@ Appwrite document type `Tournament` — the global tournament configuration
 |---|---|---|
 | `locale` | `"de" \| "en"` | Language of the app instance |
 | `active` | `boolean` | Whether the tournament is active |
-| `pin` | `string` | Admin PIN for gated actions |
+| `pin` | `string` | Admin PIN for gated actions; verified by querying the `tournament` collection for a row matching both `pin` and `active: true` (see `verifyPinInDb` in [`lib/auth.tsx`](../../auth.md)), then cached locally for 24h so re-verification isn't required on every app open |
 | `type` | `"dmmib" \| "europemasters"` | Tournament variant (controls e.g. rule set/branding) |
 
 ## Used by

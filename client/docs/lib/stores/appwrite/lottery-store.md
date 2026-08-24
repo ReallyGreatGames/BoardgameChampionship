@@ -14,8 +14,8 @@ directly against Appwrite storage, not through this store.
 
 | State/Method | Purpose |
 |---|---|
-| `collection: Models.File[]` | All files in the `lottery` bucket |
-| `init()` | Loads the file list (up to 500) |
+| `collection: Models.File[]` | All files (Appwrite storage `File` metadata objects — `$id`, `name`, `mimeType`, `sizeOriginal`, etc.) currently in the `lottery` bucket |
+| `init(): Promise<void>` | Calls `storage.listFiles({ bucketId: LOTTERY_BUCKET_ID, queries: [Query.limit(500)] })` and sets `collection` to the returned `files` array; caps the listing at 500 files |
 
 ## How it works
 
@@ -29,6 +29,5 @@ the bucket's own realtime events rather than a database collection's.
 ## Used by
 
 - [`lib/hooks/useLotteryActions.ts`](../../hooks/useLotteryActions.md)
-- [`lib/notifications/useLotteryNotifications.ts`](../../notifications/useLotteryNotifications.md)
 - [`lib/bootstrap/RealTimeStoreProvider.tsx`](../../bootstrap/RealTimeStoreProvider.md)
 - Screens: [`game.tsx`](../../../app/(pages)/(user)/game.md), [`lottery.tsx`](../../../app/(pages)/(user)/lottery.md)

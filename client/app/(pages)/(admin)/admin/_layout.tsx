@@ -2,9 +2,11 @@ import { router, Stack } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { useAuth } from "../../../../lib/auth";
+import { useTheme } from "../../../../lib/bootstrap/ThemeProvider";
 
 export default function AdminLayout() {
   const { user, loading, isAdmin } = useAuth();
+  const { colors } = useTheme();
 
   useEffect(() => {
     if (loading) {
@@ -22,10 +24,10 @@ export default function AdminLayout() {
           flex: 1,
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: "#0f0f0f",
+          backgroundColor: colors.background,
         }}
       >
-        <ActivityIndicator size="large" color="#fff" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }

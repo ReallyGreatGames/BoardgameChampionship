@@ -8,9 +8,15 @@ Shows the table seating for a game — but only the one table the current
 player is actually seated at; renders nothing if the player has no table
 for this game.
 
-## Props
+## Exports
 
-`{ gameId: string }`
+### `Table({ gameId }: { gameId: string }): JSX.Element | null`
+
+| Prop | Type | Meaning |
+|---|---|---|
+| `gameId` | `string` | The `$id` of the game whose table the current player should be shown for. |
+
+Renders the seating card for the current player's table in this game, or `null` if the player isn't seated at any table for it. Not exported as a named type — the prop object is inlined in the function signature.
 
 ## How it works
 

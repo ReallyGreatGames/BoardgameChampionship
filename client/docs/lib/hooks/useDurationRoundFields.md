@@ -21,12 +21,30 @@ own extraction was meant to prevent, but only covered the JSX half).
 
 ### `useDurationRoundFields()`
 
-Returns raw field strings (`duration`, `roundSeconds`), the current
-`direction`, a `saving` flag, parsed/validated numbers (`durNum`,
-`durValid`, `roundSecondsNum`, `roundSecondsValid`, `isValid`), derived
-error flags (`durationInvalid`, `roundSecondsInvalid`), setters
-(`setDuration`, `setRoundSeconds`, `setDirection`, `setSaving`), an
-`onDurationBlur` handler, and a `reset(initial?)` function.
+Takes no parameters. Holds five pieces of `useState` (`duration`,
+`roundSeconds` as raw strings; `direction`; `saving`; `durBlurred`,
+internal-only), derives validation on every render from the raw strings,
+and returns:
+
+| Property | Type | Meaning |
+|---|---|---|
+| `duration` | `string` | Raw text of the duration field (per-player minutes), as typed. |
+| `roundSeconds` | `string` | Raw text of the round-seconds field, as typed. |
+| `direction` | `"up" \| "down"` | Whether the timer counts up or down; defaults to `"down"`. |
+| `saving` | `boolean` | Caller-controlled flag (via `setSaving`) for disabling the form while a save request is in flight. |
+| `durNum` | `number` | `parseInt(duration, 10)` — may be `NaN`. |
+| `durValid` | `boolean` | `true` if `durNum` parsed and is `> 0`. |
+| `roundSecondsNum` | `number` | `parseInt(roundSeconds, 10)`, or `0` if the field is blank/whitespace. |
+| `roundSecondsValid` | `boolean` | `true` if `roundSecondsNum` parsed and is `>= 0` (`0` = round-timer disabled, and is valid). |
+| `isValid` | `boolean` | `durValid && roundSecondsValid` — overall form validity for enabling a save button. |
+| `durationInvalid` | `boolean` | `true` only once the field has been blurred (`durBlurred`) and currently holds non-empty, invalid text — drives the error-message UI. |
+| `roundSecondsInvalid` | `boolean` | `true` if the field holds non-empty, invalid text (no blur-gating, unlike duration). |
+| `setDuration` | `(v: string) => void` | Updates `duration` and, if the field was previously flagged invalid after a blur, clears that flag as soon as the new text parses to a valid positive number (see How it works). |
+| `setRoundSeconds` | `(v: string) => void` | Plain state setter for `roundSeconds`. |
+| `setDirection` | `(d: "up" \| "down") => void` | Plain state setter for `direction`. |
+| `setSaving` | `(s: boolean) => void` | Plain state setter for `saving`. |
+| `onDurationBlur` | `() => void` | Marks the duration field as blurred (`durBlurred = true`), enabling `durationInvalid` to turn on. |
+| `reset` | `(initial?: DurationRoundInitial) => void` | Re-initializes all fields from `initial` (or hook defaults if omitted/fields omitted) and clears `saving`/`durBlurred`. |
 
 ## How it works
 

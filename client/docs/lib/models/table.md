@@ -13,7 +13,7 @@ Appwrite document type `Table` — a table with its assigned players and game.
 | Field | Type | Meaning |
 |---|---|---|
 | `tableNumber` | `number` | Table number |
-| `players` | [`Player[]`](player.md) | Assigned players |
+| `players` | [`Player[]`](player.md) | Assigned players, in seat order — index `i` is seat `i`, the same indexing used by [`Result`](result.md)'s `placements`/`scores`/`signatureIds` arrays and by the timer's seat-indexed state |
 | `game` | [`Game`](game.md) | Assigned game |
 
 ## Used by

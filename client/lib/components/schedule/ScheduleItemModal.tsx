@@ -42,6 +42,7 @@ type Props = {
   onTimer?: (gameId: string) => void;
   onSave: (data: ScheduleFormData) => Promise<void>;
   onRules?: (gameId: string) => void;
+  onLotteries?: (gameId: string) => void;
 };
 
 function isValidTime(v: string): boolean {
@@ -130,6 +131,7 @@ export function ScheduleItemModal({
   onClose,
   onSave,
   onRules,
+  onLotteries,
   onTimer,
 }: Props) {
   const { colors } = useTheme();
@@ -214,19 +216,22 @@ export function ScheduleItemModal({
         <>
           <View style={styles.actionBtns}>
             <TouchableOpacity
-              style={[styles.actionBtn, !item && styles.actionBtnDisabled]}
-              disabled={!item}
+              style={[
+                styles.actionBtn,
+                (!item?.gameId || !onTimer) && styles.actionBtnDisabled,
+              ]}
+              disabled={!item?.gameId || !onTimer}
               onPress={() => item?.gameId && onTimer?.(item.gameId)}
             >
               <Ionicons
                 name="timer-outline"
                 size={16}
-                color={!item ? colors.textMuted : colors.text}
+                color={!item?.gameId || !onTimer ? colors.textMuted : colors.text}
               />
               <Text
                 style={[
                   styles.actionBtnText,
-                  !item && styles.actionBtnTextDisabled,
+                  (!item?.gameId || !onTimer) && styles.actionBtnTextDisabled,
                 ]}
               >
                 {t("schedule.form.actionTimer")}
@@ -257,18 +262,24 @@ export function ScheduleItemModal({
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.actionBtn, !item && styles.actionBtnDisabled]}
-              disabled={!item}
+              style={[
+                styles.actionBtn,
+                (!item?.gameId || !onLotteries) && styles.actionBtnDisabled,
+              ]}
+              disabled={!item?.gameId || !onLotteries}
+              onPress={() => item?.gameId && onLotteries?.(item.gameId)}
             >
               <Ionicons
                 name="gift-outline"
                 size={16}
-                color={!item ? colors.textMuted : colors.text}
+                color={
+                  !item?.gameId || !onLotteries ? colors.textMuted : colors.text
+                }
               />
               <Text
                 style={[
                   styles.actionBtnText,
-                  !item && styles.actionBtnTextDisabled,
+                  (!item?.gameId || !onLotteries) && styles.actionBtnTextDisabled,
                 ]}
               >
                 {t("schedule.form.actionLotteries")}

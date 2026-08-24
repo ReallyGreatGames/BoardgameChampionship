@@ -10,12 +10,14 @@ import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
 import { getItemAsync, setItemAsync } from "@/lib/secureStorage";
 import { useLotteryStore } from "@/lib/stores/appwrite/lottery-store";
+import { useOptionsLotteryStore } from "@/lib/stores/appwrite/options-lottery-store";
 import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { useTableStore } from "@/lib/stores/appwrite/table-store";
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
 import { resolveGameId } from "@/lib/utils";
 import { getLotteryPhotosForGame } from "@/lib/utils/lottery";
+import { getOptionsLotteriesForGame, getResultForTable } from "@/lib/utils/options-lottery";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { Ionicons } from "@expo/vector-icons";
@@ -100,10 +102,20 @@ export default function GamePage() {
   const tableStore = useTableStore();
   const timerStore = useTimerStore();
   const lotteryCollection = useLotteryStore((s) => s.collection);
+  const optionsLotteryCollection = useOptionsLotteryStore((s) => s.collection);
+
+  const optionsLotteryCount = useMemo(() => {
+    if (tableNumber === null) {
+      return 0;
+    }
+    return getOptionsLotteriesForGame(optionsLotteryCollection, gameId).filter(
+      (instance) => getResultForTable(instance, tableNumber) !== null,
+    ).length;
+  }, [optionsLotteryCollection, gameId, tableNumber]);
 
   const lotteryCount = useMemo(
-    () => getLotteryPhotosForGame(lotteryCollection, gameId).length,
-    [lotteryCollection, gameId],
+    () => getLotteryPhotosForGame(lotteryCollection, gameId).length + optionsLotteryCount,
+    [lotteryCollection, gameId, optionsLotteryCount],
   );
 
   const currentTable = useMemo(

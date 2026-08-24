@@ -300,7 +300,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       color: colors.onAccent,
     },
     chipLabelError: {
-      color: "#ffffff",
+      color: colors.onAccent,
     },
   });
 }

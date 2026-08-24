@@ -10,6 +10,8 @@ helpers in [`lib/utils.ts`](../utils.md)).
 | File | Purpose |
 |---|---|
 | [lottery.md](lottery.md) | Filename convention & parsing for lottery photos in the storage bucket |
+| [lottery-draw.md](lottery-draw.md) | Pure weighted-draw algorithm for options lotteries |
+| [options-lottery.md](options-lottery.md) | Raw-row ↔ derived-shape conversion and lookups for options lotteries |
 | [placements.md](placements.md) | Validation of placements and computation of tournament points/team rankings |
 | [statistics.md](statistics.md) | Per-seat statistics and team-performance evaluation across all results |
 | [timerColors.md](timerColors.md) | Player-color palettes for the timer |

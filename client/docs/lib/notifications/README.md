@@ -11,7 +11,7 @@ newly-created rows it hasn't notified about yet.
 | File | Purpose |
 |---|---|
 | [localNotify.md](localNotify.md) | Low-level cross-platform notification/haptic/sound primitives |
-| [useLotteryNotifications.md](useLotteryNotifications.md) | Notifies non-admins about new lottery photos |
 | [useTableBellNotifications.md](useTableBellNotifications.md) | Notifies admins about new table bells |
 
-Both hooks are mounted from [`RealTimeStoreProvider`](../bootstrap/RealTimeStoreProvider.md).
+The hook is mounted from [`RealTimeStoreProvider`](../bootstrap/RealTimeStoreProvider.md). Lottery
+photos and options-lottery pulls intentionally have no notification — that was removed.

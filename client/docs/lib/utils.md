@@ -14,8 +14,12 @@ specialized utility modules).
 | Export | Signature | Purpose |
 |---|---|---|
 | `EMPTY` | `Symbol` | Sentinel value for "no value" (distinguishable from `undefined`/`null`) |
+| `WRITE_PACING_MS` | `number` (`750`) | Shared delay between consecutive Appwrite write calls in the import/wipe services, to stay under Appwrite's rate limit during bulk operations |
 | `sleep(ms)` | `(number) => Promise<void>` | Promise-based delay |
 | `withRetry(fn, options)` | `<T>(() => Promise<T>, opts) => Promise<T>` | Re-runs `fn` with exponential backoff as long as `shouldRetry(error)` is true (default: always, max 4 attempts, initial delay 1000ms, doubling each attempt) |
+| — `options.maxRetries` | `number` (default `4`) | Max number of retries after the first attempt |
+| — `options.initialDelay` | `number` (default `1000`) | Delay in ms before the first retry; doubles after every subsequent failure |
+| — `options.shouldRetry` | `(error: unknown) => boolean` (default always `true`) | Predicate deciding whether a given error is retryable; when it returns `false` the error is rethrown immediately |
 | `addMinutesToTime(time, minutes)` | `(string, number) => string` | Adds minutes to an `"HH:MM"` time, with 24h wraparound |
 | `deepClone(obj)` | `<T>(T) => T` | Deep copy via JSON round-trip |
 | `formatTime(s)` | `(number) => string` | Seconds → `"MM:SS"`, negative values are clamped to 0 |
@@ -32,9 +36,33 @@ specialized utility modules).
 | `EffectiveTimerSettings` | Type | Return type of `resolveEffectiveTimer` |
 | `RoundPoolReconcileResult` | Type | Return type of `reconcileRoundAndPool` |
 
+`EffectiveTimerSettings` properties:
+
+| Property | Type | Meaning |
+|---|---|---|
+| `hasCustomTimer` | `boolean` | Whether the table overrides the game's default timer settings |
+| `effectiveDuration` | `number \| undefined` | The duration (minutes) that actually applies — table's own if customized, else the game's default |
+| `roundSecondsTotal` | `number` | The round-timer length (seconds) that actually applies (`0` = disabled) |
+| `direction` | `NonNullable<Timer["direction"]>` | Count-up/count-down direction that actually applies |
+
+`RoundPoolReconcileResult` properties:
+
+| Property | Type | Meaning |
+|---|---|---|
+| `poolTimes` | `number[]` | Recomputed per-seat pool-time remaining, in seconds |
+| `roundTimesLeft` | `number[]` | Recomputed per-seat round-time remaining, in seconds |
+| `roundExpired` | `boolean[]` | Recomputed per-seat "round timer hit zero" flags |
+
 ## How the more complex functions work
 
-### `computeTableElapsedSeconds`
+### `computeTableElapsedSeconds(accumulatedMs: number, resumedAtIso: string | null | undefined, now: number): number`
+
+- `accumulatedMs` — milliseconds already banked from past active (running,
+  not paused) stretches at this table.
+- `resumedAtIso` — ISO timestamp of when the table was last resumed, or
+  `null`/`undefined` if it's currently paused/never started.
+- `now` — current time in epoch ms (caller-supplied so the function stays
+  pure/testable).
 
 Table-wide elapsed time is **not** stored as a live-ticking counter, but
 derived: accumulated milliseconds from past "active" stretches, plus —
@@ -45,7 +73,22 @@ so the two are guaranteed to compute the same value (see the doc comments
 on `tableActiveAccumulatedMs`/`tableActiveResumedAt` in
 [`Timer`](models/timer.md)).
 
-### `reconcileRoundAndPool`
+### `reconcileRoundAndPool(poolTimes: number[], roundTimesLeft: number[], roundExpired: boolean[], pausedFlags: boolean[], roundSecondsTotal: number, updatedAt: string[], now: number): RoundPoolReconcileResult`
+
+- `poolTimes` — per-seat remaining pool-time in seconds (can go negative,
+  meaning the pool is overdrawn).
+- `roundTimesLeft` — per-seat remaining round-time in seconds.
+- `roundExpired` — per-seat flag for whether that seat's round timer has
+  already hit zero.
+- `pausedFlags` — per-seat flag; paused seats are skipped entirely (not
+  fast-forwarded).
+- `roundSecondsTotal` — the table's configured round-timer length in
+  seconds (`0` means round timers are disabled for this table).
+- `updatedAt` — per-seat ISO timestamp of that seat's last save, the
+  anchor each seat fast-forwards from.
+- `now` — current time in epoch ms.
+- Returns a `RoundPoolReconcileResult` with the recomputed `poolTimes`,
+  `roundTimesLeft`, and `roundExpired` arrays.
 
 For every unpaused seat, fast-forwards round time and pool time by the real
 time elapsed since that seat's **own** last-saved moment (`updatedAt[i]`) —
@@ -62,7 +105,14 @@ recently. Used both by the interactive timer (on reconnect) and the
 read-only results dashboard, so pool time never appears to drain during a
 seat's round-time phase.
 
-### `resolveEffectiveTimer`
+### `resolveEffectiveTimer(timer: Pick<Timer, "hasCustomTimer" | "durationMinutesTotal" | "roundSecondsTotal" | "direction"> | undefined, gameSettings: { durationMinutesTotal?: number; roundSecondsTotal?: number; direction?: Timer["direction"] } | undefined): EffectiveTimerSettings`
+
+- `timer` — the table's own `Timer` document fields (or `undefined` if the
+  table has none yet).
+- `gameSettings` — the parent game's default timer settings, used as the
+  fallback when the table isn't customized.
+- Returns an `EffectiveTimerSettings` describing which settings actually
+  apply.
 
 Determines the timer settings that actually apply to a table: a deliberate
 per-table override, or otherwise the game's default settings.

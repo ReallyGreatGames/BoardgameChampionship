@@ -7,9 +7,18 @@
 Small (i) icon button that opens an info-only [`Dialog`](Dialog.md) (no
 cancel button) with a given title/message.
 
-## Props
+## Exports
 
-`{ title: string, message: string }`
+| Export | Signature | Purpose |
+|---|---|---|
+| `InfoButton` | `(props: Props): JSX` | Renders a small `(i)` icon `Pressable`; on press, calls `confirm({ title, message, cancelLabel: null })` from [`useDialog`](Dialog.md) to show an info-only dialog. Fire-and-forget — the resolved promise isn't awaited since there's nothing to branch on. |
+
+### Props
+
+| Property | Type | Meaning |
+|---|---|---|
+| `title` | `string` | Dialog title, passed straight through to `DialogOptions.title`. |
+| `message` | `string` | Dialog body text, passed straight through to `DialogOptions.message`. |
 
 ## Used by
 

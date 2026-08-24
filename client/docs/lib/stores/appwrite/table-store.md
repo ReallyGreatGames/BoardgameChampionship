@@ -13,7 +13,7 @@ Zustand store for the `tables` collection ([`Table`](../../models/table.md)). Re
 | State/Method | Purpose |
 |---|---|
 | `collection: Table[]` | All `Table` documents, with `players`/`players.team`/`game` hydrated |
-| `init()` | Loads the collection with those relations selected |
+| `init(): Promise<void>` | `fetchCollection<Table>(key, set, [Query.select(["*", "players.*", "players.team.*", "game.*"])])` — loads every `Table` with its seated `players` (and each player's `team`) and assigned `game` inlined |
 
 ## How it works
 

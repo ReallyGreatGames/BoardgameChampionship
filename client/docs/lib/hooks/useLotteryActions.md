@@ -11,8 +11,20 @@ storage bucket.
 
 ### `useLotteryActions()`
 
-Returns `{ isAdmin, uploading, takePhoto(gameId), pickFromLibrary(gameId),
-remove(fileId, confirmOpts?), isDeleting(fileId) }`.
+Takes no parameters. Combines [`useAuth`](../auth.md) (`isAdmin`),
+[`useDialog`](../components/ui/Dialog.md) (error alerts + optional confirm),
+and two local loading flags (`uploading`, `deletingId`). Returns:
+
+| Property | Signature | Meaning |
+|---|---|---|
+| `isAdmin` | `boolean` | Passthrough from `useAuth` — gates `remove`. |
+| `uploading` | `boolean` | `true` while an `uploadAsset` call (triggered by `takePhoto`/`pickFromLibrary`) is in flight. |
+| `takePhoto` | `(gameId: string) => Promise<void>` | Requests camera permission; if denied, resolves without doing anything. If granted, launches the native camera (`quality: 0.6`, no editing) and, unless the user cancels, uploads the captured photo via the internal `uploadAsset`. |
+| `pickFromLibrary` | `(gameId: string) => Promise<void>` | Same as `takePhoto` but requests media-library permission and launches the image library picker instead of the camera. |
+| `remove` | `(fileId: string, confirmOpts?: DialogOptions) => Promise<boolean>` | No-op returning `false` if the caller isn't admin. Otherwise optionally confirms, deletes the file from the `lottery` bucket, refreshes the store, and returns `true`; on any error shows an error dialog and returns `false`. Tracks `deletingId` for the duration. |
+| `isDeleting` | `(fileId: string) => boolean` | `true` if `fileId` is the specific file currently being deleted. |
+
+The internal (unexported) `uploadAsset(gameId: string, asset: ImagePicker.ImagePickerAsset): Promise<void>` helper drives both `takePhoto` and `pickFromLibrary`: it sets `uploading`, builds the filename, converts the asset, uploads it, refreshes the lottery store, and shows an error dialog on failure — see How it works below for the upload/permission/race-condition details.
 
 ## How it works
 

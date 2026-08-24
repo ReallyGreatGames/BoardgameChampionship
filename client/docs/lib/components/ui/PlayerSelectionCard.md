@@ -9,7 +9,13 @@ Card showing the current player's team/name (via
 to [`choose-your-character`](../../../app/(pages)/(team-player)/choose-your-character.md)
 to change or (if none set) pick a player.
 
-## Props
+## Exports
+
+| Export | Signature | Purpose |
+|---|---|---|
+| `PlayerSelectionCard` | `(props: Props): JSX` | Renders the current team/player (or a "select player" prompt if none set) and, when allowed, a row that navigates to `choose-your-character`. |
+
+### Props
 
 `{ from?: "settings" | "game", onPress?: () => void, forceAllow?: boolean, gameId?: string }`
 
@@ -27,6 +33,17 @@ The "change team" row is only shown if `canChange` is true:
 — i.e. admins and players with no team yet can always change, but a
 regular player with a team already set can be locked out by the currently
 active [`Schedule`](../../models/schedule.md) item's `allowUserChange: false`.
+
+`activeItem` is memoized on `[scheduleCollection]`, scanning the collection
+for the item with `isActive === true` (there should be at most one).
+
+### `handlePress(): void`
+
+If `onPress` was passed, calls it and returns — the caller has opted out of
+navigation entirely. Otherwise builds a `URLSearchParams` with `from`
+(defaulting to `"settings"`) and, when `gameId` is set, a `gameId` param,
+then pushes to `choose-your-character` with that query string. Both the
+"change team" row and the "select player" prompt call this same handler.
 
 ## Used by
 

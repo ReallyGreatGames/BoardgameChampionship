@@ -13,10 +13,10 @@ Zustand store for the `timer_seats` collection
 
 | State/Method | Purpose |
 |---|---|
-| `collection: TimerSeat[]` | All `TimerSeat` documents |
-| `init()` | Loads the collection |
-| `add(data)` | Creates a `TimerSeat` with a deterministic id (see below) |
-| `update(item, silent?)` | Partial update by `$id` |
+| `collection: TimerSeat[]` | All `TimerSeat` documents — `{ table, games, seat, playerTime, paused, inOvertime, roundTimeLeft, roundExpired, roundLastPausedAt }` per-seat timer state |
+| `init(): Promise<void>` | `fetchCollection(key, set)` — loads the full `timer_seats` collection with no query filter |
+| `add(data: Omit<TimerSeat, keyof Models.Document>): Promise<TimerSeat \| null>` | Creates a `TimerSeat` via `addToCollection(key, data, { rowId: timerSeatRowId(data.table, resolveGameId(data.games), data.seat), silentOnConflict: true })` — `data.table`/`data.games`/`data.seat` drive a deterministic id (see below); returns the created/existing document or `null` on a non-conflict failure |
+| `update(item: PartialTimerSeat, silent?: boolean): Promise<boolean>` | `updateInCollection(key, item, silent)` — partial update by `item.$id`; `silent` (default `false`) suppresses the failure `Alert` for frequent tick-driven writes; returns whether the update succeeded |
 
 ### `type PartialTimerSeat`
 
@@ -24,10 +24,15 @@ Zustand store for the `timer_seats` collection
 
 ## How it works
 
-`add` uses [`timerSeatRowId(table, gameId, seat)`](../../models/timer-seat.md)
-as a deterministic document id with `silentOnConflict: true` — two devices
+`add` uses [`timerSeatRowId(table: number, gameId: string | null, seat: number): string`](../../models/timer-seat.md)
+(returns `` `timer-seat-${table}-${gameId ?? "none"}-${seat}` ``) as a
+deterministic document id with `silentOnConflict: true` — two devices
 racing to start the same seat's timer for the first time converge on one
-document instead of each creating their own.
+document instead of each creating their own. `resolveGameId` (from
+[`lib/utils.ts`](../../../utils.md)) normalizes `data.games` — which may
+arrive as a plain string id, an array of related documents, or a single
+related document — down to a single `string | null` game id before it's
+folded into the row id.
 
 ## Used by
 

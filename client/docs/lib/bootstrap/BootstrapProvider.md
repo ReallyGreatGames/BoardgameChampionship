@@ -9,7 +9,14 @@ specific nesting order later providers depend on.
 
 ## Exports
 
-### `BootstrapProvider` (component)
+### `BootstrapProvider(props: PropsWithChildren): JSX.Element`
+
+| Prop | Type | Meaning |
+|---|---|---|
+| `children` | `ReactNode` | The app tree rendered once every context provider below is mounted. |
+
+No return value beyond the composed JSX tree — the component itself holds
+no state and performs no side effects; it is pure composition.
 
 Wraps `children` in, from outermost to innermost:
 [`ThemeProvider`](ThemeProvider.md) → `DialogProvider`

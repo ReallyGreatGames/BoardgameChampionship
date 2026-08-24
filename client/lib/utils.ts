@@ -3,6 +3,8 @@ import type { Timer } from "./models/timer";
 
 export const EMPTY = Symbol("empty");
 
+export const WRITE_PACING_MS = 750;
+
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -117,7 +119,7 @@ export function reconcileRoundAndPool(
 }
 
 export function toNumberArray(value: unknown): number[] {
-  if (Array.isArray(value)) {return value as number[];}
+  if (Array.isArray(value)) { return value as number[]; }
   if (typeof value === "string") {
     try { return JSON.parse(value) as number[]; } catch { return []; }
   }
@@ -125,7 +127,7 @@ export function toNumberArray(value: unknown): number[] {
 }
 
 export function toBooleanArray(value: unknown): boolean[] {
-  if (Array.isArray(value)) {return value as boolean[];}
+  if (Array.isArray(value)) { return value as boolean[]; }
   if (typeof value === "string") {
     try { return JSON.parse(value) as boolean[]; } catch { return []; }
   }
@@ -133,9 +135,9 @@ export function toBooleanArray(value: unknown): boolean[] {
 }
 
 export function arraysEqual<T>(a: T[], b: T[]): boolean {
-  if (a.length !== b.length) {return false;}
+  if (a.length !== b.length) { return false; }
   for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) {return false;}
+    if (a[i] !== b[i]) { return false; }
   }
   return true;
 }
@@ -185,11 +187,11 @@ export function injectViewBox(xml: string): string {
 }
 
 export function resolveGameId(ref: unknown): string | null {
-  if (!ref) {return null;}
-  if (typeof ref === "string") {return ref;}
+  if (!ref) { return null; }
+  if (typeof ref === "string") { return ref; }
   if (Array.isArray(ref)) {
     const first = ref[0];
-    if (!first) {return null;}
+    if (!first) { return null; }
     return typeof first === "string" ? first : (first as any).$id ?? null;
   }
   return (ref as any).$id ?? null;

@@ -15,26 +15,125 @@ wrapper that plugs its own document type and collection id into these helpers.
 
 | Export | Signature | Purpose |
 |---|---|---|
-| `RealtimeCollectionStore<T>` | interface | The shape every concrete store must implement — see below |
-| `RealtimeEntity` | Type | Minimal shape the realtime logic needs (`$id`, `$updatedAt?`, `$createdAt?`) — satisfied by both `Models.Document` and `Models.File` |
-| `RealtimeSetter` | Type | Loosely-typed zustand `set` function |
-| `Key` | Type | `string` — an Appwrite collection id |
-| `updateRealtimeCollection(key, collection, response, relationshipFields?)` | see below | Applies one realtime event to a collection array |
-| `addToCollection(key, data, options?)` | `<T>(...) => Promise<T \| null>` | Creates a row (optionally with a deterministic id, see below) |
-| `updateInCollection(key, data, silent?)` | `<T>(...) => Promise<boolean>` | Updates a row |
-| `removeFromCollection(key, data)` | `<T>(...) => Promise<boolean>` | Deletes a row |
-| `fetchCollection(key, set, queries?)` | `<T, S>(...) => Promise<void>` | Loads the full collection once (initial fetch/refetch) |
-| `subscribeTier(entries)` | `(TierEntry[]) => () => void` | Opens one realtime subscription covering several stores at once |
+| `Key` | `type Key = string` | An Appwrite collection/table id. |
+| `Set<T, S>` | `type` | Generic, loosely-typed zustand setter shape, parameterized by the document type `T extends Models.Document` and the store shape `S extends RealtimeCollectionStore<T>` (defaults to `RealtimeCollectionStore<T>`). Matches zustand's `set(partial \| updater, ...args)` signature; used to type `fetchCollection`'s `set` parameter. |
+| `RealtimeSetter` | `type RealtimeSetter = (partialState: any) => void` | Untyped/erased version of a zustand setter — what `RealtimeCollectionStore.realtimeSet` and `subscribeTier`'s `TierEntry.set` are typed as, since `subscribeTier` operates across stores with different concrete `T`. |
+| `RealtimeEntity` | `type` | Minimal shape the realtime logic needs — see below. Satisfied by both `Models.Document` and `Models.File`. |
+| `RealtimeCollectionStore<T>` | `interface` | The shape every concrete store must implement — see below. |
+| `updateRealtimeCollection(key, collection, response, relationshipFields?)` | see below | Applies one realtime event to a collection array, returning the new array. |
+| `addToCollection(key, data, options?)` | see below | Creates a row (optionally with a deterministic id). |
+| `updateInCollection(key, data, silent?)` | see below | Updates a row. |
+| `removeFromCollection(key, data)` | see below | Deletes a row. |
+| `fetchCollection(key, set, queries?)` | see below | Loads the full collection once (initial fetch/refetch). |
+| `subscribeTier(entries)` | see below | Opens one realtime subscription covering several stores at once. |
 
-### `RealtimeCollectionStore<T>`
+### `RealtimeEntity`
 
-Every concrete store's state must include: `collection: T[]`, `key: Key`,
-`realtimeSet` (the setter realtime updates are relayed through — usually
-the store's raw zustand `set`, but may wrap it, e.g. to derive extra
-state), optionally `channel` (overrides the default
-`databases.*.collections.*.documents` channel for non-document resources
-such as a storage bucket's file events), optionally `relationshipFields`
-(see below), and `init()`.
+```ts
+type RealtimeEntity = { $id: string; $updatedAt?: string; $createdAt?: string };
+```
+
+| Property | Type | Description |
+|---|---|---|
+| `$id` | `string` | Appwrite document/file id — the merge/dedup key throughout this file. |
+| `$updatedAt` | `string?` | ISO timestamp of last update, used for stale-update and dedup checks. |
+| `$createdAt` | `string?` | ISO timestamp of creation, used as the dedup timestamp fallback when `$updatedAt` is absent. |
+
+### `RealtimeCollectionStore<T extends RealtimeEntity>`
+
+| Property | Type | Description |
+|---|---|---|
+| `collection` | `T[]` | The in-memory array of documents/files this store holds; kept in sync with Appwrite by `updateRealtimeCollection`/`fetchCollection`. |
+| `key` | `Key` | The Appwrite table/collection id this store reads and writes. |
+| `realtimeSet` | `RealtimeSetter` | The setter realtime updates are relayed through — usually the store's raw zustand `set`, but may wrap it (e.g. to derive extra state alongside `collection`). |
+| `channel` | `string?` | Overrides the default `databases.<DATABASE_ID>.collections.<key>.documents` realtime channel for non-document resources such as a storage bucket's file events. |
+| `relationshipFields` | `readonly string[]?` | Names of relation attributes (to-one/to-many) that need the omitted-on-update workaround — see "The relationship-fields problem" below. |
+| `init` | `() => void \| Promise<void>` | Store-specific bootstrap (typically an initial `fetchCollection` call); invoked once per store during app startup. |
+
+### `updateRealtimeCollection<T extends Models.Document>(key: Key, collection: T[], response: RealtimeResponseEvent<T>, relationshipFields: readonly string[] = []): T[]`
+
+| Parameter | Type | Description |
+|---|---|---|
+| `key` | `Key` | Collection id, used only as part of the dedup key passed to `isNewUpdate`. |
+| `collection` | `T[]` | The current in-memory array to apply the event to. |
+| `response` | `RealtimeResponseEvent<T>` | The raw Appwrite realtime message (`events: string[]`, `payload: T`, `channels: string[]`) as delivered by `client.subscribe`. |
+| `relationshipFields` | `readonly string[]` | Forwarded to the update handler; defaults to `[]` (no relationship-field protection) when the store declares none. |
+
+Derives the event type (`"create" \| "update" \| "delete" \| "unknown"`) by
+matching `response.events` against Appwrite's `*.create`/`*.update`/`*.delete`
+suffixes, drops the event entirely if `isNewUpdate` says it's a duplicate,
+then dispatches to one of the internal (non-exported) handlers
+`updateRealtimeCollectionCreate`, `updateRealtimeCollectionUpdate`, or
+`updateRealtimeCollectionDelete` (an `"unknown"` event type is a no-op).
+Returns the resulting array — callers (`subscribeTier`) are expected to
+replace `collection` in state with the returned value.
+
+### `addToCollection<T>(key: Key, data: Omit<T, keyof Models.Document>, options?: { rowId?: string; silentOnConflict?: boolean }): Promise<T | null>`
+
+| Parameter | Type | Description |
+|---|---|---|
+| `key` | `Key` | Target table/collection id (Appwrite `tableId`). |
+| `data` | `Omit<T, keyof Models.Document>` | The row's field values, excluding Appwrite's built-in document metadata (`$id`, `$createdAt`, etc). |
+| `options.rowId` | `string?` | Explicit row id to create with; defaults to `ID.unique()` when omitted. Passing a deterministic id (e.g. `timerRowId(...)`) lets two clients racing to create "the first row for X" collide instead of duplicating — see "Deterministic ids" below. |
+| `options.silentOnConflict` | `boolean?` | When `true` and creation fails with a 409/`document_already_exists`, fetches and returns the already-existing row instead of surfacing an error alert. |
+
+Calls `tablesDB.createRow`. On success, returns the created row cast to `T`.
+On a non-conflict error (or a conflict without `silentOnConflict`), shows an
+`Alert` with the error message and returns `null`. On a conflict *with*
+`silentOnConflict`, fetches the existing row via `tablesDB.getRow`; if that
+fetch also fails, alerts and returns `null`.
+
+### `updateInCollection<T>(key: Key, data: Partial<T & Models.Document> & { $id: string }, silent = false): Promise<boolean>`
+
+| Parameter | Type | Description |
+|---|---|---|
+| `key` | `Key` | Target table/collection id. |
+| `data` | `Partial<T & Models.Document> & { $id: string }` | Partial field updates; must include `$id` to identify the row. Any key starting with `$` (Appwrite metadata) or with an `undefined` value is stripped before sending. |
+| `silent` | `boolean` | When `true`, suppresses the error `Alert` on failure (used by call sites that handle/report the error themselves). Defaults to `false`. |
+
+Calls `tablesDB.updateRow` with the filtered field set. Returns `true` on
+success, `false` on failure (after optionally alerting).
+
+### `removeFromCollection<T>(key: Key, data: Partial<T & Models.Document> & { $id: string }): Promise<boolean>`
+
+| Parameter | Type | Description |
+|---|---|---|
+| `key` | `Key` | Target table/collection id. |
+| `data` | `Partial<T & Models.Document> & { $id: string }` | Must include `$id`; other fields are ignored. |
+
+Calls `tablesDB.deleteRow`. Returns `true` on success; on failure, shows an
+`Alert` with the error message and returns `false`.
+
+### `fetchCollection<T extends Models.Document, S extends RealtimeCollectionStore<T> = RealtimeCollectionStore<T>>(key: Key, set: Set<T, S>, queries?: string[]): Promise<void>`
+
+| Parameter | Type | Description |
+|---|---|---|
+| `key` | `Key` | Table/collection id to list rows from. |
+| `set` | `Set<T, S>` | The store's zustand setter; called once with `{ collection: <rows> }` on success. |
+| `queries` | `string[]?` | Additional Appwrite `Query` strings appended after `Query.limit(Number.MAX_SAFE_INTEGER)` (i.e. "fetch everything, plus these extra filters"). |
+
+Calls `tablesDB.listRows` and, on success, replaces `collection` in the
+store's state with the full result set. On failure, shows an `Alert` with
+the error message and leaves state untouched. Used both for a store's
+initial load and for manual refetches.
+
+### `subscribeTier(entries: TierEntry[]): () => void`
+
+| Parameter | Type | Description |
+|---|---|---|
+| `entries` | `TierEntry[]` | One entry per store to cover, each `{ key: Key; set: RealtimeSetter; channel?: string; relationshipFields?: readonly string[] }` (the internal, non-exported `TierEntry` type mirrors the relevant subset of `RealtimeCollectionStore`). |
+
+Returns immediately with a no-op unsubscribe if `entries` is empty. Otherwise
+computes each entry's realtime channel (`entry.channel` if set, else
+`databases.<DATABASE_ID>.collections.<entry.key>.documents`), builds a
+`channel → entry` map, and opens a single `client.subscribe(channels, cb)`
+covering all of them at once. On each incoming message, finds the matching
+entry by channel and calls its `set` with an updater that replaces
+`collection` via `updateRealtimeCollection`, guarding the callback in
+`try/catch` so one store's handler error doesn't break delivery to others.
+Returns an unsubscribe function that tears down the underlying
+`client.subscribe` call for the whole tier. See "`subscribeTier`" below for
+why subscriptions are batched per-tier rather than per-store.
 
 ## How it works
 

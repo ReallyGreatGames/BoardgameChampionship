@@ -1,6 +1,6 @@
 ---
 name: docs-first
-description: Use whenever working in this repo's app/ or lib/ folders — before reading source code to understand what a file/component/hook does, check its matching docs/ file first. Also enforces that any code change under app/ or lib/ updates the matching docs/ file in the same change. Trigger on requests like "how does X work", "where is X used", "add/change a feature in app or lib", or any edit to a .ts/.tsx file under app/ or lib/.
+description: MANDATORY for this repo — load at the START of any task that will read or write a .ts/.tsx file under app/ or lib/, not just when the user asks about docs. Before reading source code to understand what a file/component/hook does, check its matching docs/ file first. Also enforces that any code change under app/ or lib/ updates the matching docs/ file in the SAME change, before the task is reported done. Trigger on requests like "how does X work", "where is X used", "add/change a feature", "add an import/export/tab/screen", a bug fix, or any Edit/Write touching app/ or lib/ — including when that's only part of a larger task (e.g. a feature request that happens to need a new admin-panel file). If a task ends with source files under app/ or lib/ added/changed/deleted and this skill was never loaded, that is a bug in how the task was run — load it retroactively and add the missing docs before calling the task finished.
 ---
 
 # Docs-first for this repo
@@ -9,6 +9,16 @@ This repo has a full one-to-one code documentation tree under `docs/`,
 mirroring `app/` and `lib/`: every `Foo.tsx`/`Foo.ts` has a matching
 `docs/<same path>/Foo.md`, plus a `README.md` per folder that indexes it.
 `docs/README.md` is the entry point.
+
+**This applies even when the user's request doesn't mention docs at all.**
+"Add a feature," "fix this bug," "build an import flow" — any of these
+that end up touching a file under `app/` or `lib/` are in scope. Load this
+skill as soon as you know a task will touch `app/`/`lib/`, not after the
+code is already written. Before reporting any such task as finished, do a
+final check: every `.ts`/`.tsx` file you added/changed/deleted under
+`app/`/`lib/` needs its `docs/` counterpart added/updated/deleted in the
+same turn — see "After changing code" below for exactly what that means
+per case.
 
 ## Before reading source code
 
@@ -33,6 +43,61 @@ This is faster and cheaper than reading source directly, and the "Used by"
 section tells you the blast radius of a change before you make it —
 something grep alone won't reliably surface (re-exports, dynamic routes,
 etc.).
+
+## Level of detail an Exports entry needs
+
+Every export — and every significant internal function/handler/derived
+value the doc already narrates — gets:
+
+- **Full signature**: the name, every parameter's name *and* type, and the
+  return type (`JSX.Element` for components, `void`/"no return value" for
+  side-effect-only functions).
+- **Behavior, not a restated type**: one or two sentences on what each
+  parameter actually controls and what the function does and returns.
+  "`gameId: string` — the game to filter by" is not enough; say what
+  filtering it actually performs and what shape comes back.
+- **Every property of an exported type/interface**: name, type, and a
+  one-line description in domain terms (not "a string" — say what the
+  string *is*, e.g. "ISO timestamp of when the bell rang").
+
+Shape the listing to match whichever pattern already dominates that
+doc/directory:
+
+- A **component's Props type** → a `| Prop | Type | Meaning |` table.
+- A **hook's returned object** → a `| Property | Signature | Meaning |`
+  table covering every returned function/value (see
+  `docs/lib/hooks/*.md` for the convention).
+- A **zustand store** → the existing `### useXStore (zustand hook)`
+  subsection with a `| State/Method | Purpose |` table.
+- A **simple util module** → the existing `| Export | Signature | Purpose |`
+  table.
+- Anything with enough nuance to need prose (validation rules, multi-branch
+  behavior, an algorithm) → a `### \`functionName(param: Type, ...): ReturnType\``
+  subsection with 1-3 sentences underneath, table optional.
+
+## When to add "How it works" prose
+
+Add a short paragraph (or a new subsection, for a whole mechanism) when:
+an effect's dependency array or an early-return guard isn't self-evident
+from reading it; a `ref` is used instead of `state` (or vice versa) for a
+specific reason; a `useMemo`/`useCallback` exists specifically to prevent
+identity-churn from re-triggering a subscription/effect; there's a
+retry/dedup/race-condition guard; or a `key`-driven remount strategy is
+used deliberately (e.g. to reset form state on navigation). Explain *why*
+it's built that way and what edge case it's guarding against — not a
+line-by-line narration of what's already visible in the code. Skip this
+for trivial one-line effects/memos that are self-evident.
+
+## Enrichment is additive, not a rewrite
+
+- Never delete or restructure existing accurate Purpose/How it
+  works/Used by content to make room for the above — extend it in place.
+- If something existing is stale relative to the current source, fix it,
+  but don't reformat sections that are already correct just for style.
+- Directory `README.md` files are indexes, not per-file docs — they list
+  other files in a table and never get the per-function/per-property
+  treatment above. Only touch a `README.md` when a file is added/removed
+  (see below); don't try to expand it into per-function detail.
 
 ## After changing code
 

@@ -9,16 +9,16 @@ where a user should be routed based on auth/player state.
 
 ## Exports
 
-### `useRouter()`
+### `useRouter(): { navigate: (path: Href, options?: NavigationOptions) => void; routeDeterministic: () => void }`
 
 Reads `user`, `isAdmin`, `isPinVerified` from [`useAuth`](../auth.md) and
 `player`, `playerLoading` from [`usePlayer`](../bootstrap/PlayerProvider.md).
 Returns:
 
-| Function | Purpose |
-|---|---|
-| `navigate(path, options?)` | Thin wrapper around `expo-router`'s `router.navigate` |
-| `routeDeterministic()` | See below |
+| Function | Signature | Purpose |
+|---|---|---|
+| `navigate` | `(path: Href, options?: NavigationOptions) => void` | Thin wrapper around `expo-router`'s `router.navigate(path, options)`. `path` is any `expo-router` `Href` (string route or route object); `options` is `expo-router`'s `NavigationOptions` (e.g. navigation-behavior flags) and is optional. |
+| `routeDeterministic` | `() => void` | Evaluates the current auth/player state and, if the user is not already on the correct screen, calls `navigate` to send them there. Takes no arguments and returns nothing — see below for the decision order. |
 
 ## How it works
 

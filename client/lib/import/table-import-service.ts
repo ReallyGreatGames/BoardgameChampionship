@@ -1,7 +1,7 @@
 import { ID, Query } from "react-native-appwrite";
 import { DATABASE_ID, tablesDB } from "../appwrite";
 import { Table } from "../models/table";
-import { sleep, withRetry } from "../utils";
+import { sleep, withRetry, WRITE_PACING_MS } from "../utils";
 import { ParsedTableGroup } from "./table-parser";
 
 const TABLES_COLLECTION = "tables";
@@ -178,6 +178,7 @@ export async function importTables(
               data: { players: [] },
             }),
           );
+          await sleep(WRITE_PACING_MS);
 
           await retry(() =>
             tablesDB.updateRow({
@@ -204,7 +205,7 @@ export async function importTables(
         }
 
         onStatus(g, e, { state: "success" });
-        await sleep(300);
+        await sleep(WRITE_PACING_MS);
       } catch (err: unknown) {
         const message =
           err instanceof Error

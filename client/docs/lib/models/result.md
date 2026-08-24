@@ -15,10 +15,12 @@ Appwrite document type `Result` — the result of one table round of a game.
 | `gameId` | `string` | Game id |
 | `table` | `number` | Table number |
 | `note?` | `string` | Free-text note |
-| `placements?` | `string[]` | Placements (player ids in order) |
-| `scores?` | `number[]` | Scores |
-| `signatureIds?` | `string[]` | IDs of the signatures confirming this result |
+| `placements?` | `string[]` | Per-seat finishing place, indexed by seat position (not sorted by rank) — `placements[2]` is the place seat 2 finished in, stored as a numeric string (e.g. `"1"`) |
+| `scores?` | `number[]` | Per-seat raw score, same seat-position indexing as `placements` |
+| `signatureIds?` | `string[]` | Per-seat signature file id (from Appwrite storage), same seat-position indexing as `placements`; a blank/missing entry means that seat hasn't signed yet |
 | `submitted` | `boolean` | Whether the result was finally submitted |
+
+All three per-seat arrays are indexed by seat position (0-based, table has a fixed `PLAYER_COUNT` of 4 seats — see `lib/utils/placements.ts`, `lib/utils/statistics.ts`), not by finishing rank; entry `i` in every array describes the same seat, the same seat `i` that indexes [`Table.players`](table.md).
 
 ## Used by
 

@@ -141,6 +141,33 @@ function AppNavigator() {
         }}
       />
       <Drawer.Screen
+        name="(pages)/(user)/lottery-add"
+        options={{
+          title: t("entries.lotteryAdd"),
+          drawerItemStyle: { display: "none" },
+          headerShown: true,
+          swipeEnabled: false,
+        }}
+      />
+      <Drawer.Screen
+        name="(pages)/(user)/lottery-options-edit"
+        options={{
+          title: t("entries.lotteryOptionsEdit"),
+          drawerItemStyle: { display: "none" },
+          headerShown: true,
+          swipeEnabled: false,
+        }}
+      />
+      <Drawer.Screen
+        name="(pages)/(user)/lottery-results"
+        options={{
+          title: t("entries.lotteryResults"),
+          drawerItemStyle: { display: "none" },
+          headerShown: false,
+          swipeEnabled: false,
+        }}
+      />
+      <Drawer.Screen
         name="(pages)/legal"
         options={{
           title: t("entries.legal"),

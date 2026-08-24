@@ -16,8 +16,8 @@ Appwrite document type `TableBell` — a "table needs staff attention" event
 | `table` | `number` | Table number |
 | `startTime` | `string` | ISO timestamp of when the bell rang |
 | `acknowledgeTime?` | `string` | ISO timestamp of staff acknowledgement |
-| `locked?` | `boolean` | Whether the bell is locked |
-| `reason?` | `string` | Reason (e.g. timer elapsed) |
+| `locked?` | `boolean` | Set `true` when the bell was auto-rung by the timer running out (`useTimerState`); a locked bell can only be dismissed by an admin — `useTableBellActions.canDelete` returns `!locked \|\| isAdmin`, so regular staff can't dismiss it, only acknowledge it |
+| `reason?` | `string` | Human-readable cause shown in the bell UI (e.g. the translated "timer elapsed" string set alongside `locked: true` in `useTimerState`); absent for manually-rung bells |
 
 ### `function bellRowId(table: number): string`
 

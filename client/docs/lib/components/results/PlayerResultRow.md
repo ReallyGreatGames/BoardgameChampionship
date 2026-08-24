@@ -12,14 +12,34 @@ per-table input mode and the participant-facing self-entry screen.
 
 | Export | Purpose |
 |---|---|
-| `PlayerResultRow` (component, `forwardRef`) | See props below |
-| `PlayerResultRowHandle` | `{ focusScore(), focusChips() }` — imperative handle for cross-row keyboard navigation |
+| `PlayerResultRow` (component, `forwardRef<PlayerResultRowHandle, Props>`) | See props below |
+| `PlayerResultRowHandle` | `{ focusScore(): void; focusChips(): void }` — imperative handle for cross-row keyboard navigation |
 
-Props: `playerName`, `playerTeam?`, `placement`, `score`, `onSetPlacement`,
-`onSetScore`, `onScoreSubmitEditing?`, `onScoreTabForward?` (web),
-`onScoreTabBackward?` (web), `onChipTabForward?` (web),
-`onChipTabBackward?` (web), `signatureSlot: ReactNode` (caller owns this
-UI), `disabled?`, `placementError?` (highlights the chips in the error color).
+### `Props`
+
+| Prop | Type | Meaning |
+|---|---|---|
+| `playerName` | `string` | Display name for the row. |
+| `playerTeam` | `string` (optional) | Team label shown under/next to the name; hidden if absent. |
+| `placement` | `string` | Currently-selected placement chip value (`"1"`-`"4"`, or `""` for none). |
+| `score` | `string` | Current score input text (kept as a string so the caller controls formatting/precision). |
+| `onSetPlacement` | `(value: string) => void` | Called with the new placement (or `""` to clear) whenever a chip is tapped or set via keyboard. |
+| `onSetScore` | `(value: string) => void` | Called with the filtered score text (digits and at most one `.`) on every keystroke. |
+| `onScoreSubmitEditing` | `() => void` (optional) | Called when the score field's "next" keyboard action fires. |
+| `onScoreTabForward` | `() => void` (optional, web) | Called when Tab is pressed while the score field is focused. |
+| `onScoreTabBackward` | `() => void` (optional, web) | Called when Shift+Tab is pressed while the score field is focused. |
+| `onChipTabForward` | `() => void` (optional, web) | Called when Tab (or a digit key) advances focus out of the chip row. |
+| `onChipTabBackward` | `() => void` (optional, web) | Called when Shift+Tab moves focus back from the chip row. |
+| `signatureSlot` | `ReactNode` | Caller-owned signature UI rendered at the end of the row; this component has no signature logic of its own. |
+| `disabled` | `boolean` (optional, default `false`) | Dims the row and makes the score input/chips non-interactive. |
+| `placementError` | `boolean` (optional, default `false`) | Highlights the active placement chip in the error color (e.g. duplicate placement across the table). |
+
+### `PlayerResultRowHandle`
+
+| Method | Signature | Behavior |
+|---|---|---|
+| `focusScore` | `(): void` | Focuses the score `TextInput` via `scoreInputRef`. |
+| `focusChips` | `(): void` | Web only: focuses the chip row's `View` (a no-op on native, since chips aren't keyboard-focusable there). |
 
 ## How it works
 
@@ -58,6 +78,14 @@ separate mechanisms:
 `focusScore`/`focusChips` (exposed via `ref`) are what let a parent
 ([`ResultsAdminTab`](ResultsAdminTab.md)) chain focus across all 4 rows —
 each row's own tab-forward callback calls the next row's imperative handle.
+
+`handleChipKeyDown(e: KeyboardEvent): void` (internal, `useCallback` on
+`[placement, onSetPlacement, onChipTabForward, onChipTabBackward]`) is the
+chip row's `onKeyDown` handler described above: digit keys toggle
+`placement` and advance focus, `Tab`/`Shift+Tab` move focus without
+touching `placement`. It's a `useCallback` (not inlined) so the identity
+stays stable across renders where its dependencies haven't changed, since
+it's attached directly as a DOM event prop via `chipRowWebProps`.
 
 ## Used by
 
