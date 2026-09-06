@@ -130,8 +130,6 @@ const translations = {
     points: "Punkte",
     afterGames: "nach {{played}} von {{total}} Spielen",
     playingNow: "läuft gerade",
-    toCome: "folgt noch",
-    noResult: "kein Ergebnis",
     notPlayed: "nicht gespielt",
     round: "Runde {{round}}",
     table: "Tisch {{table}}",

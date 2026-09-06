@@ -99,7 +99,7 @@ export function makeSheetStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       justifyContent: "flex-end",
     },
     backdrop: {
-      ...StyleSheet.absoluteFillObject,
+      ...StyleSheet.absoluteFill,
       backgroundColor: ui.backdropColor,
     },
     sheet: {

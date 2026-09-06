@@ -1,4 +1,4 @@
-import { DrawerActions } from "@react-navigation/native";
+import { DrawerActions } from "expo-router/react-navigation";
 import { useNavigation } from "expo-router";
 import { useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";

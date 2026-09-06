@@ -33,21 +33,6 @@ export function PlayerScoreSummary({
     return entry.state === "played" ? colors.primary : colors.divider;
   };
 
-  const caption = useMemo(() => {
-    const parts = entries.map((entry) => {
-      if (entry.state === "playing") {
-        return t("playingNow");
-      }
-      if (entry.state === "played") {
-        return entry.points !== null ? formatPoints(entry.points) : t("noResult");
-      }
-      return t("toCome");
-    });
-    return parts
-      .filter((part, index) => part !== t("toCome") || parts[index - 1] !== t("toCome"))
-      .join(" · ");
-  }, [entries, t]);
-
   return (
     <View style={styles.card}>
       <View style={styles.headline}>
@@ -66,8 +51,6 @@ export function PlayerScoreSummary({
           />
         ))}
       </View>
-
-      {!!caption && <Text style={styles.caption}>{caption}</Text>}
     </View>
   );
 }
@@ -90,7 +73,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     points: {
       ...type.bigNumber,
-      lineHeight: 44,
       color: colors.text,
     },
     pointsLabel: {
@@ -112,10 +94,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       flex: 1,
       height: 8,
       borderRadius: 4,
-    },
-    caption: {
-      ...type.caption,
-      color: colors.textMuted,
     },
   });
 }

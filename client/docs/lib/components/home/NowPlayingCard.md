@@ -47,6 +47,12 @@ and the [`Badge`](../ui/Badge.md) in the title row (`info`/"Live" flipping
 to `danger`/"Overtime"). Rendering all three off one hook value is what
 keeps them from ever disagreeing mid-tick.
 
+The countdown row is built so nothing shifts while it ticks: the caption
+is `textAlign: "right"` inside a `flex: 1` cell, so it stays pinned to the
+card's right edge no matter how wide the figure gets, and the figure
+itself uses `fontVariant: ["tabular-nums"]` so its digits keep a constant
+advance width instead of the display font's proportional one.
+
 `tableNumber` is `null` until an admin has seated the player, so the
 table line degrades to a round-only label ("Round 3 · table to be
 announced") rather than printing "Table null". Each opponent's country

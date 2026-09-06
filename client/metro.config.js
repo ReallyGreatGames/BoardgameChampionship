@@ -17,4 +17,14 @@ config.resolver.extraNodeModules = {
   ),
 };
 
+config.resolver.resolveRequest = (context, moduleName, platform) =>
+  context.resolveRequest(
+    context,
+    moduleName === 'expo-file-system' &&
+      context.originModulePath.includes('react-native-appwrite')
+      ? 'expo-file-system/legacy'
+      : moduleName,
+    platform,
+  );
+
 module.exports = withStorybook(config);

@@ -146,6 +146,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     countdown: {
       ...type.bigNumber,
       color: colors.accent,
+      fontVariant: ["tabular-nums"],
     },
     countdownCaption: {
       ...type.bodySmall,
@@ -153,6 +154,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       paddingBottom: space[3],
       flex: 1,
       minWidth: 0,
+      textAlign: "right",
     },
   });
 }

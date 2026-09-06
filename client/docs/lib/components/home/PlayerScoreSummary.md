@@ -7,19 +7,21 @@
 The headline of the home screen's "my results so far" section: the
 player's total tournament points, how far into the tournament they are,
 and a segmented bar giving the whole tournament at a glance — one segment
-per game, colored by whether it's done, running, or still ahead.
+per game, colored by whether it's done, running, or still ahead. The bar
+carries no labels of its own; the per-game detail lives one component
+down, in [`PlayerGameList`](PlayerGameList.md).
 
 ## Exports
 
 | Export | Signature | Purpose |
 |---|---|---|
-| `PlayerScoreSummary` (component) | `PlayerScoreSummary(props): JSX.Element` | Renders the points card with its progress bar and per-game caption. |
+| `PlayerScoreSummary` (component) | `PlayerScoreSummary(props): JSX.Element` | Renders the points card with its per-game progress bar. |
 
 ### Props
 
 | Prop | Type | Meaning |
 |---|---|---|
-| `entries` | [`ParticipantGameEntry[]`](../../hooks/useParticipantOverview.md) | Every game of the tournament from this player's perspective; drives one bar segment and one caption part each. |
+| `entries` | [`ParticipantGameEntry[]`](../../hooks/useParticipantOverview.md) | Every game of the tournament from this player's perspective; drives one bar segment each. |
 | `totalPoints` | `number` | Points earned so far — the big figure. |
 | `playedCount` | `number` | Games finished, excluding the one currently being played. |
 | `totalCount` | `number` | Total number of games in the tournament. |
@@ -29,15 +31,6 @@ per game, colored by whether it's done, running, or still ahead.
 Maps a game's state to its bar color: `accent` for the game being played
 right now (the one moment worth the loudest color on the screen),
 `primary` for a finished game, `divider` for one still to come.
-
-### Internal: `caption` (`useMemo`, deps `[entries, t]`)
-
-Builds the line under the bar by mapping each entry to its points (via
-[`formatPoints`](../../utils.md)), "playing now", "no result", or "to
-come", then joining with `·`. Consecutive "to come" parts are collapsed to
-a single one, so a tournament with six games still to play reads
-"5 · 2 · playing now · to come" rather than repeating the same word four
-times.
 
 ### `makeStyles(colors: ReturnType<typeof useTheme>["colors"]): StyleSheet`
 
