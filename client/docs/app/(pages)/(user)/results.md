@@ -20,7 +20,7 @@ signature-count requirements) are specific to self-service.
 
 | Export | Signature | Purpose |
 | --- | --- | --- |
-| `ResultsPage` (default) | `(): JSX.Element \| null` | Screen component for `/results?gameId=...`. Renders the four `PlayerResultRow`s (placement/score/signature per seat), a note field, and a save/submit button, all backed by local form state synced to the player's table `Result` document. Returns `null` while auth is loading or unauthenticated. |
+| `ResultsPage` (default) | `(): JSX.Element \| null` | Screen component for `/results?gameId=...`. Renders a `PlayerResultColumnHeaders` row followed by the four `PlayerResultRow`s (placement/score/signature per seat), a note field, and a save/submit button, all backed by local form state synced to the player's table `Result` document. Returns `null` while auth is loading or unauthenticated. |
 
 ### Module constants
 
@@ -38,23 +38,31 @@ Returns a copy of `arr` padded with `fill` up to `length` (or truncated if longe
 
 ### `handleSave(): Promise<boolean>`
 
-`useCallback` keyed on `[canSave, saving, existingResult, placements, scores, note, confirm, t, buildPayload, resultStore]`. No-ops (returns `false`) if `!canSave || saving`. If editing an existing result whose local edits both differ from the DB (`valuesDiffer`) and were made against a stale version (`timestampDrifted`), shows a confirm-overwrite dialog first; declining discards local edits in favor of the DB's current values and returns `true` without writing. Otherwise writes via `resultStore.update`/`add`, marks `ownSaveRef.current = true` so the resulting realtime update doesn't re-trigger the conflict check against its own write, and returns whether the save succeeded.
+`useCallback` keyed on `[canSave, saving, existingResult, placements, scores, note, confirm, t, buildPayload, purgeDroppedSignatures, resultStore]`. No-ops (returns `false`) if `!canSave || saving`. If editing an existing result whose local edits both differ from the DB (`valuesDiffer`) and were made against a stale version (`timestampDrifted`), shows a confirm-overwrite dialog first; declining discards local edits in favor of the DB's current values and returns `true` without writing. Otherwise writes via `resultStore.update`/`add`, marks `ownSaveRef.current = true` so the resulting realtime update doesn't re-trigger the conflict check against its own write, awaits `purgeDroppedSignatures` to delete the now-unreferenced signature files, and returns whether the save succeeded. It deliberately does **not** lower `signaturesReset` — see "Signature flow".
 
 ### `handleSubmit(): Promise<void>`
 
-`useCallback` keyed on `[submitting, canSave, canSubmit, handleSave, confirm, t, buildPayload, existingResult, resultStore]`. No-ops while already `submitting`. Saves first if `canSave` (aborting if that save fails). If `canSubmit` is still false, shows a "need at least 3 signatures" dialog (`signatureCount < 3`) or a general "submission blocked" dialog otherwise, then returns. Otherwise shows a confirm-submit dialog; on confirmation, writes the payload with `submitted: true`.
+`useCallback` keyed on `[submitting, canSave, canSubmit, signatureCount, handleSave, confirm, t, buildPayload, existingResult, resultStore]`. No-ops while already `submitting`. Saves first if `canSave` (aborting if that save fails) — which is also what persists a signature reset caused by an edit. If `canSubmit` is still false, shows the "collect all 4 signatures" dialog (`signatureCount < PLAYER_COUNT`) or a general "submission blocked" dialog otherwise, then returns. Otherwise shows a confirm-submit dialog; on confirmation, writes the payload with `submitted: true`.
+
+### `invalidateSignatures(): void`
+
+`useCallback` keyed on `[signatureIds]`. No-ops when no signature is present. Otherwise queues every non-empty id on `droppedSignatureIdsRef` (so the files can be deleted once the clear is actually saved), clears all four `signatureIds`, and raises `signaturesReset`, which both explains the wipe in the UI and stops the focus re-sync from restoring the now-invalid signatures before the clear has been saved.
+
+### `purgeDroppedSignatures(): Promise<void>`
+
+`useCallback` with no deps. Deletes every file id queued on `droppedSignatureIdsRef` from the `signatures` bucket via `Promise.allSettled`, emptying the queue first so a concurrent save can't delete the same file twice. Failures are ignored — a file that can't be deleted is an orphan, which is what it already was before this existed, and the player's save must not fail over cleanup. Called by `handleSave` **only after the write succeeds**, so a file is never deleted while the stored document still references it.
 
 ### `handleSetPlacement(i: number, v: string): void`
 
-`useCallback`, no deps. Sets `placements[i]` to `v` via an immutable array copy.
+`useCallback` keyed on `[placements, invalidateSignatures]`. No-ops when the value is unchanged (chips toggle through the same handler, so this also filters out a tap that re-selects what was already there). Otherwise sets `placements[i]` to `v` via an immutable array copy and calls `invalidateSignatures`.
 
 ### `handleSetScore(i: number, v: string): void`
 
-`useCallback`, no deps. Sets `scores[i]` to `v` via an immutable array copy.
+`useCallback` keyed on `[scores, invalidateSignatures]`. Same shape as `handleSetPlacement` — unchanged-value guard, immutable copy, then `invalidateSignatures`. The guard matters more here because the score input fires on every keystroke.
 
 ### `handleOpenSignature(seat: number): Promise<void>`
 
-`useCallback` keyed on `[canSave, handleSave, gameId]`. Saves first if `canSave` (aborting navigation if the save fails), then pushes to `/(pages)/(user)/signature?gameId=...&place=${seat}` — guarantees the signature screen never signs against stale/unsaved placement or score edits.
+`useCallback` keyed on `[canSave, handleSave, gameId, selfHref, signatureIds]`. Saves first if `canSave` (aborting navigation if the save fails), then pushes to `/(pages)/(user)/signature?gameId=...&place=${seat}&sig=...` — guarantees the signature screen never signs against stale/unsaved placement or score edits. The `sig` param carries this screen's own view of that seat's signature id (or `NO_SIGNATURE` when there is none) so the pad doesn't have to consult the store, whose copy may not have caught up with the save that just cleared it — see [`signature.tsx`](signature.md).
 
 ### `handleBack(): void`
 
@@ -66,11 +74,41 @@ Builds all card/row/badge/button/hint styles from theme colors; memoized via `us
 
 ## How it works
 
+### Labelling the three columns
+
+The card opens with a single
+[`PlayerResultColumnHeaders`](../../../lib/components/results/PlayerResultRow.md)
+row (`colScore` / `colPlace` / `colSignature`), because nothing about a bare
+number box, four numbered chips and an icon button says which is the score,
+which is the finishing place, and that the last one collects a signature —
+players reported exactly that confusion. One shared header row costs a
+single caption line of height instead of repeating labels on all four rows,
+which matters on a screen whose input row is already ~292px wide against a
+~264px card on a 360px phone.
+
+On phones the header sits above the first player's name line rather than
+directly against the inputs (the compact layout puts each player's name on
+its own line above their row); the columns still line up, because the header
+and the row share the same width constants.
+
 ### Editability gates
 
-`disabled` (locks the score/placement inputs) is true once the result is
-`submitted` **or** already has 2+ signatures — partial signing locks the
-data players are attesting to, before full submission is even required.
+`disabled` (locks the score/placement inputs) is true only once the result
+is `submitted`. Signatures do **not** lock the inputs; instead, changing a
+placement or a score wipes every signature collected so far
+(`invalidateSignatures`), so a signature can never end up attached to
+numbers other than the ones that were signed for. That is the deliberate
+trade: a table that spots a mistake after signing can fix it and re-collect,
+rather than being locked out of its own result.
+
+The note is exempt — it is not part of what the placement/score signatures
+attest to, and editing it does not reset them.
+
+`canSign` (whether a signature button does anything) is exactly `canSave`:
+the game is active, the result is not submitted, and the placements/scores
+currently form a valid, conflict-free combination. There is no
+"someone already signed, so let the rest sign regardless" exemption any
+more — that only existed because signing used to freeze the inputs.
 
 ### Save vs. submit
 
@@ -78,11 +116,11 @@ data players are attesting to, before full submission is even required.
 numbers, a valid placement combination
 ([`isValidPlacementCombo`](../../../lib/utils/placements.md)), no
 score/placement conflict, the game being active, and not already
-submitted. `canSubmit` additionally requires either all 4 signatures, or 3
-signatures plus a note (the 4th player's absence explained in writing).
-`handleSubmit` always tries to save first if `canSave`, then checks
-`canSubmit` and shows one of two different explanatory dialogs if it isn't
-met yet (a "need a note" nudge for exactly-3-signed vs. a general
+submitted. `canSubmit` additionally requires **all four** signatures — there
+is no 3-signatures-plus-a-note alternative; every player at the table signs
+or the result cannot be submitted. `handleSubmit` always tries to save
+first if `canSave`, then checks `canSubmit` and explains what is missing
+(the "collect all 4 signatures" dialog while any are missing, the general
 "submission blocked" message otherwise).
 
 ### Optimistic-concurrency conflict detection
@@ -104,10 +142,45 @@ check against its own just-written data.
 
 Opening a signature ([`handleOpenSignature`](signature.md)) saves first if
 `canSave` — so navigating to the signature screen never leaves unsaved
-placement/score edits behind. `useFocusEffect` re-syncs `signatureIds` from
-the store whenever this screen regains focus (i.e. returning from signing),
-independently of the general "load once" effect that seeds the rest of the
-form only on the very first load of a given result.
+placement/score edits behind, and a pending signature reset reaches the
+document before the next signature is added to it. `useFocusEffect`
+re-syncs `signatureIds` from the store whenever this screen regains focus
+(i.e. returning from signing), independently of the general "load once"
+effect that seeds the rest of the form only on the very first load of a
+given result.
+
+That re-sync is skipped while `signaturesReset` is set. Otherwise an edit
+that wiped the signatures locally, followed by navigating away and back
+without saving, would pull the old signature ids straight back out of the
+document and pair them with the changed numbers.
+
+`signaturesReset` is lowered in the `existingResult` effect's `ownSaveRef`
+branch — the moment this device's own write echoes back through the realtime
+store — and **not** at the end of `handleSave`. The store has no optimistic
+local update, so at the end of a save its copy can still be the pre-save one;
+lowering the flag there re-enables the focus re-sync against that stale copy,
+which promptly restores the very signature ids the save just cleared. Worse,
+`purgeDroppedSignatures` has by then deleted those files, so a subsequent
+submit would write ids pointing at storage objects that no longer exist.
+Waiting for the echo means the re-sync can only ever run against a copy that
+already reflects the clear.
+
+### Deleting the signature files a reset drops
+
+The ids cleared by `invalidateSignatures` are queued rather than deleted on
+the spot, and the files only go once `handleSave` has successfully written
+the cleared array. The ordering is the whole point: deleting first would
+leave the stored document pointing at files that no longer exist if the edit
+is then abandoned (the player closes the app without saving), which is worse
+than an orphan — the admin's signature viewer would break. The queue is also
+dropped whenever the game or table changes, because ids belonging to a
+table whose clear was never saved are still referenced by that table's
+document and must not be deleted.
+
+This only covers signatures dropped by an edit. Re-signing a seat still
+replaces the id with a freshly uploaded file and orphans the previous one,
+and nothing prunes the `signatures` bucket in bulk — the wipe service only
+handles the lottery bucket.
 
 ### Form-state reset and load-once seeding
 

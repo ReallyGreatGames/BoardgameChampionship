@@ -4,7 +4,7 @@
 
 ## Route
 
-`/signature?gameId=...&place=...&from=...`
+`/signature?gameId=...&place=...&sig=...&from=...`
 
 ## Purpose
 
@@ -32,6 +32,10 @@ Converts a `Stroke` into an SVG path `d` attribute string (`"M x,y L x,y L x,y .
 ### `buildSvgContent(strokes: Stroke[], width: number, height: number): string`
 
 Serializes every non-empty stroke into one `<path>` element (black, 2.5px, rounded caps/joins) and wraps them in a single `<svg>` document sized `width`×`height` — this string is what gets uploaded as the signature file.
+
+### `clearDrawing(): void`
+
+`useCallback` with no deps. Empties `strokes`, `currentStroke` and `currentStrokeRef`. Wired to `useFocusEffect`, so every visit starts on a blank canvas, and reused by the `[existingFileId]` fetch effect.
 
 ### `handleClear(): void`
 
@@ -71,9 +75,26 @@ is updated or created as needed — then navigates back to `/results`.
 If the seat already has a signature (`existingFileId`), the canvas fetches
 and displays that SVG instead of accepting new strokes — signatures can't
 be redrawn from here once saved (only reset entirely, from the admin's
-[`ScoreSignatureModal`](../../../lib/components/results/ScoreSignatureModal.md)).
+[`ScoreSignatureModal`](../../../lib/components/results/ScoreSignatureModal.md),
+or by editing a placement/score on [`results.tsx`](results.md), which resets
+every signature on the table).
 
-The fetch/reset effect is keyed on `[existingFileId]`: it unconditionally clears any local drawing state first (`existingSvg`, `strokes`, `currentStroke`, `currentStrokeRef`) so switching between seats (or a signature appearing after being saved elsewhere) never leaves stale strokes or a stale fetched SVG on screen, then only re-fetches from storage if `existingFileId` is non-empty.
+`existingFileId` comes from the `sig` route param when one is present, and
+only falls back to `signatureIds[placeIdx]` on the store's `Result` when it
+isn't. The param is what [`results.tsx`](results.md) believes the seat's
+signature to be, and it is authoritative for a reason: the store's copy is
+only refreshed by a realtime event, so right after results saves a signature
+reset the store can still hold the *old* file id for a moment. Falling back
+to it there would open this screen in read-only mode showing a signature
+that no longer applies — and, because read-only mode accepts no strokes,
+would leave the player unable to re-sign at all. `NO_SIGNATURE` (`"none"`,
+from [`lib/models/result.ts`](../../../lib/models/result.md)) is the
+sentinel for "this seat has no signature", since an empty param value can't
+be distinguished from an absent one.
+
+The fetch/reset effect is keyed on `[existingFileId]`: it clears `existingSvg` and the drawing state, then only re-fetches from storage if `existingFileId` is non-empty.
+
+That effect alone is not enough to guarantee a blank canvas, because it only fires when `existingFileId` *changes*. This screen stays mounted (a drawer navigator keeps visited screens alive), so `strokes` outlives a visit — and after a signature reset on [`results.tsx`](results.md) a previously-unsigned seat goes from `""` straight back to `""`, leaving the strokes drawn on the earlier visit sitting on the canvas. `clearDrawing` therefore also runs from `useFocusEffect`, on every focus, which is the only signal that reliably marks "a new visit". Nothing is lost by it: leaving the screen is the only way to blur it, and an unsaved drawing is abandoned at that point anyway.
 
 ## Related
 

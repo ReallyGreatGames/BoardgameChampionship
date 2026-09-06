@@ -3,6 +3,7 @@ import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BackButton } from "@/lib/components/ui/BackButton";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
+import { NO_SIGNATURE } from "@/lib/models/result";
 import { useResultStore } from "@/lib/stores/appwrite/result-store";
 import { inset } from "@/lib/theme/spacing";
 import { ui } from "@/lib/theme/ui";
@@ -10,7 +11,7 @@ import { type } from "@/lib/theme/typography";
 import { goBackTo } from "@/lib/utils/navigation";
 import { Ionicons } from "@expo/vector-icons";
 import { File as FSFile, Paths } from "expo-file-system";
-import { useLocalSearchParams } from "expo-router";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -52,10 +53,11 @@ function buildSvgContent(
 
 export default function SignaturePage() {
   useRequireAuth();
-  const { gameId, place, from } = useLocalSearchParams<{
+  const { gameId, place, from, sig } = useLocalSearchParams<{
     gameId: string;
     from?: string;
     place: string;
+    sig?: string;
   }>();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -74,7 +76,11 @@ export default function SignaturePage() {
           ),
     [resultStore.collection, gameId, tableNumber],
   );
-  const existingFileId = existingResult?.signatureIds?.[placeIdx] ?? "";
+  const existingFileId = sig
+    ? sig === NO_SIGNATURE
+      ? ""
+      : sig
+    : (existingResult?.signatureIds?.[placeIdx] ?? "");
 
   const [existingSvg, setExistingSvg] = useState<string | null>(null);
   const [loadingExisting, setLoadingExisting] = useState(false);
@@ -84,11 +90,17 @@ export default function SignaturePage() {
   const [canvasDims, setCanvasDims] = useState({ width: 300, height: 200 });
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    setExistingSvg(null);
+  const clearDrawing = useCallback(() => {
     setStrokes([]);
     setCurrentStroke([]);
     currentStrokeRef.current = [];
+  }, []);
+
+  useFocusEffect(clearDrawing);
+
+  useEffect(() => {
+    setExistingSvg(null);
+    clearDrawing();
 
     if (!existingFileId) {
       setLoadingExisting(false);
@@ -103,7 +115,7 @@ export default function SignaturePage() {
       })
       .catch(() => setExistingSvg(null))
       .finally(() => setLoadingExisting(false));
-  }, [existingFileId]);
+  }, [existingFileId, clearDrawing]);
 
   const hasExisting = loadingExisting || existingSvg !== null;
   const isEmpty = strokes.length === 0 && currentStroke.length === 0;

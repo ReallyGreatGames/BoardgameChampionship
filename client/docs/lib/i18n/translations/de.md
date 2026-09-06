@@ -28,7 +28,7 @@ shape used to drive a confirmation dialog.
 | `activeBells` | Admin "active bells" list: acknowledge/delete confirm dialogs, push-notification `notificationTitle`/`notificationBody(WithReason)` templates | Active bells admin screen; also read outside `useTranslation` for notification content |
 | `rules` | Search box, rule `types`, add/edit `form` fields, delete confirmation | Rules screen |
 | `timer` | Full-screen game timer: pause/timeout labels, bell ring/ack strings (`confirmRing`/`confirmDismiss`, duplicated from `game`), orientation & pause-mode toggles, `confirmReset`, `customTimerModal` fields | Timer screen |
-| `results` | Score/note inputs, submit/save actions, `confirmSubmit`/`confirmOverwrite` dialogs, signature-requirement warnings and validation messages | Result entry screen |
+| `results` | Score/note inputs, the `colScore`/`colPlace`/`colSignature` column headers, submit/save actions, `confirmSubmit`/`confirmOverwrite` dialogs, signature-requirement warnings (all four signatures, plus `hintSignaturesReset` for signatures wiped by an edit) and validation messages | Result entry screen |
 | `scoreOverview` | Admin score-overview screen: table/input/overview view-mode labels, per-table status labels, `confirmReset`/`confirmSave`/`confirmResetOne` dialogs, table navigation | Admin score overview |
 | `rankings` | Standings table column headers, completion-status text | Rankings screen |
 | `statistics` | Long explanatory info texts (`infoSeatDetails`, `infoTeamPerformance`), per-seat/team table headers | Statistics screen |

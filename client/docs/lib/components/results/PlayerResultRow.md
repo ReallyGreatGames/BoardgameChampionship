@@ -6,7 +6,9 @@
 
 One player's result-entry row: name/team, a score input, 4 placement
 chips, and a caller-supplied signature slot. Used both by the admin's
-per-table input mode and the participant-facing self-entry screen.
+per-table input mode and the participant-facing self-entry screen. Also
+exports the matching column headers, so a caller can label those three
+columns once above a list of rows.
 
 ## Exports
 
@@ -14,6 +16,8 @@ per-table input mode and the participant-facing self-entry screen.
 |---|---|
 | `PlayerResultRow` (component, `forwardRef<PlayerResultRowHandle, Props>`) | See props below |
 | `PlayerResultRowHandle` | `{ focusScore(): void; focusChips(): void }` — imperative handle for cross-row keyboard navigation |
+| `PlayerResultColumnHeaders` (component) | `({ scoreLabel, placementLabel, signatureLabel }: { scoreLabel: string; placementLabel: string; signatureLabel: string }): JSX.Element` — one muted caption row whose cells line up with the score input, the chip row and the signature slot. Rendered once above a list of rows; takes its labels as props so the component stays free of i18n namespaces. |
+| `SIGNATURE_COLUMN_WIDTH` | `number` (`40`) — the width a caller must give its `signatureSlot` for the signature header to sit over it. |
 
 ### `Props`
 
@@ -42,6 +46,20 @@ per-table input mode and the participant-facing self-entry screen.
 | `focusChips` | `(): void` | Web only: focuses the chip row's `View` (a no-op on native, since chips aren't keyboard-focusable there). |
 
 ## How it works
+
+### Column alignment
+
+The three column widths are module constants — `SCORE_WIDTH` (64),
+`PLACEMENT_WIDTH` (derived: 4 chips of `CHIP_SIZE` plus 3 `CHIP_GAP`s) and
+the exported `SIGNATURE_COLUMN_WIDTH` — and both the row's inputs and the
+header's cells are sized from them, so the two can't drift apart when a chip
+or the score box is resized. The header repeats the row's `gap: space[2]`
+and, above the tablet breakpoint, a leading `playerInfo` spacer, since that
+is where the row puts the name column.
+
+The signature column is the constrained one at 40px wide, which is what
+keeps its label short (`"Sign"` / `"Sign."`) — the full word does not fit
+over the button at caption size.
 
 ### Responsive layout
 
