@@ -15,6 +15,45 @@ import { ui } from "@/lib/theme/ui";
 
 const PLACEMENTS = ["1", "2", "3", "4"] as const;
 
+const SCORE_WIDTH = 64;
+const CHIP_SIZE = 40;
+const CHIP_GAP = 4;
+const PLACEMENT_WIDTH = PLACEMENTS.length * CHIP_SIZE + (PLACEMENTS.length - 1) * CHIP_GAP;
+
+export const SIGNATURE_COLUMN_WIDTH = 40;
+
+type ColumnHeaderProps = {
+  scoreLabel: string;
+  placementLabel: string;
+  signatureLabel: string;
+};
+
+export function PlayerResultColumnHeaders({
+  scoreLabel,
+  placementLabel,
+  signatureLabel,
+}: ColumnHeaderProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const { width: screenWidth } = useWindowDimensions();
+  const isCompact = screenWidth < ui.breakpointTablet;
+
+  return (
+    <View style={styles.headerRow}>
+      {!isCompact && <View style={styles.playerInfo} />}
+      <Text style={[styles.columnHeader, styles.scoreColumn]} numberOfLines={1}>
+        {scoreLabel}
+      </Text>
+      <Text style={[styles.columnHeader, styles.placementColumn]} numberOfLines={1}>
+        {placementLabel}
+      </Text>
+      <Text style={[styles.columnHeader, styles.signatureColumn]} numberOfLines={1}>
+        {signatureLabel}
+      </Text>
+    </View>
+  );
+}
+
 export type PlayerResultRowHandle = {
   focusScore: () => void;
   focusChips: () => void;
@@ -226,6 +265,28 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     rowDisabled: {
       opacity: 0.55,
     },
+    headerRow: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: space[2],
+      paddingTop: space[2],
+      paddingBottom: space[1],
+    },
+    columnHeader: {
+      ...type.caption,
+      color: colors.textMuted,
+      fontWeight: "600",
+      textAlign: "center",
+    },
+    scoreColumn: {
+      width: SCORE_WIDTH,
+    },
+    placementColumn: {
+      width: PLACEMENT_WIDTH,
+    },
+    signatureColumn: {
+      width: SIGNATURE_COLUMN_WIDTH,
+    },
     row: {
       flexDirection: "row",
       alignItems: "center",
@@ -252,7 +313,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       color: colors.textMuted,
     },
     scoreInput: {
-      width: 64,
+      width: SCORE_WIDTH,
       height: 40,
       borderWidth: 1,
       borderColor: colors.border,
@@ -268,11 +329,11 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     chipsRow: {
       flexDirection: "row",
-      gap: 4,
+      gap: CHIP_GAP,
     },
     chip: {
-      width: 40,
-      height: 40,
+      width: CHIP_SIZE,
+      height: CHIP_SIZE,
       borderRadius: 8,
       borderWidth: 1,
       borderColor: colors.border,

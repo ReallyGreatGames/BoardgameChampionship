@@ -52,6 +52,12 @@ badge).
 `DrawerHeader` and `DrawerFooter` are local, unexported helpers — the
 footer's auth button logs out (if signed in) or navigates to login (if not).
 
+Every navigation out of the drawer (a nav entry, the info icon, the settings
+icon) first calls [`resetBackHistory`](../../utils/navigation.md): jumping
+from the menu starts a new path rather than continuing one, so the origins
+recorded for the previous flow must not send a later back press somewhere
+unrelated.
+
 ## Used by
 
 - [`app/_layout.tsx`](../../../app/_layout.md)

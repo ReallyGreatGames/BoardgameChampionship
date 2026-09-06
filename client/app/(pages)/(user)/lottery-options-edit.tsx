@@ -16,6 +16,7 @@ import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
 import { validateLotteryConfig } from "@/lib/utils/lottery-draw";
 import { parseOptionsLottery } from "@/lib/utils/options-lottery";
+import { goBackTo, goTo, redirectTo } from "@/lib/utils/navigation";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
@@ -63,10 +64,10 @@ export default function LotteryOptionsEditScreen() {
   );
 
   const backToLottery = () =>
-    router.replace((from as any) ?? `/(pages)/(user)/lottery?gameId=${gameId}`);
+    goBackTo(from ?? `/(pages)/(user)/lottery?gameId=${gameId}`);
 
   if (!isAdmin) {
-    backToLottery();
+    redirectTo(`/(pages)/(user)/lottery?gameId=${gameId}`);
     return null;
   }
 
@@ -115,6 +116,11 @@ function LotteryOptionsEditForm({
   const { t } = useTranslation(["lotteryOptions"]);
   const { confirm } = useDialog();
   const actions = useOptionsLotteryActions();
+
+  const selfHref =
+    `/(pages)/(user)/lottery-options-edit?gameId=${gameId}` +
+    (instance ? `&instanceId=${instance.$id}` : "") +
+    (draft ? `&draft=${draft}` : "");
 
   const [name, setName] = useState(instance?.name ?? "");
   const [pullsPerTable, setPullsPerTable] = useState(String(instance?.pullsPerTable ?? 1));
@@ -187,6 +193,19 @@ function LotteryOptionsEditForm({
           }
         : undefined,
     );
+  }
+
+  async function handleClearResults() {
+    if (!instance) {
+      return;
+    }
+    await actions.clearResults(instance, {
+      title: t("clearResultsConfirm.title"),
+      message: t("clearResultsConfirm.message"),
+      confirmLabel: t("clearResultsConfirm.confirm"),
+      cancelLabel: t("clearResultsConfirm.cancel"),
+      destructive: true,
+    });
   }
 
   async function handleDelete() {
@@ -337,17 +356,35 @@ function LotteryOptionsEditForm({
               )}
             </Pressable>
 
-            <Pressable
-              style={styles.deleteBtn}
-              onPress={handleDelete}
-              disabled={actions.isDeleting(instance.$id)}
-            >
-              {actions.isDeleting(instance.$id) ? (
-                <ActivityIndicator size="small" color={colors.error} />
-              ) : (
-                <Text style={styles.deleteBtnText}>{t("deleteConfirm.confirm")}</Text>
-              )}
-            </Pressable>
+            <View style={styles.dangerRow}>
+              <Pressable
+                style={[
+                  styles.clearResultsBtn,
+                  styles.dangerRowBtn,
+                  instance.results.length === 0 && styles.saveBtnDisabled,
+                ]}
+                onPress={handleClearResults}
+                disabled={instance.results.length === 0 || actions.isClearing(instance.$id)}
+              >
+                {actions.isClearing(instance.$id) ? (
+                  <ActivityIndicator size="small" color={colors.error} />
+                ) : (
+                  <Text style={styles.deleteBtnText}>{t("clearResults")}</Text>
+                )}
+              </Pressable>
+
+              <Pressable
+                style={[styles.deleteBtn, styles.dangerRowBtn]}
+                onPress={handleDelete}
+                disabled={actions.isDeleting(instance.$id)}
+              >
+                {actions.isDeleting(instance.$id) ? (
+                  <ActivityIndicator size="small" color={colors.error} />
+                ) : (
+                  <Text style={styles.deleteBtnText}>{t("deleteConfirm.confirm")}</Text>
+                )}
+              </Pressable>
+            </View>
 
             <Text style={styles.sectionTitle}>{t("resultsSectionTitle")}</Text>
             {instance.results.length === 0 ? (
@@ -356,7 +393,7 @@ function LotteryOptionsEditForm({
               <Pressable
                 style={styles.viewResultsBtn}
                 onPress={() =>
-                  router.push(`/(pages)/(user)/lottery-results?gameId=${gameId}`)
+                  goTo(selfHref, `/(pages)/(user)/lottery-results?gameId=${gameId}`)
                 }
               >
                 <Ionicons name="expand-outline" size={18} color={colors.primary} />
@@ -500,12 +537,29 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       ...type.button,
       color: colors.primary,
     },
+    dangerRow: {
+      flexDirection: "row",
+      gap: inset.tight,
+    },
+    dangerRowBtn: {
+      flex: 1,
+    },
+    clearResultsBtn: {
+      borderWidth: 1,
+      borderColor: colors.error,
+      borderStyle: "dashed",
+      borderRadius: ui.buttonRadius,
+      paddingVertical: 12,
+      alignItems: "center",
+      justifyContent: "center",
+    },
     deleteBtn: {
       borderWidth: 1,
       borderColor: colors.error,
       borderRadius: ui.buttonRadius,
       paddingVertical: 12,
       alignItems: "center",
+      justifyContent: "center",
     },
     deleteBtnText: {
       ...type.button,

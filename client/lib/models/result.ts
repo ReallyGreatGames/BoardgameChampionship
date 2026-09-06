@@ -10,3 +10,5 @@ export type Result = {
   signatureIds?: string[];
   submitted: boolean;
 } & Models.Document;
+
+export const NO_SIGNATURE = "none";

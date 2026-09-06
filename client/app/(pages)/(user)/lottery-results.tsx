@@ -7,8 +7,9 @@ import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
 import { getOptionsLotteriesForGame } from "@/lib/utils/options-lottery";
+import { goBackTo, redirectTo } from "@/lib/utils/navigation";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -43,7 +44,7 @@ type TableCard = {
 
 export default function LotteryResultsScreen() {
   useRequireAuth();
-  const { gameId } = useLocalSearchParams<{ gameId: string }>();
+  const { gameId, from } = useLocalSearchParams<{ gameId: string; from?: string }>();
   const { isAdmin } = useAuth();
   const { colors } = useTheme();
   const { width: screenWidth } = useWindowDimensions();
@@ -91,10 +92,11 @@ export default function LotteryResultsScreen() {
     return cards.sort((a, b) => a.table - b.table);
   }, [pulledInstances]);
 
-  const handleClose = () => router.replace(`/(pages)/(user)/lottery?gameId=${gameId}`);
+  const handleClose = () =>
+    goBackTo(from ?? `/(pages)/(user)/lottery?gameId=${gameId}`);
 
   if (!isAdmin) {
-    handleClose();
+    redirectTo(`/(pages)/(user)/lottery?gameId=${gameId}`);
     return null;
   }
 

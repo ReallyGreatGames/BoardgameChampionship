@@ -1,9 +1,16 @@
+import { SIGNATURES_BUCKET_ID, storage } from "@/lib/appwrite";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BackButton } from "@/lib/components/ui/BackButton";
 import { useDialog } from "@/lib/components/ui/Dialog";
-import { PlayerResultRow, type PlayerResultRowHandle } from "@/lib/components/results/PlayerResultRow";
+import {
+  PlayerResultColumnHeaders,
+  PlayerResultRow,
+  SIGNATURE_COLUMN_WIDTH,
+  type PlayerResultRowHandle,
+} from "@/lib/components/results/PlayerResultRow";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
+import { NO_SIGNATURE } from "@/lib/models/result";
 import { useResultStore } from "@/lib/stores/appwrite/result-store";
 import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
 import { useTableStore } from "@/lib/stores/appwrite/table-store";
@@ -12,8 +19,9 @@ import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
 import { hasScorePlacementConflict, isValidPlacementCombo } from "@/lib/utils/placements";
 import { teamName } from "@/lib/utils";
+import { goBackTo, goTo } from "@/lib/utils/navigation";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -36,7 +44,7 @@ function padArray<T>(arr: T[], length: number, fill: T): T[] {
 }
 
 export default function ResultsPage() {
-  const { gameId } = useLocalSearchParams<{ gameId: string }>();
+  const { gameId, from } = useLocalSearchParams<{ gameId: string; from?: string }>();
   const { user, loading } = useRequireAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -81,9 +89,11 @@ export default function ResultsPage() {
   );
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [signaturesReset, setSignaturesReset] = useState(false);
 
   const acknowledgedAtRef = useRef<string | null>(null);
   const ownSaveRef = useRef(false);
+  const droppedSignatureIdsRef = useRef<string[]>([]);
 
   const scoreRefs = useRef<(PlayerResultRowHandle | null)[]>([null, null, null, null]);
   const noteRef = useRef<TextInput | null>(null);
@@ -95,6 +105,8 @@ export default function ResultsPage() {
     setScores(Array(PLAYER_COUNT).fill(""));
     setNote("");
     setSignatureIds(Array(PLAYER_COUNT).fill(""));
+    setSignaturesReset(false);
+    droppedSignatureIdsRef.current = [];
   }, [gameId, tableNumber]);
 
   useEffect(() => {
@@ -112,30 +124,29 @@ export default function ResultsPage() {
     } else if (ownSaveRef.current) {
       ownSaveRef.current = false;
       acknowledgedAtRef.current = existingResult.$updatedAt;
+      setSignaturesReset(false);
     }
   }, [existingResult]);
 
   useFocusEffect(
     useCallback(() => {
-      if (existingResult && acknowledgedAtRef.current !== null) {
+      if (existingResult && acknowledgedAtRef.current !== null && !signaturesReset) {
         setSignatureIds(
           padArray(existingResult.signatureIds ?? [], PLAYER_COUNT, ""),
         );
       }
-    }, [existingResult]),
+    }, [existingResult, signaturesReset]),
   );
 
+  const selfHref = `/(pages)/(user)/results?gameId=${gameId}`;
+
   const handleBack = useCallback(() => {
-    if (gameId) router.replace(`/game?gameId=${gameId}`);
-    else router.replace("/");
-  }, [gameId]);
+    goBackTo(from ?? (gameId ? `/game?gameId=${gameId}` : "/"));
+  }, [from, gameId]);
 
   const isSubmitted = existingResult?.submitted ?? false;
   const signatureCount = signatureIds.filter(Boolean).length;
-  const anySigned = signatureCount > 0;
-  const twoSigned = signatureCount >= 2;
-  const hasNote = note.trim().length > 0;
-  const disabled = isSubmitted || twoSigned;
+  const disabled = isSubmitted;
 
   const allPlacementsSet = placements.every((p) => p !== "");
   const allScoresValid = scores.every((s) => {
@@ -153,12 +164,10 @@ export default function ResultsPage() {
     !isSubmitted &&
     isActiveGame;
 
-  const canSubmit =
-    !isSubmitted &&
-    isActiveGame &&
-    (signatureCount === PLAYER_COUNT || (signatureCount === 3 && hasNote));
+  const canSubmit = !isSubmitted && isActiveGame && signatureCount === PLAYER_COUNT;
 
-  const showNoteHint = !isSubmitted && signatureCount === 3 && !hasNote;
+  const canSign = canSave;
+  const signaturesMissing = !isSubmitted && isActiveGame && signatureCount < PLAYER_COUNT;
 
   const buildPayload = useCallback(
     (submittedFlag: boolean) => ({
@@ -172,6 +181,19 @@ export default function ResultsPage() {
     }),
     [gameId, tableNumber, placements, scores, note, signatureIds],
   );
+
+  const purgeDroppedSignatures = useCallback(async () => {
+    const fileIds = droppedSignatureIdsRef.current;
+    if (fileIds.length === 0) {
+      return;
+    }
+    droppedSignatureIdsRef.current = [];
+    await Promise.allSettled(
+      fileIds.map((fileId) =>
+        storage.deleteFile({ bucketId: SIGNATURES_BUCKET_ID, fileId }),
+      ),
+    );
+  }, []);
 
   const handleSave = useCallback(async (): Promise<boolean> => {
     if (!canSave || saving) return false;
@@ -217,13 +239,14 @@ export default function ResultsPage() {
         await resultStore.add(data);
       }
       ownSaveRef.current = true;
+      await purgeDroppedSignatures();
       return true;
     } catch {
       return false;
     } finally {
       setSaving(false);
     }
-  }, [canSave, saving, existingResult, placements, scores, note, confirm, t, buildPayload, resultStore]);
+  }, [canSave, saving, existingResult, placements, scores, note, confirm, t, buildPayload, purgeDroppedSignatures, resultStore]);
 
   const handleSubmit = useCallback(async () => {
     if (submitting) return;
@@ -234,7 +257,7 @@ export default function ResultsPage() {
     }
 
     if (!canSubmit) {
-      if (signatureCount < 3) {
+      if (signatureCount < PLAYER_COUNT) {
         await confirm({
           title: t("sigRequiredTitle"),
           message: t("sigRequiredMessage"),
@@ -276,6 +299,7 @@ export default function ResultsPage() {
     submitting,
     canSave,
     canSubmit,
+    signatureCount,
     handleSave,
     confirm,
     t,
@@ -284,21 +308,47 @@ export default function ResultsPage() {
     resultStore,
   ]);
 
-  const handleSetPlacement = useCallback((i: number, v: string) => {
-    setPlacements((prev) => {
-      const next = [...prev];
-      next[i] = v;
-      return next;
-    });
-  }, []);
+  const invalidateSignatures = useCallback(() => {
+    if (!signatureIds.some(Boolean)) {
+      return;
+    }
+    droppedSignatureIdsRef.current = [
+      ...droppedSignatureIdsRef.current,
+      ...signatureIds.filter(Boolean),
+    ];
+    setSignatureIds(Array(PLAYER_COUNT).fill(""));
+    setSignaturesReset(true);
+  }, [signatureIds]);
 
-  const handleSetScore = useCallback((i: number, v: string) => {
-    setScores((prev) => {
-      const next = [...prev];
-      next[i] = v;
-      return next;
-    });
-  }, []);
+  const handleSetPlacement = useCallback(
+    (i: number, v: string) => {
+      if (placements[i] === v) {
+        return;
+      }
+      setPlacements((prev) => {
+        const next = [...prev];
+        next[i] = v;
+        return next;
+      });
+      invalidateSignatures();
+    },
+    [placements, invalidateSignatures],
+  );
+
+  const handleSetScore = useCallback(
+    (i: number, v: string) => {
+      if (scores[i] === v) {
+        return;
+      }
+      setScores((prev) => {
+        const next = [...prev];
+        next[i] = v;
+        return next;
+      });
+      invalidateSignatures();
+    },
+    [scores, invalidateSignatures],
+  );
 
   const handleOpenSignature = useCallback(
     async (seat: number) => {
@@ -306,9 +356,14 @@ export default function ResultsPage() {
         const saved = await handleSave();
         if (!saved) return;
       }
-      router.push(`/(pages)/(user)/signature?gameId=${gameId}&place=${seat}`);
+      goTo(
+        selfHref,
+        `/(pages)/(user)/signature?gameId=${gameId}&place=${seat}&sig=${
+          signatureIds[seat] || NO_SIGNATURE
+        }`,
+      );
     },
-    [canSave, handleSave, gameId],
+    [canSave, handleSave, gameId, selfHref, signatureIds],
   );
 
   if (loading || !user) return null;
@@ -335,6 +390,12 @@ export default function ResultsPage() {
         </View>
 
         <View style={styles.card}>
+          <PlayerResultColumnHeaders
+            scoreLabel={t("colScore")}
+            placementLabel={t("colPlace")}
+            signatureLabel={t("colSignature")}
+          />
+
           {Array.from({ length: PLAYER_COUNT }, (_, i) => {
             const player = playerData[i];
             const sigId = signatureIds[i];
@@ -372,15 +433,10 @@ export default function ResultsPage() {
                     style={[
                       styles.sigBtn,
                       !!sigId && styles.sigBtnSigned,
-                      (!isActiveGame ||
-                        (!sigId && !anySigned && (!allPlacementsSet || !allScoresValid || isSubmitted))) &&
-                        styles.sigBtnDisabled,
+                      !canSign && styles.sigBtnDisabled,
                     ]}
                     onPress={() => handleOpenSignature(i)}
-                    disabled={
-                      !isActiveGame ||
-                      (!sigId && !anySigned && (!allPlacementsSet || !allScoresValid || isSubmitted))
-                    }
+                    disabled={!canSign}
                     activeOpacity={0.7}
                     // @ts-expect-error — web-only: remove sig from tab order
                     tabIndex={Platform.OS === "web" ? -1 : undefined}
@@ -389,11 +445,7 @@ export default function ResultsPage() {
                       name={sigId ? "checkmark-circle" : "pencil-outline"}
                       size={20}
                       color={
-                        sigId
-                          ? colors.success
-                          : !allPlacementsSet || !allScoresValid
-                            ? colors.textMuted
-                            : colors.primary
+                        sigId ? colors.success : canSign ? colors.primary : colors.textMuted
                       }
                     />
                   </TouchableOpacity>
@@ -403,7 +455,7 @@ export default function ResultsPage() {
           })}
 
           {}
-          {(scoreConflict || !placementComboValid || (signatureCount < 3 && !isSubmitted && isActiveGame)) && (
+          {(scoreConflict || !placementComboValid || signaturesMissing) && (
             <View style={styles.cardErrors}>
               {scoreConflict && (
                 <View style={styles.cardErrorRow}>
@@ -417,10 +469,12 @@ export default function ResultsPage() {
                   <Text style={styles.cardErrorText}>{t("warnPlacementInvalid")}</Text>
                 </View>
               )}
-              {signatureCount < 3 && !isSubmitted && isActiveGame && (
+              {signaturesMissing && (
                 <View style={styles.cardErrorRow}>
                   <Ionicons name="pencil-outline" size={14} color={colors.error} />
-                  <Text style={styles.cardErrorText}>{t("hintSignatures")}</Text>
+                  <Text style={styles.cardErrorText}>
+                    {signaturesReset ? t("hintSignaturesReset") : t("hintSignatures")}
+                  </Text>
                 </View>
               )}
             </View>
@@ -431,11 +485,7 @@ export default function ResultsPage() {
           <Text style={styles.fieldLabel}>{t("note")}</Text>
           <TextInput
             ref={noteRef}
-            style={[
-              styles.input,
-              styles.noteInput,
-              showNoteHint && styles.inputError,
-            ]}
+            style={[styles.input, styles.noteInput]}
             value={note}
             onChangeText={setNote}
             placeholder={t("notePlaceholder")}
@@ -445,12 +495,6 @@ export default function ResultsPage() {
             textAlignVertical="top"
             editable={!isSubmitted}
           />
-          {showNoteHint && (
-            <View style={styles.hint}>
-              <Ionicons name="warning-outline" size={13} color={colors.error} />
-              <Text style={styles.hintError}>{t("hintNote")}</Text>
-            </View>
-          )}
           {!isActiveGame && !isSubmitted && (
             <View style={styles.hint}>
               <Ionicons name="lock-closed-outline" size={13} color={colors.textMuted} />
@@ -574,7 +618,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       paddingHorizontal: inset.card,
     },
     sigBtn: {
-      width: 40,
+      width: SIGNATURE_COLUMN_WIDTH,
       height: 40,
       borderRadius: 8,
       backgroundColor: colors.surfaceHigh,
@@ -612,17 +656,10 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     noteInput: {
       minHeight: 96,
     },
-    inputError: {
-      borderColor: colors.error,
-    },
     hint: {
       flexDirection: "row",
       alignItems: "center",
       gap: 5,
-    },
-    hintError: {
-      ...type.caption,
-      color: colors.error,
     },
     hintMuted: {
       ...type.caption,

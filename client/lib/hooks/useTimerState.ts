@@ -489,13 +489,17 @@ export function useTimerState({
         };
 
       const poolTime = reconciled.poolTimes[0];
+      const inOvertime = (seatDoc.inOvertime ?? false) || poolTime <= 0;
       outcomes[i] = {
         paused,
         poolTime,
         roundTimeLeft: reconciled.roundTimesLeft[0],
         roundExpired: reconciled.roundExpired[0],
-        inOvertime: (seatDoc.inOvertime ?? false) || poolTime <= 0,
+        inOvertime,
       };
+      if (isFirstHydration) {
+        bellFiredRef.current[i] = inOvertime;
+      }
       lastProcessedSeatDocRef.current[i] = seatDoc;
       depleteAnims.current[i].setValue(Math.min(1, Math.max(0, 1 - poolTime / totalSeconds)));
     }

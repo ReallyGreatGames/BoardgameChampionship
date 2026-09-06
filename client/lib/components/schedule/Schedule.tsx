@@ -30,6 +30,7 @@ import { Markdown } from "@/lib/components/ui/Markdown";
 import { ScheduleFormData, ScheduleItemModal } from "@/lib/components/schedule/ScheduleItemModal";
 import { Table } from "@/lib/components/game/Table";
 import { TimerSettingsModal } from "@/lib/components/schedule/TimerSettingsModal";
+import { goTo } from "@/lib/utils/navigation";
 
 if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -269,7 +270,10 @@ export function ScheduleItem({
                   style={styles.goToGameButton}
                   onPress={() => {
                     if (player?.team && player?.$id) {
-                      router.push(`/game?gameId=${schedule.gameId}&from=/(pages)/(user)/schedule`);
+                      goTo(
+                        "/(pages)/(user)/schedule",
+                        `/game?gameId=${schedule.gameId}&from=/(pages)/(user)/schedule`,
+                      );
                     } else {
                       router.push({
                         pathname:
@@ -571,14 +575,16 @@ export function ScheduleList() {
         onClose={() => setModalVisible(false)}
         onSave={handleModalSave}
         onRules={(gameId) => {
-          router.push(`/rules?gameId=${gameId}`);
+          goTo(
+            "/(pages)/(user)/schedule",
+            `/rules?gameId=${gameId}&from=/(pages)/(user)/schedule`,
+          );
           setModalVisible(false);
         }}
         onLotteries={(gameId) => {
-          router.push(
-            `/(pages)/(user)/lottery-add?gameId=${gameId}&from=${encodeURIComponent(
-              "/(pages)/(user)/schedule",
-            )}`,
+          goTo(
+            "/(pages)/(user)/schedule",
+            `/(pages)/(user)/lottery-add?gameId=${gameId}&from=/(pages)/(user)/schedule`,
           );
           setModalVisible(false);
         }}
