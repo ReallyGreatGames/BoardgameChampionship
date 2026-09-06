@@ -189,6 +189,19 @@ function LotteryOptionsEditForm({
     );
   }
 
+  async function handleClearResults() {
+    if (!instance) {
+      return;
+    }
+    await actions.clearResults(instance, {
+      title: t("clearResultsConfirm.title"),
+      message: t("clearResultsConfirm.message"),
+      confirmLabel: t("clearResultsConfirm.confirm"),
+      cancelLabel: t("clearResultsConfirm.cancel"),
+      destructive: true,
+    });
+  }
+
   async function handleDelete() {
     if (!instance) {
       return;
@@ -337,17 +350,35 @@ function LotteryOptionsEditForm({
               )}
             </Pressable>
 
-            <Pressable
-              style={styles.deleteBtn}
-              onPress={handleDelete}
-              disabled={actions.isDeleting(instance.$id)}
-            >
-              {actions.isDeleting(instance.$id) ? (
-                <ActivityIndicator size="small" color={colors.error} />
-              ) : (
-                <Text style={styles.deleteBtnText}>{t("deleteConfirm.confirm")}</Text>
-              )}
-            </Pressable>
+            <View style={styles.dangerRow}>
+              <Pressable
+                style={[
+                  styles.clearResultsBtn,
+                  styles.dangerRowBtn,
+                  instance.results.length === 0 && styles.saveBtnDisabled,
+                ]}
+                onPress={handleClearResults}
+                disabled={instance.results.length === 0 || actions.isClearing(instance.$id)}
+              >
+                {actions.isClearing(instance.$id) ? (
+                  <ActivityIndicator size="small" color={colors.error} />
+                ) : (
+                  <Text style={styles.deleteBtnText}>{t("clearResults")}</Text>
+                )}
+              </Pressable>
+
+              <Pressable
+                style={[styles.deleteBtn, styles.dangerRowBtn]}
+                onPress={handleDelete}
+                disabled={actions.isDeleting(instance.$id)}
+              >
+                {actions.isDeleting(instance.$id) ? (
+                  <ActivityIndicator size="small" color={colors.error} />
+                ) : (
+                  <Text style={styles.deleteBtnText}>{t("deleteConfirm.confirm")}</Text>
+                )}
+              </Pressable>
+            </View>
 
             <Text style={styles.sectionTitle}>{t("resultsSectionTitle")}</Text>
             {instance.results.length === 0 ? (
@@ -500,12 +531,29 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       ...type.button,
       color: colors.primary,
     },
+    dangerRow: {
+      flexDirection: "row",
+      gap: inset.tight,
+    },
+    dangerRowBtn: {
+      flex: 1,
+    },
+    clearResultsBtn: {
+      borderWidth: 1,
+      borderColor: colors.error,
+      borderStyle: "dashed",
+      borderRadius: ui.buttonRadius,
+      paddingVertical: 12,
+      alignItems: "center",
+      justifyContent: "center",
+    },
     deleteBtn: {
       borderWidth: 1,
       borderColor: colors.error,
       borderRadius: ui.buttonRadius,
       paddingVertical: 12,
       alignItems: "center",
+      justifyContent: "center",
     },
     deleteBtnText: {
       ...type.button,

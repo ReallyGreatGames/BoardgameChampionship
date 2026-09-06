@@ -534,6 +534,14 @@ const translations = {
       confirm: "Ziehen",
       cancel: "Abbrechen",
     },
+    clearResults: "Ziehungen löschen",
+    clearResultsConfirm: {
+      title: "Ziehungen löschen",
+      message:
+        "Dies löscht das gezogene Ergebnis jedes Tisches, behält aber die Auslosung und ihre Optionen. Das kann nicht rückgängig gemacht werden.",
+      confirm: "Ziehungen löschen",
+      cancel: "Abbrechen",
+    },
     deleteConfirm: {
       title: "Auslosung löschen",
       message: "Dies löscht das Ergebnis jedes Tisches. Das kann nicht rückgängig gemacht werden.",

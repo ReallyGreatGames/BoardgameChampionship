@@ -24,6 +24,7 @@ export function useOptionsLotteryActions() {
   const [saving, setSaving] = useState(false);
   const [pullingId, setPullingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [clearingId, setClearingId] = useState<string | null>(null);
 
   function canRemoveOption(instance: OptionsLottery, optionId: string): boolean {
     return !instance.results.some((r) => r.optionIds.includes(optionId));
@@ -111,6 +112,27 @@ export function useOptionsLotteryActions() {
     }
   }
 
+  async function clearResults(
+    instance: OptionsLottery,
+    confirmOpts?: DialogOptions,
+  ): Promise<boolean> {
+    if (!isAdmin || instance.results.length === 0) {
+      return false;
+    }
+    if (confirmOpts) {
+      const ok = await confirm(confirmOpts);
+      if (!ok) {
+        return false;
+      }
+    }
+    setClearingId(instance.$id);
+    try {
+      return await store.update({ $id: instance.$id, resultsJson: "[]" });
+    } finally {
+      setClearingId(null);
+    }
+  }
+
   async function remove(instance: OptionsLottery, confirmOpts?: DialogOptions): Promise<boolean> {
     if (!isAdmin) {
       return false;
@@ -136,8 +158,10 @@ export function useOptionsLotteryActions() {
     create,
     update,
     pull,
+    clearResults,
     remove,
     isPulling: (id: string) => pullingId === id,
     isDeleting: (id: string) => deletingId === id,
+    isClearing: (id: string) => clearingId === id,
   };
 }

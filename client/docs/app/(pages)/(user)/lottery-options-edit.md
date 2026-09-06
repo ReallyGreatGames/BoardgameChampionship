@@ -12,7 +12,9 @@
 Admin-only screen for both creating a new options lottery and managing an
 existing one: name, `pullsPerTable`, a "same result for all tables" switch,
 the option pool (title, optional description, weight, maxPerTable), save,
-pull-for-all-tables, a button to the full-screen results board, and delete.
+pull-for-all-tables, a button to the full-screen results board, and a
+danger row with "delete draws" (clear the results, keep the lottery) and
+"delete" (the whole lottery) side by side.
 
 ## Exports
 
@@ -26,7 +28,7 @@ Builds a fresh, blank `LotteryOption` row (`id: ID.unique()`, empty title/descri
 
 ### Internal: `LotteryOptionsEditForm(props): JSX.Element`
 
-The actual form: name/pullsPerTable fields, the option-row list with add/remove, save, and — once an `instance` exists — pull, delete, and (once results exist) a button to [`lottery-results.tsx`](lottery-results.md), the full-screen results board.
+The actual form: name/pullsPerTable fields, the option-row list with add/remove, save, and — once an `instance` exists — pull, the delete-draws/delete danger row, and (once results exist) a button to [`lottery-results.tsx`](lottery-results.md), the full-screen results board.
 
 | Prop | Type | Meaning |
 | --- | --- | --- |
@@ -58,6 +60,10 @@ No-ops if `validationError` is set. Otherwise builds a `LotteryConfigInput` (`{ 
 ### `handlePull(): Promise<void>`
 
 No-ops if there's no `instance`. Calls `actions.pull(instance, tableNumbers, confirmOptions)`, where `confirmOptions` is a translated destructive re-pull confirmation if `instance.results.length > 0` (an existing pull would be overwritten), or `undefined` for a first pull (no confirmation needed).
+
+### `handleClearResults(): Promise<void>`
+
+No-ops if there's no `instance`. Calls `actions.clearResults(instance, ...)` with a translated destructive confirm dialog (`clearResultsConfirm.*`), which blanks every table's drawn result but keeps the lottery and its option pool. Stays on the screen afterwards — unlike `handleDelete`, there's still something to edit.
 
 ### `handleDelete(): Promise<void>`
 
@@ -97,6 +103,12 @@ Builds all form/card/button styles from theme colors; memoized via `useMemo` on 
   [`usePlayerTable`](../../../lib/hooks/usePlayerTable.md)), confirms
   first only if results already exist (re-pull overwrites everything), and
   delegates the actual draw to `useOptionsLotteryActions().pull`.
+- Delete-draws and delete sit in one `dangerRow` (`flexDirection: "row"`,
+  both children `flex: 1`), so each takes half the width. Both are
+  error-colored outline buttons; delete-draws uses a dashed border to read
+  as the lighter of the two at a glance, and is disabled (dimmed via
+  `saveBtnDisabled`) while `instance.results.length === 0`, since there's
+  nothing to clear before the first pull.
 - Once `instance.results.length > 0`, a "view fullscreen" button replaces
   the "not pulled yet" placeholder and navigates to
   [`lottery-results.tsx`](lottery-results.md) (`?gameId=...` — no

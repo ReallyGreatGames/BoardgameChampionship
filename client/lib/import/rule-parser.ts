@@ -12,27 +12,49 @@ type LabelDef = { phrase: string; type: RuleType };
 
 const RAW_LABELS: LabelDef[] = [
   { phrase: "Erläuterung Änderung zu", type: "change" },
-  { phrase: "Ruling for", type: "clarification" },
+  { phrase: "Ruling for", type: "change" },
+  { phrase: "Ruling on", type: "change" },
+  { phrase: "Rulings for", type: "change" },
   { phrase: "Clarification for", type: "clarification" },
+  { phrase: "Clarification on", type: "clarification" },
+  { phrase: "Clarification of", type: "clarification" },
+  { phrase: "Clarifications for", type: "clarification" },
+  { phrase: "Clarifications on", type: "clarification" },
+  { phrase: "Note for", type: "clarification" },
+  { phrase: "Note on", type: "clarification" },
+  { phrase: "Reminder for", type: "clarification" },
+  { phrase: "Reminder on", type: "clarification" },
   { phrase: "Change to", type: "change" },
+  { phrase: "Change of", type: "change" },
+  { phrase: "Changes to", type: "change" },
+  { phrase: "Correction to", type: "change" },
   { phrase: "Addition to", type: "addition" },
+  { phrase: "Additions to", type: "addition" },
   { phrase: "Erläuterung zu", type: "clarification" },
+  { phrase: "Erläuterung für", type: "clarification" },
   { phrase: "Änderung zu", type: "change" },
+  { phrase: "Änderung an", type: "change" },
+  { phrase: "Änderungen zu", type: "change" },
+  { phrase: "Korrektur zu", type: "change" },
   { phrase: "Ergänzung zu", type: "addition" },
-  { phrase: "Festlegung zu", type: "clarification" },
+  { phrase: "Ergänzungen zu", type: "addition" },
+  { phrase: "Festlegung zu", type: "change" },
+  { phrase: "Festlegung für", type: "change" },
   { phrase: "Klarstellung zu", type: "clarification" },
   { phrase: "Erinnerung zu", type: "clarification" },
+  { phrase: "Hinweis zu", type: "clarification" },
+  { phrase: "Anmerkung zu", type: "clarification" },
 ];
 
 const LABELS: LabelDef[] = [...RAW_LABELS].sort(
   (a, b) => b.phrase.length - a.phrase.length,
 );
 
-const QUOTE_PAIRS: [string, string][] = [
-  ["„", "“"],
-  ["“", "”"],
-  ['"', '"'],
-];
+const QUOTE_CHAR = /[„“”"«»]/;
+const TITLE_TAIL = /^([^:\n]{0,80}?)\s*:\s*([\s\S]*)$/;
+const SEPARATOR_LINE = /^[-–—_=*~]{2,}$/;
+
+type TitleSplit = { title: string; bodyStart: string };
 
 type EntryStart = {
   lineIndex: number;
@@ -41,29 +63,70 @@ type EntryStart = {
   bodyStart: string;
 };
 
-function escapeForRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function firstQuoteIndex(s: string): number {
+  for (let i = 0; i < s.length; i++) {
+    if (QUOTE_CHAR.test(s[i])) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function buildTitle(prefix: string, quoted: string, suffix: string): string {
+  return [prefix.trim(), quoted.trim(), suffix.trim()]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+}
+
+function splitTitleAndBody(rest: string): TitleSplit | null {
+  const openIdx = firstQuoteIndex(rest);
+
+  if (openIdx >= 0) {
+    const prefix = rest.slice(0, openIdx);
+    for (let i = openIdx + 1; i < rest.length; i++) {
+      if (!QUOTE_CHAR.test(rest[i])) {
+        continue;
+      }
+      const tail = rest.slice(i + 1).match(TITLE_TAIL);
+      if (!tail) {
+        continue;
+      }
+      const title = buildTitle(prefix, rest.slice(openIdx + 1, i), tail[1]);
+      if (title) {
+        return { title, bodyStart: tail[2] };
+      }
+    }
+  }
+
+  const plain = rest.match(TITLE_TAIL);
+  if (plain) {
+    const title = plain[1].replace(QUOTE_CHAR, "").trim();
+    if (title) {
+      return { title, bodyStart: plain[2] };
+    }
+  }
+
+  return null;
 }
 
 function matchEntryStart(
   trimmedLine: string,
 ): { type: RuleType; title: string; bodyStart: string } | null {
+  const lower = trimmedLine.toLowerCase();
   for (const label of LABELS) {
-    if (!trimmedLine.startsWith(label.phrase)) {
+    if (!lower.startsWith(label.phrase.toLowerCase())) {
       continue;
     }
-    const rest = trimmedLine.slice(label.phrase.length).trimStart();
-    for (const [open, close] of QUOTE_PAIRS) {
-      if (!rest.startsWith(open)) {
-        continue;
-      }
-      const pattern = new RegExp(
-        `^${escapeForRegex(open)}([\\s\\S]*?)${escapeForRegex(close)}\\s*:\\s*([\\s\\S]*)$`,
-      );
-      const m = rest.match(pattern);
-      if (m) {
-        return { type: label.type, title: m[1].trim(), bodyStart: m[2] };
-      }
+    const boundary = trimmedLine[label.phrase.length];
+    if (boundary !== undefined && !/\s/.test(boundary)) {
+      continue;
+    }
+    const split = splitTitleAndBody(
+      trimmedLine.slice(label.phrase.length).trimStart(),
+    );
+    if (split) {
+      return { type: label.type, ...split };
     }
   }
   return null;
@@ -74,6 +137,19 @@ function indentOf(line: string): number {
 }
 
 const BULLET_LINE = /^([-•◦*]|\d+[.)])\s+(.*)$/;
+
+function bulletsWithContinuations(lines: string[]): string {
+  const items: string[] = [];
+  for (const line of lines) {
+    const previous = items[items.length - 1];
+    if (previous !== undefined && previous.endsWith(":")) {
+      items[items.length - 1] = `${previous}\n  ${line}`;
+      continue;
+    }
+    items.push(line);
+  }
+  return items.map((i) => `- ${i}`).join("\n");
+}
 
 function formatRun(run: string[]): string {
   if (run.length === 1) {
@@ -98,7 +174,7 @@ function formatRun(run: string[]): string {
   const allSameIndent = indents.every((i) => i === indents[0]);
 
   if (allSameIndent && indents[0] > 0) {
-    return run.map((l) => `- ${l.trim()}`).join("\n");
+    return bulletsWithContinuations(run.map((l) => l.trim()));
   }
   if (allSameIndent) {
     return run.map((l) => l.trim()).join("\n");
@@ -150,7 +226,13 @@ function formatBody(rawLines: string[]): string {
 }
 
 function isBareHeading(line: string): boolean {
-  return line.length < 60 && !line.includes(":") && !/[.!?]$/.test(line);
+  if (line.length >= 60 || /[.!?;,]$/.test(line) || line.endsWith(":")) {
+    return false;
+  }
+  if (line.split(/\s+/).filter(Boolean).length > 8) {
+    return false;
+  }
+  return matchEntryStart(line) === null;
 }
 
 export function parseRulesText(raw: string): ParsedRule[] {
@@ -174,7 +256,7 @@ export function parseRulesText(raw: string): ParsedRule[] {
   const preambleLines = lines
     .slice(0, firstIdx)
     .map((l) => l.trim())
-    .filter(Boolean);
+    .filter((l) => l && !SEPARATOR_LINE.test(l));
 
   if (preambleLines.length > 0) {
     const [maybeHeading, ...rest] = preambleLines;

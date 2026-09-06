@@ -531,6 +531,14 @@ const translations = {
       confirm: "Pull",
       cancel: "Cancel",
     },
+    clearResults: "Delete Draws",
+    clearResultsConfirm: {
+      title: "Delete draws",
+      message:
+        "This deletes every table's drawn result but keeps the lottery and its options. This can't be undone.",
+      confirm: "Delete Draws",
+      cancel: "Cancel",
+    },
     deleteConfirm: {
       title: "Delete lottery",
       message: "This deletes every table's result. This can't be undone.",

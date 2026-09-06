@@ -16,7 +16,7 @@ the pure draw algorithm in
 Takes no parameters. Wires together [`useAuth`](../auth.md) (`isAdmin`),
 [`useOptionsLotteryStore`](../stores/appwrite/options-lottery-store.md),
 [`useDialog`](../components/ui/Dialog.md), and three local loading flags
-(`saving`, `pullingId`, `deletingId`). `LotteryConfigInput` is
+(`saving`, `pullingId`, `deletingId`, `clearingId`). `LotteryConfigInput` is
 `{ name: string; pullsPerTable: number; sameForAllTables: boolean; options: LotteryOption[] }`,
 the shape a caller edits in the config form before it's serialized for
 storage. Returns:
@@ -29,9 +29,11 @@ storage. Returns:
 | `create` | `(gameId: string, config: LotteryConfigInput) => Promise<OptionsLottery \| null>` | Returns `null` immediately if not admin or `validateLotteryConfig` rejects the config. Otherwise creates a new row (`resultsJson: "[]"`, i.e. no draw yet), tracking `saving`, and returns the parsed `OptionsLottery` on success or `null` if the store write failed. |
 | `update` | `(instance: OptionsLottery, config: LotteryConfigInput) => Promise<boolean>` | Returns `false` if not admin, the config fails validation, or the new `config.options` would drop an option id still referenced by `instance.results` (see How it works). Otherwise writes the updated name/pullsPerTable/options, tracking `saving`, and returns whether the store update succeeded. |
 | `pull` | `(instance: OptionsLottery, tableNumbers: number[], confirmOpts?: DialogOptions) => Promise<boolean>` | Returns `false` if not admin. If `instance.results` is non-empty and `confirmOpts` is given, confirms before overwriting. Computes a fresh draw with `computeDraw(instance.options, instance.pullsPerTable, tableNumbers, instance.sameForAllTables)` and writes it to `resultsJson`, tracking `pullingId`. Returns `false` (after showing an error dialog) if `computeDraw` throws, or the store update's success flag otherwise. |
+| `clearResults` | `(instance: OptionsLottery, confirmOpts?: DialogOptions) => Promise<boolean>` | Returns `false` if not admin or `instance.results` is already empty. Optionally confirms, then writes `resultsJson: "[]"` — deleting every table's drawn result while keeping the lottery row, its name and its option pool — tracking `clearingId`, and returns the store update's success flag. |
 | `remove` | `(instance: OptionsLottery, confirmOpts?: DialogOptions) => Promise<boolean>` | Returns `false` if not admin. Optionally confirms, then deletes the entire lottery row (which cascades to every table's embedded result — see How it works), tracking `deletingId`, and returns the store delete's success flag. |
 | `isPulling` | `(id: string) => boolean` | `true` if `id` is the lottery instance currently mid-`pull`. |
 | `isDeleting` | `(id: string) => boolean` | `true` if `id` is the lottery instance currently mid-`remove`. |
+| `isClearing` | `(id: string) => boolean` | `true` if `id` is the lottery instance currently mid-`clearResults`. |
 
 ## How it works
 
@@ -55,6 +57,12 @@ storage. Returns:
 - `remove` deletes the whole row — since results are embedded JSON on the
   same row, this is the entire "delete the lottery = delete every table's
   result" cascade; there is no per-table delete.
+- `clearResults` is the non-destructive half of that: same "wipe every
+  table's result" effect, but by blanking `resultsJson` instead of deleting
+  the row, so the configured option pool survives. It's the way back to an
+  un-pulled state — `pull` only ever overwrites results with a new draw,
+  never removes them. The `results.length === 0` guard makes it a no-op
+  rather than a pointless write when there's nothing drawn.
 
 ## Used by
 
