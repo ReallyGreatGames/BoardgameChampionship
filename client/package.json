@@ -1,13 +1,17 @@
 {
   "name": "boardgame-championship",
   "main": "expo-router/entry",
+  "types": "types/index.d.ts",
   "version": "1.0.0",
   "scripts": {
     "start": "dotenv -e .env.local -- expo start",
     "android": "dotenv -e .env.local -- expo run:android",
     "ios": "dotenv -e .env.local -- expo start --ios",
     "web": "dotenv -e .env.local -- expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "storybook": "cross-env STORYBOOK_ENABLED=true dotenv -e .env.local -- expo start",
+    "storybook:ios": "cross-env STORYBOOK_ENABLED=true dotenv -e .env.local -- expo start --ios",
+    "storybook:android": "cross-env STORYBOOK_ENABLED=true dotenv -e .env.local -- expo run:android"
   },
   "dependencies": {
     "@expo-google-fonts/barlow-condensed": "^0.4.1",
@@ -55,7 +59,20 @@
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.5.1",
     "reanimated-color-picker": "^4.2.0",
-    "zustand": "^5.0.12"
+    "zustand": "^5.0.12",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-community/datetimepicker": "8.4.4",
+    "@react-native-community/slider": "5.0.1",
+    "@gorhom/bottom-sheet": "5.2.14",
+    "cross-env": "10.0.0",
+    "@storybook/addon-ondevice-controls": "10.4.2",
+    "@storybook/addon-ondevice-actions": "10.4.2",
+    "@storybook/react": "10.4.2",
+    "@storybook/react-native": "10.4.2",
+    "@storybook/react-native-theming": "10.4.2",
+    "@storybook/react-native-ui": "10.4.2",
+    "@storybook/react-native-ui-common": "10.4.2",
+    "storybook": "10.4.2"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",

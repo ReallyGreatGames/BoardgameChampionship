@@ -1,3 +1,7 @@
+const {
+  withStorybook,
+} = require('@storybook/react-native/withStorybook');
+
 const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
 
@@ -13,4 +17,4 @@ config.resolver.extraNodeModules = {
   ),
 };
 
-module.exports = config;
+module.exports = withStorybook(config);

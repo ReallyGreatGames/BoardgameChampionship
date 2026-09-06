@@ -1,0 +1,33 @@
+{
+  "projectId": "95444864-2007-41bc-9b4c-54d58916fb0e",
+  "shape": "package",
+  "pkg": "boardgame-championship",
+  "globalName": "BoardgameChampionship",
+  "entry": ".design-sync/entry.ts",
+  "buildCmd": "node .design-sync/gen-types.mjs",
+  "srcDir": "lib/components/ui",
+  "tsconfig": ".design-sync/tsconfig.sync.json",
+  "docsMap": {
+    "DialogProvider": "docs/lib/components/ui/Dialog.md"
+  },
+  "componentSrcMap": {
+    "ThemeProvider": null,
+    "PlayerSelectionCard": null,
+    "ActivityIndicator": null,
+    "Image": null,
+    "Pressable": null,
+    "ScrollView": null,
+    "StyleSheet": null,
+    "Text": null,
+    "TextInput": null,
+    "View": null
+  },
+  "provider": { "component": "ThemeProvider" },
+  "overrides": {
+    "BottomSheet": { "cardMode": "single", "primaryStory": "RoundSettings" },
+    "DialogProvider": { "cardMode": "single", "primaryStory": "DestructiveConfirm" },
+    "PieChart": { "cardMode": "column" }
+  },
+  "extraFonts": [".design-sync/fonts.css"],
+  "readmeHeader": ".design-sync/conventions.md"
+}
