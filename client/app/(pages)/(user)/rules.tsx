@@ -4,22 +4,19 @@ import { RuleList } from "@/lib/components/rules/RuleList";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
-import { router, useLocalSearchParams } from "expo-router";
+import { goBackTo } from "@/lib/utils/navigation";
+import { useLocalSearchParams } from "expo-router";
 import { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 
 export default function RulesPage() {
-  const { gameId } = useLocalSearchParams<{ gameId: string }>();
+  const { gameId, from } = useLocalSearchParams<{ gameId: string; from?: string }>();
   const { user, loading, isAdmin } = useRequireAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const handleBack = () => {
-    if (gameId) {
-      router.replace(`/game?gameId=${gameId}`);
-    } else {
-      router.replace("/");
-    }
+    goBackTo(from ?? (gameId ? `/game?gameId=${gameId}` : "/"));
   };
 
   if (loading || !user) {

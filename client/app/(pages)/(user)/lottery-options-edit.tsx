@@ -16,6 +16,7 @@ import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
 import { validateLotteryConfig } from "@/lib/utils/lottery-draw";
 import { parseOptionsLottery } from "@/lib/utils/options-lottery";
+import { goBackTo, goTo, redirectTo } from "@/lib/utils/navigation";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
@@ -63,10 +64,10 @@ export default function LotteryOptionsEditScreen() {
   );
 
   const backToLottery = () =>
-    router.replace((from as any) ?? `/(pages)/(user)/lottery?gameId=${gameId}`);
+    goBackTo(from ?? `/(pages)/(user)/lottery?gameId=${gameId}`);
 
   if (!isAdmin) {
-    backToLottery();
+    redirectTo(`/(pages)/(user)/lottery?gameId=${gameId}`);
     return null;
   }
 
@@ -115,6 +116,11 @@ function LotteryOptionsEditForm({
   const { t } = useTranslation(["lotteryOptions"]);
   const { confirm } = useDialog();
   const actions = useOptionsLotteryActions();
+
+  const selfHref =
+    `/(pages)/(user)/lottery-options-edit?gameId=${gameId}` +
+    (instance ? `&instanceId=${instance.$id}` : "") +
+    (draft ? `&draft=${draft}` : "");
 
   const [name, setName] = useState(instance?.name ?? "");
   const [pullsPerTable, setPullsPerTable] = useState(String(instance?.pullsPerTable ?? 1));
@@ -387,7 +393,7 @@ function LotteryOptionsEditForm({
               <Pressable
                 style={styles.viewResultsBtn}
                 onPress={() =>
-                  router.push(`/(pages)/(user)/lottery-results?gameId=${gameId}`)
+                  goTo(selfHref, `/(pages)/(user)/lottery-results?gameId=${gameId}`)
                 }
               >
                 <Ionicons name="expand-outline" size={18} color={colors.primary} />

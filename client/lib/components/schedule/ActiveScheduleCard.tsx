@@ -9,6 +9,7 @@ import { Schedule } from "@/lib/models/schedule";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { addMinutesToTime } from "@/lib/utils";
+import { goTo } from "@/lib/utils/navigation";
 
 interface Props {
   item: Schedule;
@@ -70,7 +71,7 @@ export function ActiveScheduleCard({ item }: Props) {
           activeOpacity={0.85}
           onPress={() => {
             if (player?.team && player?.$id) {
-              router.push(`/game?gameId=${item.gameId}&from=/`);
+              goTo("/", `/game?gameId=${item.gameId}&from=/`);
             } else {
               router.push({ pathname: "/(pages)/(team-player)/choose-your-character", params: { gameId: item.gameId } });
             }

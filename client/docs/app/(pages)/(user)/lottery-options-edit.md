@@ -39,7 +39,7 @@ The actual form: name/pullsPerTable fields, the option-row list with add/remove,
 | `tableNumbers` | `number[]` | Every table number for this game, used for "pull for all tables" and to disable Pull when there are no tables yet. |
 | `colors` | `ReturnType<typeof useTheme>["colors"]` | Current theme colors. |
 | `styles` | `ReturnType<typeof makeStyles>` | Shared stylesheet. |
-| `backToLottery` | `() => void` | Navigates back to `from` if present, otherwise the lottery list; used by the back button and after a successful delete. |
+| `backToLottery` | `() => void` | Pops the recorded origin via [`goBackTo`](../../../lib/utils/navigation.md), falling back to the `from` query param and then the lottery list; used by the back button and after a successful delete. The non-admin bounce uses `redirectTo` instead, since a render-phase redirect must not consume a back-history entry. |
 
 ### `updateOption(id: string, patch: Partial<LotteryOption>): void`
 

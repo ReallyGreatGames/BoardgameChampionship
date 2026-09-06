@@ -4,7 +4,7 @@
 
 ## Route
 
-`/results?gameId=...`
+`/results?gameId=...&from=...`
 
 ## Purpose
 
@@ -58,7 +58,7 @@ Returns a copy of `arr` padded with `fill` up to `length` (or truncated if longe
 
 ### `handleBack(): void`
 
-`useCallback` keyed on `[gameId]`. Replaces the route with `/game?gameId=${gameId}` if `gameId` is set, otherwise `/`.
+`useCallback` keyed on `[from, gameId]`. Pops the recorded origin via [`goBackTo`](../../../lib/utils/navigation.md), falling back to the `from` query param and then `/game?gameId=${gameId}` (or `/`). The screen passes its own `selfHref` as the `origin` when opening the signature screen.
 
 ### `makeStyles(colors: ReturnType<typeof useTheme>["colors"]): StyleSheet`
 

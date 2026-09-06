@@ -7,9 +7,10 @@ import { useResultStore } from "@/lib/stores/appwrite/result-store";
 import { inset } from "@/lib/theme/spacing";
 import { ui } from "@/lib/theme/ui";
 import { type } from "@/lib/theme/typography";
+import { goBackTo } from "@/lib/utils/navigation";
 import { Ionicons } from "@expo/vector-icons";
 import { File as FSFile, Paths } from "expo-file-system";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -51,8 +52,9 @@ function buildSvgContent(
 
 export default function SignaturePage() {
   useRequireAuth();
-  const { gameId, place } = useLocalSearchParams<{
+  const { gameId, place, from } = useLocalSearchParams<{
     gameId: string;
+    from?: string;
     place: string;
   }>();
   const { colors } = useTheme();
@@ -141,12 +143,8 @@ export default function SignaturePage() {
   }, []);
 
   const handleBack = useCallback(() => {
-    if (gameId) {
-      router.replace(`/(pages)/(user)/results?gameId=${gameId}`);
-    } else {
-      router.back();
-    }
-  }, [gameId]);
+    goBackTo(from ?? (gameId ? `/(pages)/(user)/results?gameId=${gameId}` : "/"));
+  }, [from, gameId]);
 
   const handleSave = useCallback(async () => {
     if (isEmpty || saving || tableNumber === null) {
@@ -210,11 +208,11 @@ export default function SignaturePage() {
         });
       }
 
-      router.replace(`/(pages)/(user)/results?gameId=${gameId}`);
+      goBackTo(from ?? `/(pages)/(user)/results?gameId=${gameId}`);
     } finally {
       setSaving(false);
     }
-  }, [isEmpty, saving, tableNumber, strokes, canvasDims, placeIdx, gameId, resultStore]);
+  }, [isEmpty, saving, tableNumber, strokes, canvasDims, placeIdx, gameId, from, resultStore]);
 
   const allStrokes = [
     ...strokes,

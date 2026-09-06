@@ -4,7 +4,7 @@
 
 ## Route
 
-`/signature?gameId=...&place=...`
+`/signature?gameId=...&place=...&from=...`
 
 ## Purpose
 
@@ -39,7 +39,7 @@ Serializes every non-empty stroke into one `<path>` element (black, 2.5px, round
 
 ### `handleBack(): void`
 
-`useCallback` keyed on `[gameId]`. Replaces the route with `/(pages)/(user)/results?gameId=${gameId}` if `gameId` is set, otherwise falls back to `router.back()`.
+`useCallback` keyed on `[from, gameId]`. Pops the recorded origin via [`goBackTo`](../../../lib/utils/navigation.md) — the results screen that opened this one — falling back to the `from` query param and then `/(pages)/(user)/results?gameId=${gameId}` (or `/`). `handleSave` ends the same way, so a saved signature and a cancelled one land on the same screen.
 
 ### `handleSave(): Promise<void>`
 

@@ -22,13 +22,13 @@ status, and feature flags), and the table-bell toggle.
 
 | Type | Fields | Meaning |
 | --- | --- | --- |
-| `ActionButton` | `key: string`, `icon: React.ComponentProps<typeof Ionicons>["name"]`, `labelKey: string`, `onPress: (gameId: string) => void`, `requiresActiveGame?: boolean`, `featureFlag?: (typeof FeatureFlagSlugs)[keyof typeof FeatureFlagSlugs]` | Describes one action-grid button: its icon/label, navigation handler, and the two gating conditions (must be the active game / must have a feature flag enabled) evaluated against player and game state. |
+| `ActionButton` | `key: string`, `icon: React.ComponentProps<typeof Ionicons>["name"]`, `labelKey: string`, `onPress: (gameId: string, origin: string) => void`, `requiresActiveGame?: boolean`, `featureFlag?: (typeof FeatureFlagSlugs)[keyof typeof FeatureFlagSlugs]` | Describes one action-grid button: its icon/label, navigation handler, and the two gating conditions (must be the active game / must have a feature flag enabled) evaluated against player and game state. |
 
 ### Module constants
 
 | Constant | Type | Meaning |
 | --- | --- | --- |
-| `ACTION_BUTTONS` | `ActionButton[]` | The four fixed action buttons (lottery, rules, timer, results) with their icons, labels, gating flags, and navigation targets. |
+| `ACTION_BUTTONS` | `ActionButton[]` | The four fixed action buttons (lottery, rules, timer, results) with their icons, labels, gating flags, and navigation targets. Each `onPress` receives the screen's `selfHref` as `origin` and passes it to `goTo`, which records it so the sub-screen's back button returns here. |
 
 ### `formatElapsed(seconds: number): string`
 
@@ -36,11 +36,11 @@ Formats a duration in whole seconds as `MM:SS` (zero-padded). Used for the table
 
 ### `handleBack(): void`
 
-Replaces the route with the `from` query param if present, otherwise `/(pages)/(user)/schedule`.
+Pops the recorded origin via [`goBackTo`](../../../lib/utils/navigation.md), falling back to the `from` query param and then to `/(pages)/(user)/schedule`. As the hub of most flows this screen also builds `selfHref` (`/(pages)/(user)/game?gameId=...`) and passes it as the `origin` argument of [`goTo`](../../../lib/utils/navigation.md) when opening rules, lottery, results or the timer, so each of them returns here.
 
 ### `handleTimerPress(): Promise<void>`
 
-Checks `secureStorage` for previously-saved player colors keyed by `playerColors_{gameId}_{tableNumber}`; if none exist and a `currentTable` is resolved, opens `PlayerColorSetupModal` (`colorSetupVisible`) instead of navigating; otherwise pushes straight to `/(pages)/(user)/timer?gameId=...`. Bound as the "timer" action button's press handler (overriding its plain `onPress` from `ACTION_BUTTONS`).
+Checks `secureStorage` for previously-saved player colors keyed by `playerColors_{gameId}_{tableNumber}`; if none exist and a `currentTable` is resolved, opens `PlayerColorSetupModal` (`colorSetupVisible`) instead of navigating; otherwise goes straight to `/(pages)/(user)/timer?gameId=...` via `goTo`, recording `selfHref` as the origin. Bound as the "timer" action button's press handler (overriding its plain `onPress` from `ACTION_BUTTONS`).
 
 ### `handleSaveSetup(playerIds: (string | null)[], hexColors: string[]): Promise<void>`
 

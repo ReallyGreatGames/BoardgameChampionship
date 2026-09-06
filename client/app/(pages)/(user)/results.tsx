@@ -12,8 +12,9 @@ import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
 import { hasScorePlacementConflict, isValidPlacementCombo } from "@/lib/utils/placements";
 import { teamName } from "@/lib/utils";
+import { goBackTo, goTo } from "@/lib/utils/navigation";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -36,7 +37,7 @@ function padArray<T>(arr: T[], length: number, fill: T): T[] {
 }
 
 export default function ResultsPage() {
-  const { gameId } = useLocalSearchParams<{ gameId: string }>();
+  const { gameId, from } = useLocalSearchParams<{ gameId: string; from?: string }>();
   const { user, loading } = useRequireAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -125,10 +126,11 @@ export default function ResultsPage() {
     }, [existingResult]),
   );
 
+  const selfHref = `/(pages)/(user)/results?gameId=${gameId}`;
+
   const handleBack = useCallback(() => {
-    if (gameId) router.replace(`/game?gameId=${gameId}`);
-    else router.replace("/");
-  }, [gameId]);
+    goBackTo(from ?? (gameId ? `/game?gameId=${gameId}` : "/"));
+  }, [from, gameId]);
 
   const isSubmitted = existingResult?.submitted ?? false;
   const signatureCount = signatureIds.filter(Boolean).length;
@@ -306,9 +308,9 @@ export default function ResultsPage() {
         const saved = await handleSave();
         if (!saved) return;
       }
-      router.push(`/(pages)/(user)/signature?gameId=${gameId}&place=${seat}`);
+      goTo(selfHref, `/(pages)/(user)/signature?gameId=${gameId}&place=${seat}`);
     },
-    [canSave, handleSave, gameId],
+    [canSave, handleSave, gameId, selfHref],
   );
 
   if (loading || !user) return null;

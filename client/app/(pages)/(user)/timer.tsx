@@ -10,8 +10,9 @@ import { useTimerLocalSettings } from "@/lib/hooks/useTimerLocalSettings";
 import { useTimerState } from "@/lib/hooks/useTimerState";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { formatElapsedSeconds } from "@/lib/utils";
+import { goBackTo } from "@/lib/utils/navigation";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { OrientationLock } from "expo-screen-orientation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { StatusBar, StyleSheet, View } from "react-native";
@@ -20,7 +21,7 @@ import { useTranslation } from "react-i18next";
 export default function TimerPage() {
   useRequireAuth();
   const { forceOrientation, unlockOrientation } = useScreenOrientation();
-  const params = useLocalSearchParams<{ gameId?: string }>();
+  const params = useLocalSearchParams<{ gameId?: string; from?: string }>();
 
   const tableNumber = usePlayerTable(params.gameId);
 
@@ -39,6 +40,7 @@ export default function TimerPage() {
     <TimerScreenContent
       key={`${params.gameId ?? "none"}-${tableNumber ?? "loading"}`}
       gameId={params.gameId}
+      from={params.from}
       tableNumber={tableNumber}
     />
   );
@@ -46,9 +48,11 @@ export default function TimerPage() {
 
 function TimerScreenContent({
   gameId,
+  from,
   tableNumber,
 }: {
   gameId: string | undefined;
+  from: string | undefined;
   tableNumber: number | null;
 }) {
   const { colors } = useTheme();
@@ -215,10 +219,11 @@ function TimerScreenContent({
         onCloseTimer={() => {
           setMenuOpen(false);
           handlePause();
-          router.replace(
-            gameId
-              ? `/(pages)/(user)/game?gameId=${gameId}`
-              : "/(pages)/(user)/schedule",
+          goBackTo(
+            from ??
+              (gameId
+                ? `/(pages)/(user)/game?gameId=${gameId}`
+                : "/(pages)/(user)/schedule"),
           );
         }}
         customTimerOpen={customTimerOpen}

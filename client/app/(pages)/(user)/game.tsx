@@ -20,6 +20,7 @@ import { getLotteryPhotosForGame } from "@/lib/utils/lottery";
 import { getOptionsLotteriesForGame, getResultForTable } from "@/lib/utils/options-lottery";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
+import { goBackTo, goTo } from "@/lib/utils/navigation";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -37,7 +38,7 @@ type ActionButton = {
   key: string;
   icon: React.ComponentProps<typeof Ionicons>["name"];
   labelKey: string;
-  onPress: (gameId: string) => void;
+  onPress: (gameId: string, origin: string) => void;
   requiresActiveGame?: boolean;
   featureFlag?: (typeof FeatureFlagSlugs)[keyof typeof FeatureFlagSlugs];
 };
@@ -48,13 +49,14 @@ const ACTION_BUTTONS: ActionButton[] = [
     icon: "shuffle",
     labelKey: "actions.lottery",
     featureFlag: FeatureFlagSlugs.LOTTERY,
-    onPress: (gameId) => router.push(`/(pages)/(user)/lottery?gameId=${gameId}`),
+    onPress: (gameId, origin) =>
+      goTo(origin, `/(pages)/(user)/lottery?gameId=${gameId}`),
   },
   {
     key: "rules",
     icon: "book-outline",
     labelKey: "actions.rules",
-    onPress: (gameId) => router.push(`/rules?gameId=${gameId}`),
+    onPress: (gameId, origin) => goTo(origin, `/rules?gameId=${gameId}`),
   },
   {
     key: "timer",
@@ -62,7 +64,8 @@ const ACTION_BUTTONS: ActionButton[] = [
     labelKey: "actions.timer",
     requiresActiveGame: true,
     featureFlag: FeatureFlagSlugs.TIMER,
-    onPress: (gameId) => router.push(`/(pages)/(user)/timer?gameId=${gameId}`),
+    onPress: (gameId, origin) =>
+      goTo(origin, `/(pages)/(user)/timer?gameId=${gameId}`),
   },
   {
     key: "results",
@@ -70,8 +73,8 @@ const ACTION_BUTTONS: ActionButton[] = [
     labelKey: "actions.results",
     requiresActiveGame: true,
     featureFlag: FeatureFlagSlugs.RESULTS,
-    onPress: (gameId) =>
-      router.push(`/(pages)/(user)/results?gameId=${gameId}`),
+    onPress: (gameId, origin) =>
+      goTo(origin, `/(pages)/(user)/results?gameId=${gameId}`),
   },
 ];
 
@@ -164,17 +167,19 @@ export default function GamePage() {
   }, [bell]);
 
   const handleBack = () => {
-    router.replace((from as any) ?? "/(pages)/(user)/schedule");
+    goBackTo(from ?? "/(pages)/(user)/schedule");
   };
 
   const playerColorsKey = `playerColors_${gameId}_${tableNumber}`;
+
+  const selfHref = `/(pages)/(user)/game?gameId=${gameId}`;
 
   const handleTimerPress = async () => {
     const stored = await getItemAsync(playerColorsKey);
     if (!stored && currentTable) {
       setColorSetupVisible(true);
     } else {
-      router.push(`/(pages)/(user)/timer?gameId=${gameId}`);
+      goTo(selfHref, `/(pages)/(user)/timer?gameId=${gameId}`);
     }
   };
 
@@ -208,7 +213,7 @@ export default function GamePage() {
     }
 
     setColorSetupVisible(false);
-    router.push(`/(pages)/(user)/timer?gameId=${gameId}`);
+    goTo(selfHref, `/(pages)/(user)/timer?gameId=${gameId}`);
   };
 
   async function toggleBell() {
@@ -271,7 +276,7 @@ export default function GamePage() {
                 (requiresActiveGame && !isActiveGame) ||
                 (featureFlag !== undefined && !isFeatureEnabled(featureFlag));
               const press =
-                key === "timer" ? handleTimerPress : () => onPress(gameId);
+                key === "timer" ? handleTimerPress : () => onPress(gameId, selfHref);
               return (
                 <TouchableOpacity
                   key={key}

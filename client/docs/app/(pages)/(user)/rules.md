@@ -4,7 +4,7 @@
 
 ## Route
 
-`/rules?gameId=...`
+`/rules?gameId=...&from=...`
 
 ## Purpose
 
@@ -18,7 +18,7 @@ Thin screen wrapper: back button + [`RuleList`](../../../lib/components/rules/Ru
 
 ### `handleBack(): void`
 
-Navigates back: if `gameId` is present, replaces the route with `/game?gameId=${gameId}` to return to that game's detail screen; otherwise replaces with `/` (home). Used as the `onPress` handler for `BackButton`.
+Pops the recorded origin via [`goBackTo`](../../../lib/utils/navigation.md), so it returns to whatever opened this screen — the game hub *or* the admin schedule modal — with that screen's own params. Falls back to the `from` query param, then `/game?gameId=${gameId}` (or `/` without a `gameId`). Used as the `onPress` handler for `BackButton`.
 
 ### `makeStyles(colors: ReturnType<typeof useTheme>["colors"]): StyleSheet`
 
