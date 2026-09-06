@@ -22,3 +22,4 @@ Appwrite document type `Table` — a table with its assigned players and game.
 - [`lib/import/table-import-service.ts`](../import/table-import-service.md)
 - [`lib/stores/appwrite/table-store.ts`](../stores/appwrite/table-store.md)
 - [`lib/utils/statistics.ts`](../utils/statistics.md)
+- [`lib/hooks/useParticipantOverview.ts`](../hooks/useParticipantOverview.md)

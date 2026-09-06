@@ -12,6 +12,7 @@ part of the app.
 |---|---|
 | [admin/](admin/README.md) | Admin dashboard tabs (results delegated to `results/`, plus rankings, statistics, import, feature flags, tournament settings) |
 | [game/](game/README.md) | The current player's table-seating widget |
+| [home/](home/README.md) | The participant start page: hero, running match, own score |
 | [onboarding/](onboarding/README.md) | Team/player picker, welcome screen, seat/color setup |
 | [results/](results/README.md) | Result entry, review, and signatures |
 | [rules/](rules/README.md) | Per-game rule list + edit modal |

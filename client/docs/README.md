@@ -33,6 +33,7 @@ knowing about).
 
 | If you're working on... | Start at |
 |---|---|
+| The participant start page (home) | [`app/index.tsx`](app/index.md), then [`lib/components/home/`](lib/components/home/README.md) and [`useParticipantOverview`](lib/hooks/useParticipantOverview.md) |
 | The interactive timer | [`useTimerState`](lib/hooks/useTimerState.md), then [`app/(pages)/(user)/timer.tsx`](app/(pages)/(user)/timer.md) |
 | Realtime data sync | [`lib/stores/real-time-store.ts`](lib/stores/real-time-store.md) |
 | Result entry / signatures | [`lib/components/results/`](lib/components/results/README.md) |

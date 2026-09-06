@@ -7,6 +7,11 @@
 Home-screen card for the currently active [`Schedule`](../../models/schedule.md)
 item, with a "go to game" button if it has an associated game.
 
+Since the home screen became the participant start page, this is the
+*fallback* card: it renders only when the active item isn't a game the
+player is seated for (a break, a briefing), where
+[`NowPlayingCard`](../home/NowPlayingCard.md) takes over.
+
 ## Exports
 
 | Export | Signature | Purpose |

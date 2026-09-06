@@ -27,5 +27,6 @@ Zustand store for the `results` collection ([`Result`](../../models/result.md)).
 - [`lib/components/admin/StatisticsTab.tsx`](../../components/admin/StatisticsTab.md)
 - [`lib/components/results/ResultsAdminTab.tsx`](../../components/results/ResultsAdminTab.md)
 - [`lib/components/schedule/Schedule.tsx`](../../components/schedule/Schedule.md)
+- [`lib/hooks/useParticipantOverview.ts`](../../hooks/useParticipantOverview.md)
 - [`lib/bootstrap/RealTimeStoreProvider.tsx`](../../bootstrap/RealTimeStoreProvider.md)
 - Screens: [`results.tsx`](../../../app/(pages)/(user)/results.md), [`signature.tsx`](../../../app/(pages)/(user)/signature.md)

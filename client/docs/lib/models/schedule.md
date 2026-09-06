@@ -29,4 +29,5 @@ Appwrite document type `Schedule` — one item in the tournament schedule.
 - [`lib/components/schedule/Schedule.tsx`](../components/schedule/Schedule.md)
 - [`lib/components/schedule/ScheduleItemModal.tsx`](../components/schedule/ScheduleItemModal.md)
 - [`lib/components/schedule/UpcomingList.tsx`](../components/schedule/UpcomingList.md)
+- [`lib/hooks/useParticipantOverview.ts`](../hooks/useParticipantOverview.md), [`lib/hooks/useRoundCountdown.ts`](../hooks/useRoundCountdown.md)
 - [`lib/stores/appwrite/schedule-store.ts`](../stores/appwrite/schedule-store.md)

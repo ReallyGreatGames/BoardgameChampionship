@@ -59,5 +59,5 @@ resolved locale sticks until a new active tournament sets one.
 
 - [`lib/auth.tsx`](../auth.md) — the forced-logout-when-inactive effect
 - [`app/(pages)/login.tsx`](../../app/(pages)/login.md), [`app/_layout.tsx`](../../app/_layout.md)
-- [`lib/components/onboarding/WelcomeScreen.tsx`](../components/onboarding/WelcomeScreen.md)
+- [`lib/components/onboarding/WelcomeScreen.tsx`](../components/onboarding/WelcomeScreen.md), [`lib/components/home/ParticipantHero.tsx`](../components/home/ParticipantHero.md)
 - [`lib/bootstrap/BootstrapProvider.tsx`](BootstrapProvider.md)

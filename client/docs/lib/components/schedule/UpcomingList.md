@@ -7,6 +7,10 @@
 Home-screen list of upcoming [`Schedule`](../../models/schedule.md) items
 (title + start time), with the first entry styled more prominently than the rest.
 
+On the participant start page it renders only while no match is running —
+mid-round, [`PlayerGameList`](../home/PlayerGameList.md) already shows what
+is still to come.
+
 ## Exports
 
 | Export | Signature | Purpose |

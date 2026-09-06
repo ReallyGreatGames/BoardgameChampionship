@@ -28,5 +28,6 @@ Zustand store for the `schedule` collection ([`Schedule`](../../models/schedule.
 - [`lib/components/admin/RankingsTab.tsx`](../../components/admin/RankingsTab.md), [`StatisticsTab.tsx`](../../components/admin/StatisticsTab.md), [`ImportRules.tsx`](../../components/admin/ImportRules.md)
 - [`lib/components/results/ResultsAdminTab.tsx`](../../components/results/ResultsAdminTab.md)
 - [`lib/components/ui/PlayerSelectionCard.tsx`](../../components/ui/PlayerSelectionCard.md)
+- [`lib/hooks/useParticipantOverview.ts`](../../hooks/useParticipantOverview.md)
 - [`lib/bootstrap/RealTimeStoreProvider.tsx`](../../bootstrap/RealTimeStoreProvider.md)
 - Screens: [`game.tsx`](../../../app/(pages)/(user)/game.md), [`results.tsx`](../../../app/(pages)/(user)/results.md), [`app/index.tsx`](../../../app/index.md)

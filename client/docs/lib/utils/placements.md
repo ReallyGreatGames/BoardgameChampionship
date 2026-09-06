@@ -76,4 +76,5 @@ placements (element-wise comparison of the sorted placement lists).
 
 - [`app/(pages)/(user)/results.tsx`](../../app/(pages)/(user)/results.md)
 - [`lib/components/admin/RankingsTab.tsx`](../components/admin/RankingsTab.md)
+- [`lib/hooks/useParticipantOverview.ts`](../hooks/useParticipantOverview.md)
 - [`lib/components/results/ResultsAdminTab.tsx`](../components/results/ResultsAdminTab.md)
