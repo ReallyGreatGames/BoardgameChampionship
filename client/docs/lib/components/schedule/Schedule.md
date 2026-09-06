@@ -106,8 +106,10 @@ later one finished).
 Renders both [`ScheduleItemModal`](ScheduleItemModal.md) (add/edit an
 item) and [`TimerSettingsModal`](TimerSettingsModal.md) (opened via the
 item modal's "timer" action) as children, wiring their save callbacks back
-into this component's own store calls. `onRules` pushes
-`/rules?gameId=...` and closes the modal; `onLotteries` pushes
+into this component's own store calls. `onRules` opens
+`/rules?gameId=...` through `goTo` with the schedule recorded as the origin
+(so the rules screen's back button returns to the schedule rather than a
+game hub the admin never opened) and closes the modal; `onLotteries` pushes
 `/(pages)/(user)/lottery-add?gameId=...&from=/(pages)/(user)/schedule`
 (URL-encoded) and closes the modal — the same screen tapping the "+"
 button on [`lottery.tsx`](../../../app/(pages)/(user)/lottery.md)

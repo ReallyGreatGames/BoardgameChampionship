@@ -345,13 +345,17 @@ const translations = {
     playerPlaceholder: "Player",
     playerValue: "Player {n}",
     scorePlaceholder: "Score",
+    colScore: "Score",
+    colPlace: "Place",
+    colSignature: "Sign",
     note: "Note",
     notePlaceholder: "Add a note...",
     save: "Save",
     submit: "Submit",
     submitted: "Submitted",
-    hintNote: "A note is required before submitting.",
-    hintSignatures: "At least 3 signatures required to submit.",
+    hintSignatures: "All 4 signatures are required to submit.",
+    hintSignaturesReset:
+      "A placement or score was changed — all signatures were reset and must be collected again.",
     confirmSubmit: {
       title: "Submit Results",
       message: "Submit the results? This cannot be undone.",
@@ -368,12 +372,13 @@ const translations = {
     tableHeader: "Table {n}",
     notActiveGame: "Results can only be edited for the currently active game.",
     sigRequiredTitle: "Signatures Required",
-    sigRequiredMessage: "Please collect at least 3 signatures from your fellow players using the signature button before submitting.",
+    sigRequiredMessage:
+      "Please collect all 4 signatures from your fellow players using the signature button before submitting.",
     warnScoreConflict: "Scores do not match the placements.",
     warnPlacementInvalid: "Invalid placement combination.",
     submitBlockedTitle: "Cannot submit yet",
     submitBlockedMessage:
-      "Your result was saved. To submit, at least 3 signatures are still required.",
+      "Your result was saved. To submit, all 4 signatures are still required.",
     submitBlockedOk: "OK",
   },
   scoreOverview: {
@@ -554,6 +559,14 @@ const translations = {
       title: "Re-pull results?",
       message: "This overwrites every table's current result.",
       confirm: "Pull",
+      cancel: "Cancel",
+    },
+    clearResults: "Delete Draws",
+    clearResultsConfirm: {
+      title: "Delete draws",
+      message:
+        "This deletes every table's drawn result but keeps the lottery and its options. This can't be undone.",
+      confirm: "Delete Draws",
       cancel: "Cancel",
     },
     deleteConfirm: {

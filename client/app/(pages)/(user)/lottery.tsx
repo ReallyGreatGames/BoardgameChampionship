@@ -14,9 +14,10 @@ import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
 import { getLotteryPhotosForGame } from "@/lib/utils/lottery";
 import { getOptionsLotteriesForGame, getResultForTable } from "@/lib/utils/options-lottery";
+import { goBackTo, goTo } from "@/lib/utils/navigation";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -39,6 +40,7 @@ function OptionsLotterySection({
   playerTable,
   isAdmin,
   gameId,
+  origin,
   styles,
   colors,
   t,
@@ -47,6 +49,7 @@ function OptionsLotterySection({
   playerTable: number | null;
   isAdmin: boolean;
   gameId: string;
+  origin: string;
   styles: ReturnType<typeof makeStyles>;
   colors: ReturnType<typeof useTheme>["colors"];
   t: (key: string, opts?: any) => string;
@@ -86,7 +89,8 @@ function OptionsLotterySection({
   return (
     <Pressable
       onPress={() =>
-        router.push(
+        goTo(
+          origin,
           `/(pages)/(user)/lottery-options-edit?gameId=${gameId}&instanceId=${instance.$id}`,
         )
       }
@@ -98,7 +102,7 @@ function OptionsLotterySection({
 
 export default function LotteryScreen() {
   useRequireAuth();
-  const { gameId } = useLocalSearchParams<{ gameId: string }>();
+  const { gameId, from } = useLocalSearchParams<{ gameId: string; from?: string }>();
   const { isAdmin } = useAuth();
   const { colors } = useTheme();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
@@ -127,12 +131,10 @@ export default function LotteryScreen() {
     return isAdmin ? instances : instances.filter((instance) => instance.results.length > 0);
   }, [optionsLotteryRows, gameId, isAdmin]);
 
+  const selfHref = `/(pages)/(user)/lottery?gameId=${gameId}`;
+
   const handleBack = () => {
-    if (gameId) {
-      router.replace(`/game?gameId=${gameId}`);
-    } else {
-      router.replace("/");
-    }
+    goBackTo(from ?? (gameId ? `/game?gameId=${gameId}` : "/"));
   };
 
   const handleDelete = async (fileId: string) => {
@@ -155,6 +157,7 @@ export default function LotteryScreen() {
         <OptionsLotterySection
           key={instance.$id}
           instance={instance}
+          origin={selfHref}
           playerTable={playerTable}
           isAdmin={isAdmin}
           gameId={gameId}
@@ -173,7 +176,9 @@ export default function LotteryScreen() {
         {isAdmin && (
           <Pressable
             style={styles.addBtn}
-            onPress={() => router.push(`/(pages)/(user)/lottery-add?gameId=${gameId}`)}
+            onPress={() =>
+              goTo(selfHref, `/(pages)/(user)/lottery-add?gameId=${gameId}`)
+            }
             hitSlop={8}
           >
             <Ionicons name="add" size={22} color={colors.primary} />

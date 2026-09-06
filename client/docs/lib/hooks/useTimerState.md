@@ -379,6 +379,34 @@ duplicate is created; if an already-acknowledged bell exists, it's re-rung
 (see [`table-bell-store.ts`](../stores/appwrite/table-bell-store.md)) only
 allows one row per table anyway.
 
+#### The bell rings on a *crossing* into overtime, not on seeing overtime
+
+`bellFiredRef` is a per-mount ref, so a seat that is *already* in overtime
+the first time this client hydrates it is seeded as already-fired (in the
+hydration effect, gated on that seat's `isFirstHydration`) instead of being
+treated as a fresh timeout.
+
+Without that seeding the bell was effectively unstoppable, because
+rediscovering an old expiry looks identical to a new one:
+
+- an admin dismisses the locked bell → the row is gone → the next client to
+  mount the timer screen for that table sees `inOvertime` with a blank
+  `bellFiredRef` and immediately re-creates it, locked, so players still
+  can't clear it;
+- an admin acknowledges the bell → the "already acknowledged, re-ring it"
+  branch fires on the next mount and writes `acknowledgeTime: null` +
+  `locked: true` + a fresh `startTime`, silently undoing the
+  acknowledgement.
+
+With four players plus admins moving between the game and timer screens,
+those remounts happen constantly, so the bell kept resurrecting itself.
+
+The tradeoff: if every client leaves the timer screen while a seat is
+running and the seat crosses zero unobserved,
+[`reconcileRoundAndPool`](../utils.md) surfaces the expiry on the next
+hydration but no bell is auto-rung for it — the table can still ring
+manually. Auto-ringing that case is what made a dismissed bell come back.
+
 ## Used by
 
 - [`app/(pages)/(user)/timer.tsx`](../../app/(pages)/(user)/timer.md)

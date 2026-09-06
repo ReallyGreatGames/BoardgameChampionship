@@ -29,7 +29,9 @@ player is seated for (a break, a briefing), where
 Pressing "go to game" routes to `/game?gameId=...` if the current player
 already has a team assigned, otherwise to
 [`choose-your-character`](../../../app/(pages)/(team-player)/choose-your-character.md)
-first (passing the `gameId` through as a param). The displayed end time is
+first (passing the `gameId` through as a param). The game route is opened
+with [`goTo`](../../utils/navigation.md), recording `/` as the origin so the
+game screen's back button returns to the home screen. The displayed end time is
 computed inline via `addMinutesToTime(item.startTimePlanned, item.durationPlanned)` —
 not stored, always derived from the planned start/duration.
 

@@ -27,11 +27,12 @@ choose "Photos" or "Options" for what kind of lottery to add.
 
 ### `backToLottery(): void`
 
-Replaces the route with the `from` query param if present, otherwise
-`/(pages)/(user)/lottery?gameId=${gameId}` (the lottery list for the
-current game). Used after a non-admin bounce, after a photo upload
-resolves, and as the fallback for the back button — see "How it works" for
-why `from` exists.
+Pops the recorded origin via [`goBackTo`](../../../lib/utils/navigation.md), falling back to the `from`
+query param and then to `/(pages)/(user)/lottery?gameId=${gameId}` (the
+lottery list for the current game). Used after a photo upload resolves and
+as the fallback for the back button — see "How it works" for why `from`
+exists. The non-admin bounce uses `redirectTo` instead, since a
+render-phase redirect must not consume a back-history entry.
 
 ### `handleBack(): void`
 

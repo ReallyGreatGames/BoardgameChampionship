@@ -345,13 +345,17 @@ const translations = {
     playerPlaceholder: "Spieler:in",
     playerValue: "Spieler:in {n}",
     scorePlaceholder: "Punkte",
+    colScore: "Punkte",
+    colPlace: "Platz",
+    colSignature: "Sign.",
     note: "Notiz",
     notePlaceholder: "Notiz hinzufügen...",
     save: "Speichern",
     submit: "Einreichen",
     submitted: "Eingereicht",
-    hintNote: "Eine Notiz ist zum Einreichen erforderlich.",
-    hintSignatures: "Mindestens 3 Unterschriften zum Einreichen erforderlich.",
+    hintSignatures: "Alle 4 Unterschriften sind zum Einreichen erforderlich.",
+    hintSignaturesReset:
+      "Platzierung oder Punkte wurden geändert — alle Unterschriften wurden zurückgesetzt und müssen erneut eingeholt werden.",
     confirmSubmit: {
       title: "Ergebnisse einreichen",
       message:
@@ -370,12 +374,13 @@ const translations = {
     notActiveGame:
       "Ergebnisse können nur für das aktive Spiel bearbeitet werden.",
     sigRequiredTitle: "Unterschriften erforderlich",
-    sigRequiredMessage: "Bitte sammle vor dem Einreichen mindestens 3 Unterschriften über den Unterschriften-Button.",
+    sigRequiredMessage:
+      "Bitte sammle vor dem Einreichen alle 4 Unterschriften über den Unterschriften-Button.",
     warnScoreConflict: "Punkte stimmen nicht mit der Platzierung überein.",
     warnPlacementInvalid: "Ungültige Platzierungskombination.",
     submitBlockedTitle: "Noch nicht einreichbar",
     submitBlockedMessage:
-      "Zum Einreichen werden noch mindestens 3 Unterschriften benötigt.",
+      "Zum Einreichen werden noch alle 4 Unterschriften benötigt.",
     submitBlockedOk: "OK",
   },
   scoreOverview: {
@@ -557,6 +562,14 @@ const translations = {
       title: "Ergebnisse neu ziehen?",
       message: "Dies überschreibt das aktuelle Ergebnis jedes Tisches.",
       confirm: "Ziehen",
+      cancel: "Abbrechen",
+    },
+    clearResults: "Ziehungen löschen",
+    clearResultsConfirm: {
+      title: "Ziehungen löschen",
+      message:
+        "Dies löscht das gezogene Ergebnis jedes Tisches, behält aber die Auslosung und ihre Optionen. Das kann nicht rückgängig gemacht werden.",
+      confirm: "Ziehungen löschen",
       cancel: "Abbrechen",
     },
     deleteConfirm: {

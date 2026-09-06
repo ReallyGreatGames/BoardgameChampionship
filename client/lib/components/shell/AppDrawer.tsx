@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
+import { resetBackHistory } from "@/lib/utils/navigation";
 
 function DrawerHeader() {
   const { t } = useTranslation(["menu"]);
@@ -24,6 +25,7 @@ function DrawerHeader() {
       <Text style={styles.headerTitle}>{t("title")}</Text>
       <Pressable
         onPress={() => {
+          resetBackHistory();
           router.push("/(pages)/info");
         }}
         hitSlop={12}
@@ -57,7 +59,10 @@ function DrawerFooter() {
       <View style={styles.footerActions}>
         <Pressable
           style={styles.iconButton}
-          onPress={() => router.push("/(pages)/settings")}
+          onPress={() => {
+            resetBackHistory();
+            router.push("/(pages)/settings");
+          }}
           hitSlop={8}
         >
           <Ionicons name="settings-outline" size={22} color={colors.primary} />
@@ -163,7 +168,10 @@ export function AppDrawer(props: DrawerContentComponentProps) {
                   )
             }
             focused={pathname === entry.route}
-            onPress={() => router.push(entry.route as any)}
+            onPress={() => {
+              resetBackHistory();
+              router.push(entry.route as any);
+            }}
             activeTintColor={colors.primary}
             inactiveTintColor={colors.textMuted}
             labelStyle={{ color: colors.text }}

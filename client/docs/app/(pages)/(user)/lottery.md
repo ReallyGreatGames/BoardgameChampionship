@@ -4,7 +4,7 @@
 
 ## Route
 
-`/lottery?gameId=...`
+`/lottery?gameId=...&from=...`
 
 ## Purpose
 
@@ -40,7 +40,7 @@ Renders one options-lottery instance's card: its `name`, and either "not pulled 
 
 ### `handleBack(): void`
 
-Replaces the route with `/game?gameId=${gameId}` if `gameId` is set, otherwise `/` — returns to the originating game screen or home.
+Pops the recorded origin via [`goBackTo`](../../../lib/utils/navigation.md), returning to whichever screen opened the lottery list. Falls back to the `from` query param, then `/game?gameId=${gameId}` (or `/`). The screen also builds its own `selfHref` and passes it as the `origin` when opening `lottery-add` or the options editor (the latter through `OptionsLotterySection`'s `origin` prop).
 
 ### `handleDelete(fileId: string): Promise<void>`
 

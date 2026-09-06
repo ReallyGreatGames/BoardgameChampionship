@@ -4,7 +4,7 @@
 
 ## Route
 
-`/timer?gameId=...`
+`/timer?gameId=...&from=...`
 
 ## Purpose
 
@@ -85,6 +85,12 @@ A `useEffect` keyed on `[bell]` resets `elapsedSeconds` to `0` and clears any ru
 "Close timer" force-pauses every seat
 ([`handlePause`](../../../lib/hooks/useTimerState.md)) before navigating
 away, so nothing keeps ticking unattended once nobody's looking at this device.
+It then pops the recorded origin via
+[`goBackTo`](../../../lib/utils/navigation.md), returning to the screen that
+opened the timer with that screen's own params, and falls back to the `from`
+route param and then `/(pages)/(user)/game?gameId=...` (or the schedule,
+with no `gameId`). `from` is a route param on `TimerPage`, passed down to
+`TimerScreenContent` as a prop.
 
 ## Related
 

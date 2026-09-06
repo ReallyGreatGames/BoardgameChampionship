@@ -20,6 +20,10 @@ Appwrite document type `Result` — the result of one table round of a game.
 | `signatureIds?` | `string[]` | Per-seat signature file id (from Appwrite storage), same seat-position indexing as `placements`; a blank/missing entry means that seat hasn't signed yet |
 | `submitted` | `boolean` | Whether the result was finally submitted |
 
+### `NO_SIGNATURE`
+
+`const NO_SIGNATURE = "none"` — the route-param sentinel meaning "this seat has no signature". [`results.tsx`](../../app/(pages)/(user)/results.md) sends it as `?sig=` when opening the signature pad for an unsigned seat, and [`signature.tsx`](../../app/(pages)/(user)/signature.md) reads it as "start blank". It exists because an empty param value is indistinguishable from an absent one, and the difference matters: absent means "fall back to the stored `signatureIds`", which can be momentarily stale.
+
 All three per-seat arrays are indexed by seat position (0-based, table has a fixed `PLAYER_COUNT` of 4 seats — see `lib/utils/placements.ts`, `lib/utils/statistics.ts`), not by finishing rank; entry `i` in every array describes the same seat, the same seat `i` that indexes [`Table.players`](table.md).
 
 ## Used by
@@ -30,3 +34,5 @@ All three per-seat arrays are indexed by seat position (0-based, table has a fix
 - [`lib/stores/appwrite/result-store.ts`](../stores/appwrite/result-store.md)
 - [`lib/utils/statistics.ts`](../utils/statistics.md)
 - [`lib/hooks/useParticipantOverview.ts`](../hooks/useParticipantOverview.md)
+- [`app/(pages)/(user)/results.tsx`](../../app/(pages)/(user)/results.md) — `NO_SIGNATURE`
+- [`app/(pages)/(user)/signature.tsx`](../../app/(pages)/(user)/signature.md) — `NO_SIGNATURE`

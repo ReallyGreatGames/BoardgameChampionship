@@ -4,7 +4,7 @@
 
 ## Route
 
-`/lottery-results?gameId=...`
+`/lottery-results?gameId=...&from=...`
 
 ## Purpose
 
@@ -40,7 +40,7 @@ Resolves an array of pulled option ids against `instance.options` into two displ
 
 ### `handleClose(): void`
 
-Replaces the route with `/(pages)/(user)/lottery?gameId=${gameId}` (the game's lottery list) — a game-scoped "close" destination, since this page no longer belongs to any single instance. Wired to the header's close button, and also used for the non-admin bounce.
+Pops the recorded origin via [`goBackTo`](../../../lib/utils/navigation.md), returning to the options editor that opened this board. Falls back to the `from` query param and then `/(pages)/(user)/lottery?gameId=${gameId}` (the game's lottery list) — a game-scoped destination, since this page no longer belongs to any single instance. Wired to the header's close button. The non-admin bounce uses `redirectTo` instead, since a render-phase redirect must not consume a back-history entry.
 
 ### `makeStyles(colors: ReturnType<typeof useTheme>["colors"], cardWidth: number): StyleSheet`
 

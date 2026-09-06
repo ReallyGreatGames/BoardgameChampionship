@@ -7,8 +7,9 @@ import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
+import { goBackTo, goTo, redirectTo } from "@/lib/utils/navigation";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
@@ -27,7 +28,7 @@ export default function LotteryAddScreen() {
   const [selectedType, setSelectedType] = useState<LotteryType | null>(null);
 
   const backToLottery = () =>
-    router.replace((from as any) ?? `/(pages)/(user)/lottery?gameId=${gameId}`);
+    goBackTo(from ?? `/(pages)/(user)/lottery?gameId=${gameId}`);
 
   const handleBack = () => {
     if (selectedType) {
@@ -38,7 +39,7 @@ export default function LotteryAddScreen() {
   };
 
   if (!isAdmin) {
-    backToLottery();
+    redirectTo(`/(pages)/(user)/lottery?gameId=${gameId}`);
     return null;
   }
 
@@ -67,9 +68,9 @@ export default function LotteryAddScreen() {
           <Pressable
             style={styles.tile}
             onPress={() =>
-              router.push(
-                (`/(pages)/(user)/lottery-options-edit?gameId=${gameId}&draft=${ID.unique()}` +
-                  (from ? `&from=${encodeURIComponent(from)}` : "")) as any,
+              goTo(
+                `/(pages)/(user)/lottery-add?gameId=${gameId}`,
+                `/(pages)/(user)/lottery-options-edit?gameId=${gameId}&draft=${ID.unique()}`,
               )
             }
           >
