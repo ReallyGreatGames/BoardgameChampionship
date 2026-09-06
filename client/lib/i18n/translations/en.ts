@@ -126,6 +126,7 @@ const translations = {
     leftInRound: "left in this round",
     overRoundTime: "over the planned round time",
     openMatch: "Open match",
+    viewSchedule: "View schedule",
     myResults: "My results so far",
     points: "points",
     afterGames: "after {{played}} of {{total}} games",

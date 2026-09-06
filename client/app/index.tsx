@@ -11,6 +11,7 @@ import { ParticipantHero } from "@/lib/components/home/ParticipantHero";
 import { PlayerGameList } from "@/lib/components/home/PlayerGameList";
 import { PlayerScoreSummary } from "@/lib/components/home/PlayerScoreSummary";
 import { UpcomingList } from "@/lib/components/schedule/UpcomingList";
+import { Button } from "@/lib/components/ui/Button";
 import { WelcomeScreen } from "@/lib/components/onboarding/WelcomeScreen";
 import { useParticipantOverview } from "@/lib/hooks/useParticipantOverview";
 import { useRouter } from "../lib/routing/useRouter";
@@ -101,6 +102,12 @@ export default function Index() {
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>{t("nowPlaying")}</Text>
             <NowPlayingCard match={currentMatch} />
+            <Button
+              label={t("viewSchedule")}
+              icon="calendar-outline"
+              variant="secondary"
+              onPress={() => navigate("/(pages)/(user)/schedule")}
+            />
           </View>
         )}
 

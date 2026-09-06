@@ -126,6 +126,7 @@ const translations = {
     leftInRound: "in dieser Runde übrig",
     overRoundTime: "über der geplanten Rundenzeit",
     openMatch: "Partie öffnen",
+    viewSchedule: "Zeitplan ansehen",
     myResults: "Meine bisherigen Ergebnisse",
     points: "Punkte",
     afterGames: "nach {{played}} von {{total}} Spielen",
