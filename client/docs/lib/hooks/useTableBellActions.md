@@ -19,7 +19,7 @@ track which single bell is mid-mutation. Returns an object with:
 
 | Property | Signature | Meaning |
 |---|---|---|
-| `canDelete` | `(bell: TableBell) => boolean` | `true` if `bell` can be dismissed by the current user: unlocked bells can always be dismissed, locked bells only by an admin (`!bell.locked \|\| isAdmin`). |
+| `canDelete` | `(bell: TableBell) => boolean` | `true` if `bell` can be dismissed by the current user: unlocked bells can always be dismissed, locked bells only by an admin (`!bell.locked \|\| isAdmin`). The `locked` flag is set by [`useTimerState`](useTimerState.md) when a seat times out and is never cleared again — this hook only reads it, so a locked bell stays admin-only until an admin dismisses it. |
 | `ring` | `(table: number, opts?: { locked?: boolean; reason?: string }, confirmOpts?: DialogOptions) => Promise<boolean>` | Creates a new bell for `table` with `startTime` set to now, plus any `locked`/`reason` passed in `opts`. If `confirmOpts` is given, shows a confirm dialog first and bails out (returning `false`) if the user declines; otherwise creates the bell and returns `true`. |
 | `dismiss` | `(bell: TableBell, confirmOpts?: DialogOptions) => Promise<boolean>` | Deletes `bell`. Returns `false` immediately (no dialog, no delete) if `canDelete(bell)` is `false`. Otherwise optionally confirms, then deletes, setting `loadingId` to `bell.$id` for the duration so `isLoadingBell` reflects it, and clearing it in a `finally` even if the delete throws. |
 | `acknowledge` | `(bell: TableBell, confirmOpts?: DialogOptions) => Promise<boolean>` | Sets `bell.acknowledgeTime` to now via a store update. Optionally confirms first; tracks `loadingId` the same way as `dismiss`. |
