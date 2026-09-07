@@ -89,6 +89,7 @@ function AppNavigator() {
         options={{
           drawerLabel: t("entries.schedule"),
           title: t("entries.schedule"),
+          headerShown: false,
         }}
       />
       <Drawer.Screen

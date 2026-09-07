@@ -48,5 +48,5 @@ first, so the card's own border isn't doubled at the top edge.
 
 ## Related
 
-- [`Table.tsx`](Table.md) — the compact seating variant used by [`Schedule`](../schedule/Schedule.md)
+- [`Table.tsx`](Table.md) — the compact seating variant used by the [schedule](../schedule/README.md)
 - [`lib/models/table.ts`](../../models/table.md), [`player.ts`](../../models/player.md), [`team.ts`](../../models/team.md)

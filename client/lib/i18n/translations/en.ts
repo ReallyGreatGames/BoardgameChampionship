@@ -622,6 +622,25 @@ const translations = {
   components: {
     schedule: {
       title: "Schedule",
+      adminBadge: "Admin",
+      itemCount_one: "{{count}} item",
+      itemCount_other: "{{count}} items",
+      runningNow: "Running now",
+      upcoming: "Up next",
+      doneSection: "Done · {{count}}",
+      noUpcomingItems: "Nothing else scheduled.",
+      durationMinutes: "{{minutes}} min",
+      remaining: "{{minutes}} min left",
+      overtime: "Time is up",
+      actions: {
+        moveUp: "Move up",
+        moveDown: "Move down",
+        start: "Start",
+        startNext: "Start next",
+        restart: "Restart",
+        edit: "Edit",
+        delete: "Delete",
+      },
       goToGameButton: "Go to Game",
       addItem: "Add Schedule Item",
       confirmDelete: {

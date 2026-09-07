@@ -29,7 +29,8 @@ widget, not a general table browser.
 
 ## Used by
 
-- [`lib/components/schedule/Schedule.tsx`](../schedule/Schedule.md) — inside an expanded schedule item
+- [`lib/components/schedule/ScheduleRow.tsx`](../schedule/ScheduleRow.md) — inside an expanded schedule entry
+- [`lib/components/schedule/RunningNowCard.tsx`](../schedule/RunningNowCard.md) — inside the running item's card
 
 ## Related
 

@@ -47,7 +47,7 @@ deep-linking rather than the drawer menu itself, e.g. timer/results/
 signature/lottery/legal). The drawer's own content is rendered by
 [`AppDrawer`](../lib/components/shell/AppDrawer.md).
 
-A few screens set `headerShown: false` because they render their own header instead of the navigator's: `participants` ([`ParticipantListHeader`](../lib/components/participants/ParticipantListHeader.md)), `game` ([`GameHeader`](../lib/components/game/GameHeader.md)), plus the full-screen `timer` and `lottery-results`.
+A few screens set `headerShown: false` because they render their own header instead of the navigator's: `participants` ([`ParticipantListHeader`](../lib/components/participants/ParticipantListHeader.md)), `game` ([`GameHeader`](../lib/components/game/GameHeader.md)), `schedule` ([`ScheduleHeader`](../lib/components/schedule/ScheduleHeader.md)), plus the full-screen `timer` and `lottery-results`.
 
 `screenOptions` is memoized (`useMemo`, deps `[colors]`) because it's passed as a single object to `<Drawer>` on every render; recomputing it only when the theme's colors change avoids handing the navigator a new options object (and triggering its internal re-render machinery) on every unrelated re-render of `AppNavigator`.
 

@@ -625,6 +625,25 @@ const translations = {
   components: {
     schedule: {
       title: "Zeitplan",
+      adminBadge: "Admin",
+      itemCount_one: "{{count}} Punkt",
+      itemCount_other: "{{count}} Punkte",
+      runningNow: "Läuft jetzt",
+      upcoming: "Als nächstes",
+      doneSection: "Erledigt · {{count}}",
+      noUpcomingItems: "Keine weiteren Punkte geplant.",
+      durationMinutes: "{{minutes}} min",
+      remaining: "noch {{minutes}} min",
+      overtime: "Zeit abgelaufen",
+      actions: {
+        moveUp: "Nach oben",
+        moveDown: "Nach unten",
+        start: "Starten",
+        startNext: "Nächsten starten",
+        restart: "Neu starten",
+        edit: "Bearbeiten",
+        delete: "Löschen",
+      },
       goToGameButton: "Zum Spiel",
       addItem: "Zeitplan-Eintrag hinzufügen",
       confirmDelete: {

@@ -55,6 +55,7 @@ the label and the overtime flag disagreeing.
 ## Used by
 
 - [`lib/components/home/NowPlayingCard.tsx`](../components/home/NowPlayingCard.md)
+- [`lib/components/schedule/RunningNowCard.tsx`](../components/schedule/RunningNowCard.md)
 
 ## Related
 

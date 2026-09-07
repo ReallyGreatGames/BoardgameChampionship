@@ -139,6 +139,8 @@ dashboard so the two can't drift apart.
 [`TableCard.tsx`](components/results/TableCard.md),
 [`ActiveScheduleCard.tsx`](components/schedule/ActiveScheduleCard.md),
 [`Schedule.tsx`](components/schedule/Schedule.md),
+[`ScheduleRow.tsx`](components/schedule/ScheduleRow.md),
+[`RunningNowCard.tsx`](components/schedule/RunningNowCard.md),
 [`lib/components/home/*`](components/home/README.md) (`formatPoints`) and
 [`ParticipantHero.tsx`](components/home/ParticipantHero.md) (`teamName`),
 [`useParticipantOverview.ts`](hooks/useParticipantOverview.md) (`resolveGameId`),
