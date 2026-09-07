@@ -31,7 +31,7 @@ type AuthContextType = {
   isPinVerified: boolean;
 };
 
-const AuthContext = createContext<AuthContextType | null>(null);
+export const AuthContext = createContext<AuthContextType | null>(null);
 
 async function getOrCreateAnonymousSession(): Promise<Models.User<Models.Preferences> | null> {
   return account.get().catch(async () => {

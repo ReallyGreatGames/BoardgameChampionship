@@ -172,6 +172,10 @@ export function resolveEffectiveTimer(
   return { hasCustomTimer, effectiveDuration, roundSecondsTotal, direction };
 }
 
+export function formatPoints(points: number): string {
+  return Number.isInteger(points) ? String(points) : points.toFixed(1);
+}
+
 export function teamName(player: Player): string {
   return typeof player.team === "string" ? player.team : player.team.name;
 }

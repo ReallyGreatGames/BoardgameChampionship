@@ -87,5 +87,6 @@ together, so the two never go out of sync.
 - [`app/(pages)/settings.tsx`](../../app/(pages)/settings.md)
 - [`lib/bootstrap/BootstrapProvider.tsx`](BootstrapProvider.md)
 - [`lib/components/game/Table.tsx`](../components/game/Table.md), [`ActiveScheduleCard.tsx`](../components/schedule/ActiveScheduleCard.md), [`Schedule.tsx`](../components/schedule/Schedule.md), [`PlayerSelectionCard.tsx`](../components/ui/PlayerSelectionCard.md)
-- [`lib/hooks/usePlayerTable.ts`](../hooks/usePlayerTable.md)
+- [`lib/hooks/usePlayerTable.ts`](../hooks/usePlayerTable.md), [`useParticipantOverview.ts`](../hooks/useParticipantOverview.md)
+- [`lib/components/home/ParticipantHero.tsx`](../components/home/ParticipantHero.md), [`NowPlayingCard.tsx`](../components/home/NowPlayingCard.md)
 - [`lib/routing/useRouter.ts`](../routing/useRouter.md)

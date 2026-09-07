@@ -1,0 +1,38 @@
+/* Brand fonts for the design-sync bundle. Family names must equal the RN
+   fontFamily strings in lib/theme/typography.ts (react-native-web passes
+   them through verbatim). Files come from the repo's own font packages. */
+@font-face {
+  font-family: "DMSans_400Regular";
+  src: url("../node_modules/@expo-google-fonts/dm-sans/400Regular/DMSans_400Regular.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "DMSans_500Medium";
+  src: url("../node_modules/@expo-google-fonts/dm-sans/500Medium/DMSans_500Medium.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "DMSans_700Bold";
+  src: url("../node_modules/@expo-google-fonts/dm-sans/700Bold/DMSans_700Bold.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "BarlowCondensed_600SemiBold";
+  src: url("../node_modules/@expo-google-fonts/barlow-condensed/600SemiBold/BarlowCondensed_600SemiBold.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "BarlowCondensed_700Bold";
+  src: url("../node_modules/@expo-google-fonts/barlow-condensed/700Bold/BarlowCondensed_700Bold.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "BarlowCondensed_800ExtraBold";
+  src: url("../node_modules/@expo-google-fonts/barlow-condensed/800ExtraBold/BarlowCondensed_800ExtraBold.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "ionicons";
+  src: url("../node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf") format("truetype");
+  font-display: block;
+}

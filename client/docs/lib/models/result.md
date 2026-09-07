@@ -33,5 +33,6 @@ All three per-seat arrays are indexed by seat position (0-based, table has a fix
 - [`lib/components/results/types.ts`](../components/results/types.md)
 - [`lib/stores/appwrite/result-store.ts`](../stores/appwrite/result-store.md)
 - [`lib/utils/statistics.ts`](../utils/statistics.md)
+- [`lib/hooks/useParticipantOverview.ts`](../hooks/useParticipantOverview.md)
 - [`app/(pages)/(user)/results.tsx`](../../app/(pages)/(user)/results.md) — `NO_SIGNATURE`
 - [`app/(pages)/(user)/signature.tsx`](../../app/(pages)/(user)/signature.md) — `NO_SIGNATURE`

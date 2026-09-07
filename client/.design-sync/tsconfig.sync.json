@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "baseUrl": "..",
+    "paths": {
+      "@/*": ["./*"],
+      "react-native": ["./node_modules/react-native-web/dist/index.js"],
+      "react-native-svg": ["./.design-sync/.cache/rnsvg-web.mjs"],
+      "react-native-markdown-display": ["./.design-sync/.cache/markdown-display.mjs"],
+      "@expo/vector-icons": ["./.design-sync/shims/vector-icons.tsx"],
+      "expo-screen-orientation": ["./.design-sync/shims/screen-orientation.ts"],
+      "expo-secure-store": ["./.design-sync/shims/secure-store.ts"],
+      "expo-localization": ["./.design-sync/shims/localization.ts"]
+    }
+  }
+}

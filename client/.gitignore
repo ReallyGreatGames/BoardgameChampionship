@@ -41,3 +41,14 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+*storybook.log
+storybook-static
+
+# design-sync (staged scripts, build output, machine state)
+.ds-sync/
+ds-bundle/
+types/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules

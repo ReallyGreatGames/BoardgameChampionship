@@ -25,6 +25,7 @@ Appwrite document type `Player` — a tournament player.
 - [`lib/components/onboarding/PlayerPickerForm.tsx`](../components/onboarding/PlayerPickerForm.md)
 - [`lib/components/results/types.ts`](../components/results/types.md)
 - [`lib/models/table.ts`](table.md), [`lib/models/timer.ts`](timer.md) (as a field type)
+- [`lib/hooks/useParticipantOverview.ts`](../hooks/useParticipantOverview.md)
 - [`lib/stores/appwrite/player-store.ts`](../stores/appwrite/player-store.md)
 - [`lib/utils.ts`](../utils.md)
 

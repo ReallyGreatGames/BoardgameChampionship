@@ -1,0 +1,17 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "noEmit": false,
+    "noEmitOnError": false,
+    "outDir": "../types",
+    "rootDir": ".."
+  },
+  "include": [
+    "../lib/components/ui/**/*.tsx",
+    "../lib/bootstrap/ThemeProvider.tsx",
+    "../lib/theme/*.ts"
+  ],
+  "exclude": ["../lib/components/ui/PlayerSelectionCard.tsx"]
+}

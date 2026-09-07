@@ -1,3 +1,7 @@
+const {
+  withStorybook,
+} = require('@storybook/react-native/withStorybook');
+
 const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
 
@@ -13,4 +17,14 @@ config.resolver.extraNodeModules = {
   ),
 };
 
-module.exports = config;
+config.resolver.resolveRequest = (context, moduleName, platform) =>
+  context.resolveRequest(
+    context,
+    moduleName === 'expo-file-system' &&
+      context.originModulePath.includes('react-native-appwrite')
+      ? 'expo-file-system/legacy'
+      : moduleName,
+    platform,
+  );
+
+module.exports = withStorybook(config);

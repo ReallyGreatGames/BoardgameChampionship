@@ -30,6 +30,7 @@ specialized utility modules).
 | `toNumberArray(value)` / `toBooleanArray(value)` | `(unknown) => number[] / boolean[]` | Normalizes realtime payloads that may serialize arrays as a JSON string |
 | `arraysEqual(a, b)` | `<T>(T[], T[]) => boolean` | Value-equality for flat arrays (cheaper than a `JSON.stringify` comparison) |
 | `resolveEffectiveTimer(timer, gameSettings)` | see below | Resolves the timer settings that actually apply to a table |
+| `formatPoints(points)` | `(number) => string` | Tournament points → display string: whole numbers plain, tie-averaged fractions to one decimal (`2.5`) |
 | `teamName(player)` | `(Player) => string` | Team name, whether Appwrite returns a hydrated `Team` object or just the `$id` |
 | `injectViewBox(xml)` | `(string) => string` | Injects a missing `viewBox` attribute into signature SVGs |
 | `resolveGameId(ref)` | `(unknown) => string \| null` | Normalizes Appwrite relation fields (string, object, or array) into a game id |
@@ -138,6 +139,10 @@ dashboard so the two can't drift apart.
 [`TableCard.tsx`](components/results/TableCard.md),
 [`ActiveScheduleCard.tsx`](components/schedule/ActiveScheduleCard.md),
 [`Schedule.tsx`](components/schedule/Schedule.md),
+[`lib/components/home/*`](components/home/README.md) (`formatPoints`) and
+[`ParticipantHero.tsx`](components/home/ParticipantHero.md) (`teamName`),
+[`useParticipantOverview.ts`](hooks/useParticipantOverview.md) (`resolveGameId`),
+[`useRoundCountdown.ts`](hooks/useRoundCountdown.md) (`formatElapsedSeconds`),
 [`TimerCell.tsx`](components/timer/TimerCell.md),
 [`RankingsTab.tsx`](components/admin/RankingsTab.md),
 [`lib/import/*`](import/README.md) (player-, table-import-service, wipe-service),

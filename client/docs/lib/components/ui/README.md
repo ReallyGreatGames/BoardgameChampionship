@@ -11,7 +11,9 @@ tournaments, timers, or games specifically.
 | File | Purpose |
 |---|---|
 | [BackButton.md](BackButton.md) | Themed back-navigation button |
+| [Badge.md](Badge.md) | Small tinted status pill |
 | [BottomSheet.md](BottomSheet.md) | Modal bottom sheet shell (header/scroll body/footer) |
+| [Button.md](Button.md) | Standard button: four variants, icon, loading state |
 | [ChipGroup.md](ChipGroup.md) | Selectable/cyclable chip group |
 | [Combobox.md](Combobox.md) | Dropdown select with a "live" indicator dot |
 | [Dialog.md](Dialog.md) | App-wide confirm/alert dialog, exposed via `useDialog()` |

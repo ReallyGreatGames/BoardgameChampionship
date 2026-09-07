@@ -6,7 +6,7 @@ import {
   DrawerContentComponentProps,
   DrawerContentScrollView,
   DrawerItem,
-} from "@react-navigation/drawer";
+} from "expo-router/drawer";
 import { router, usePathname } from "expo-router";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
