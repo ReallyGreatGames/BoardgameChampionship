@@ -19,4 +19,5 @@ Zustand store for the `teams` collection ([`Team`](../../models/team.md)). Read-
 ## Used by
 
 - [`lib/components/onboarding/PlayerPickerForm.tsx`](../../components/onboarding/PlayerPickerForm.md)
+- [`lib/hooks/useTeamDirectory.ts`](../../hooks/useTeamDirectory.md)
 - [`lib/bootstrap/RealTimeStoreProvider.tsx`](../../bootstrap/RealTimeStoreProvider.md)

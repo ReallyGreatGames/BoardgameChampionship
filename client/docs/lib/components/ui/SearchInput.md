@@ -24,4 +24,5 @@ Search box with a search icon and a clear ("×") button shown only while there's
 ## Used by
 
 - [`lib/components/results/ResultsAdminTab.tsx`](../results/ResultsAdminTab.md)
+- [`lib/components/participants/ParticipantList.tsx`](../participants/ParticipantList.md)
 - [`lib/components/rules/RuleList.tsx`](../rules/RuleList.md)

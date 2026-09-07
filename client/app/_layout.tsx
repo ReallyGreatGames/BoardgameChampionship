@@ -88,6 +88,14 @@ function AppNavigator() {
         }}
       />
       <Drawer.Screen
+        name="(pages)/(user)/participants"
+        options={{
+          drawerLabel: t("entries.participants"),
+          title: t("entries.participants"),
+          headerShown: false,
+        }}
+      />
+      <Drawer.Screen
         name="(pages)/(team-player)/choose-your-character"
         options={{
           title: t("entries.chooseYourCharacter"),

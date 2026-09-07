@@ -24,4 +24,4 @@ no-op, so an unauthenticated visitor isn't bounced to `/login` mid-load.
 
 ## Used by
 
-- [`app/(pages)/(user)/game.tsx`](../../app/(pages)/(user)/game.md), [`lottery.tsx`](../../app/(pages)/(user)/lottery.md), [`results.tsx`](../../app/(pages)/(user)/results.md), [`rules.tsx`](../../app/(pages)/(user)/rules.md), [`schedule.tsx`](../../app/(pages)/(user)/schedule.md), [`signature.tsx`](../../app/(pages)/(user)/signature.md), [`timer.tsx`](../../app/(pages)/(user)/timer.md)
+- [`app/(pages)/(user)/game.tsx`](../../app/(pages)/(user)/game.md), [`lottery.tsx`](../../app/(pages)/(user)/lottery.md), [`participants.tsx`](../../app/(pages)/(user)/participants.md), [`results.tsx`](../../app/(pages)/(user)/results.md), [`rules.tsx`](../../app/(pages)/(user)/rules.md), [`schedule.tsx`](../../app/(pages)/(user)/schedule.md), [`signature.tsx`](../../app/(pages)/(user)/signature.md), [`timer.tsx`](../../app/(pages)/(user)/timer.md)

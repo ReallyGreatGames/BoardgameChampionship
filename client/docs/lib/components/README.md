@@ -14,6 +14,7 @@ part of the app.
 | [game/](game/README.md) | The current player's table-seating widget |
 | [home/](home/README.md) | The participant start page: hero, running match, own score |
 | [onboarding/](onboarding/README.md) | Team/player picker, welcome screen, seat/color setup |
+| [participants/](participants/README.md) | The participant directory: header band + searchable, country-grouped team list |
 | [results/](results/README.md) | Result entry, review, and signatures |
 | [rules/](rules/README.md) | Per-game rule list + edit modal |
 | [schedule/](schedule/README.md) | Tournament schedule timeline + edit modals |
