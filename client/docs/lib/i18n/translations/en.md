@@ -11,7 +11,7 @@ top-level namespace keys, same nesting, same interpolation placeholders
 ## Structure (top-level namespaces)
 
 `adminDashboard`, `importTab`, `home`, `login`, `menu`, `settings`, `game`,
-`navigation`, `activeBells`, `rules`, `timer`, `results`, `scoreOverview`,
+`participants`, `navigation`, `activeBells`, `rules`, `timer`, `results`, `scoreOverview`,
 `rankings`, `statistics`, `tableOverview`, `signature`, `lottery`,
 `lotteryOptions`, `components`, `info`, `legal`.
 

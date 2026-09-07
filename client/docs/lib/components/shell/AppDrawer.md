@@ -32,7 +32,7 @@ its own beyond that.
 | Value | Type | Computed as |
 |---|---|---|
 | `activeBellCount` | `number` | Count of entries in `bellCollection` (from `useTableBellStore`) whose `acknowledgeTime` is falsy, i.e. unacknowledged table bells. Recomputed on `[bellCollection]`. |
-| `entries` | array of `{ translationId, route, icon, scope, badgeCount }` | Recomputed fresh every render (not memoized) — the static list of the four nav entries (home, schedule, active bells, dashboard), each with a `scope` ("public"/"private"/"admin") and an optional `badgeCount`. Only the "active bells" entry gets a non-`undefined` `badgeCount` (`activeBellCount`, admins only). |
+| `entries` | array of `{ translationId, route, icon, scope, badgeCount }` | Recomputed fresh every render (not memoized) — the static list of the five nav entries (home, schedule, participants, active bells, dashboard), each with a `scope` ("public"/"private"/"admin") and an optional `badgeCount`. Only the "active bells" entry gets a non-`undefined` `badgeCount` (`activeBellCount`, admins only). |
 
 ## How it works
 

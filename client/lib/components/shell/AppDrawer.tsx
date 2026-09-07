@@ -107,6 +107,13 @@ export function AppDrawer(props: DrawerContentComponentProps) {
       badgeCount: undefined as number | undefined,
     },
     {
+      translationId: "entries.participants",
+      route: "/participants",
+      icon: "people-outline",
+      scope: "private",
+      badgeCount: undefined as number | undefined,
+    },
+    {
       translationId: "entries.activeBells",
       route: "/active-bells",
       icon: "notifications-outline",

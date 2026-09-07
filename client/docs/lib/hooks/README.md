@@ -19,5 +19,6 @@ biggest single piece of client-side state: the timer.
 | [useRoundCountdown.md](useRoundCountdown.md) | Live countdown to a schedule item's planned end time |
 | [useSecureStoragePerGame.md](useSecureStoragePerGame.md) | Generic per-game, per-device preference storage |
 | [useTableBellActions.md](useTableBellActions.md) | Ring/dismiss/acknowledge table bells |
+| [useTeamDirectory.md](useTeamDirectory.md) | Search + country grouping for the participant directory |
 | [useTimerLocalSettings.md](useTimerLocalSettings.md) | Local (non-synced) timer orientation/pause-mode preference |
 | [useTimerState.md](useTimerState.md) | The entire interactive timer — the most complex piece of logic in the app |
