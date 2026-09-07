@@ -288,6 +288,8 @@ const translations = {
   },
   rules: {
     title: "Regeln",
+    additionalRuleCount_one: "{{count}} zusätzliche Regel",
+    additionalRuleCount_other: "{{count}} zusätzliche Regeln",
     search: "Regeln suchen...",
     empty: "Noch keine Regeln",
     noResults: "Keine Regeln gefunden",

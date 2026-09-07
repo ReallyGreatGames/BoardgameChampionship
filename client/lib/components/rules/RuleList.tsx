@@ -6,14 +6,14 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
+  Pressable,
   View,
 } from "react-native";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { Rule, RuleType } from "@/lib/models/rule";
 import { useRuleStore } from "@/lib/stores/appwrite/rule-store";
 import { inset } from "@/lib/theme/spacing";
-import { type } from "@/lib/theme/typography";
+import { fonts, type } from "@/lib/theme/typography";
 import { useDialog } from "@/lib/components/ui/Dialog";
 import { Markdown } from "@/lib/components/ui/Markdown";
 import { RuleFormData, RuleModal, typeColor } from "@/lib/components/rules/RuleModal";
@@ -119,7 +119,7 @@ export function RuleList({ gameId, isAdmin }: Props) {
   }
 
   return (
-    <>
+    <View style={styles.container}>
       <RuleModal
         visible={modalVisible}
         item={editingRule}
@@ -142,13 +142,20 @@ export function RuleList({ gameId, isAdmin }: Props) {
         keyboardShouldPersistTaps="handled"
       >
         {isEmpty ? (
-          <Text style={styles.empty}>
-            {search.trim()
-              ? t("noResults")
-              : hasAny
+          <View style={styles.empty}>
+            <Ionicons
+              name={search.trim() ? "search-outline" : "document-text-outline"}
+              size={28}
+              color={colors.textMuted}
+            />
+            <Text style={styles.emptyText}>
+              {search.trim()
                 ? t("noResults")
-                : t("empty")}
-          </Text>
+                : hasAny
+                  ? t("noResults")
+                  : t("empty")}
+            </Text>
+          </View>
         ) : (
           RULE_TYPES.map((ruleType) => {
             const rules = grouped[ruleType];
@@ -161,60 +168,80 @@ export function RuleList({ gameId, isAdmin }: Props) {
             return (
               <View key={ruleType} style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Ionicons name={cfg.icon} size={14} color={color} />
-                  <Text style={[styles.sectionTitle, { color }]}>
-                    {t(cfg.labelKey)}
-                  </Text>
+                  <View style={styles.sectionHeading}>
+                    <Ionicons name={cfg.icon} size={16} color={color} />
+                    <Text style={[styles.sectionTitle, { color }]}>
+                      {t(cfg.labelKey)}
+                    </Text>
+                  </View>
+                  <Text style={styles.sectionCount}>{rules.length}</Text>
                 </View>
 
-                {rules.map((rule) => {
+                {rules.map((rule, index) => {
                   const isLoading = loadingId === rule.$id;
                   return (
-                    <View
-                      key={rule.$id}
-                      style={[styles.card, { borderLeftColor: color }]}
-                    >
-                      <View style={styles.cardContent}>
+                    <View key={rule.$id} style={styles.card}>
+                      <View style={styles.cardHeader}>
+                        <View
+                          style={[
+                            styles.ruleNumber,
+                            { backgroundColor: `${color}18` },
+                          ]}
+                        >
+                          <Text style={[styles.ruleNumberText, { color }]}>
+                            {String(index + 1).padStart(2, "0")}
+                          </Text>
+                        </View>
                         <Text style={styles.ruleTitle}>{rule.title}</Text>
-                        <Markdown textStyle={styles.ruleText}>
-                          {rule.text}
-                        </Markdown>
+
+                        {isAdmin && (
+                          <View style={styles.adminActions}>
+                            {isLoading ? (
+                              <ActivityIndicator
+                                size="small"
+                                color={colors.textMuted}
+                              />
+                            ) : (
+                              <>
+                                <Pressable
+                                  accessibilityRole="button"
+                                  accessibilityLabel={t("form.editTitle")}
+                                  hitSlop={4}
+                                  style={({ pressed }) => [
+                                    styles.adminBtn,
+                                    pressed && styles.adminBtnPressed,
+                                  ]}
+                                  onPress={() => handleEdit(rule)}
+                                >
+                                  <Ionicons
+                                    name="create-outline"
+                                    size={18}
+                                    color={colors.textSecondary}
+                                  />
+                                </Pressable>
+                                <Pressable
+                                  accessibilityRole="button"
+                                  accessibilityLabel={t("confirmDelete.title")}
+                                  hitSlop={4}
+                                  style={({ pressed }) => [
+                                    styles.adminBtn,
+                                    pressed && styles.adminBtnPressed,
+                                  ]}
+                                  onPress={() => handleDelete(rule)}
+                                >
+                                  <Ionicons
+                                    name="trash-outline"
+                                    size={18}
+                                    color={colors.error}
+                                  />
+                                </Pressable>
+                              </>
+                            )}
+                          </View>
+                        )}
                       </View>
 
-                      {isAdmin && (
-                        <View style={styles.adminBar}>
-                          <View style={styles.adminBarSpacer} />
-                          {isLoading ? (
-                            <ActivityIndicator
-                              size="small"
-                              color={colors.textMuted}
-                            />
-                          ) : (
-                            <>
-                              <TouchableOpacity
-                                style={styles.adminBtn}
-                                onPress={() => handleEdit(rule)}
-                              >
-                                <Ionicons
-                                  name="create-outline"
-                                  size={16}
-                                  color={colors.text}
-                                />
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                style={styles.adminBtn}
-                                onPress={() => handleDelete(rule)}
-                              >
-                                <Ionicons
-                                  name="trash-outline"
-                                  size={16}
-                                  color={colors.error}
-                                />
-                              </TouchableOpacity>
-                            </>
-                          )}
-                        </View>
-                      )}
+                      <Markdown textStyle={styles.ruleText}>{rule.text}</Markdown>
                     </View>
                   );
                 })}
@@ -225,20 +252,24 @@ export function RuleList({ gameId, isAdmin }: Props) {
       </ScrollView>
 
       {isAdmin && (
-        <TouchableOpacity
-          style={styles.fab}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("form.addTitle")}
+          style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
           onPress={handleAdd}
-          activeOpacity={0.85}
         >
           <Ionicons name="add" size={28} color={colors.onAccent} />
-        </TouchableOpacity>
+        </Pressable>
       )}
-    </>
+    </View>
   );
 }
 
 function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
   return StyleSheet.create({
+    container: {
+      flex: 1,
+    },
     searchWrapper: {
       marginBottom: inset.list,
     },
@@ -248,9 +279,14 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     empty: {
       ...type.body,
+      alignItems: "center",
+      gap: inset.tight,
+      marginTop: inset.section,
+    },
+    emptyText: {
+      ...type.body,
       color: colors.textMuted,
       textAlign: "center",
-      marginTop: inset.section,
     },
     section: {
       gap: inset.list,
@@ -258,46 +294,73 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     sectionHeader: {
       flexDirection: "row",
       alignItems: "center",
+      justifyContent: "space-between",
+      gap: inset.list,
+      paddingHorizontal: 2,
+    },
+    sectionHeading: {
+      flexDirection: "row",
+      alignItems: "center",
       gap: 6,
     },
     sectionTitle: {
-      ...type.eyebrow,
+      ...type.bodySmall,
+      fontFamily: fonts.bodyBold,
+    },
+    sectionCount: {
+      ...type.caption,
+      color: colors.textMuted,
     },
     card: {
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
-      borderLeftWidth: 3,
-      borderRadius: 10,
-      overflow: "hidden",
-    },
-    cardContent: {
+      borderRadius: 12,
       padding: inset.card,
-      paddingBottom: 10,
-      gap: 4,
+      gap: inset.list,
+    },
+    cardHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: inset.list,
+    },
+    ruleNumber: {
+      width: 34,
+      height: 34,
+      borderRadius: 8,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    ruleNumberText: {
+      ...type.caption,
+      fontFamily: fonts.bodyBold,
+      letterSpacing: 0.5,
     },
     ruleTitle: {
-      ...type.bodySmall,
+      ...type.body,
+      fontFamily: fonts.bodyBold,
       color: colors.text,
-      fontWeight: "700",
+      flex: 1,
+      minWidth: 0,
     },
     ruleText: {
       ...type.body,
       color: colors.textSecondary,
     },
-    adminBar: {
+    adminActions: {
       flexDirection: "row",
       alignItems: "center",
-      borderTopWidth: 1,
-      borderTopColor: colors.divider,
-      paddingHorizontal: inset.card,
-      paddingVertical: 6,
       gap: 4,
     },
-    adminBarSpacer: { flex: 1 },
     adminBtn: {
-      padding: 6,
-      borderRadius: 6,
+      width: 40,
+      height: 40,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 8,
+    },
+    adminBtnPressed: {
+      backgroundColor: colors.surfaceHigh,
     },
     fab: {
       position: "absolute",
@@ -309,11 +372,15 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       backgroundColor: colors.accent,
       justifyContent: "center",
       alignItems: "center",
-      shadowColor: "#000",
+      shadowColor: colors.text,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.3,
       shadowRadius: 6,
       elevation: 8,
+    },
+    fabPressed: {
+      opacity: 0.8,
+      transform: [{ scale: 0.96 }],
     },
   });
 }

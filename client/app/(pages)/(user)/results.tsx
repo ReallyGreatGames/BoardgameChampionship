@@ -1,5 +1,6 @@
 import { SIGNATURES_BUCKET_ID, storage } from "@/lib/appwrite";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
+import { GameHeader } from "@/lib/components/game/GameHeader";
 import { BackButton } from "@/lib/components/ui/BackButton";
 import { useDialog } from "@/lib/components/ui/Dialog";
 import {
@@ -8,6 +9,7 @@ import {
   SIGNATURE_COLUMN_WIDTH,
   type PlayerResultRowHandle,
 } from "@/lib/components/results/PlayerResultRow";
+import { useGameScheduleInfo } from "@/lib/hooks/useGameScheduleInfo";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { NO_SIGNATURE } from "@/lib/models/result";
@@ -21,7 +23,8 @@ import { hasScorePlacementConflict, isValidPlacementCombo } from "@/lib/utils/pl
 import { teamName } from "@/lib/utils";
 import { goBackTo, goTo } from "@/lib/utils/navigation";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useNavigation } from "expo-router";
+import { DrawerActions } from "expo-router/react-navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -50,6 +53,8 @@ export default function ResultsPage() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useTranslation(["results"]);
   const { confirm } = useDialog();
+  const navigation = useNavigation();
+  const game = useGameScheduleInfo(gameId);
   const resultStore = useResultStore();
   const scheduleStore = useScheduleStore();
   const tableNumber = usePlayerTable(gameId);
@@ -139,6 +144,15 @@ export default function ResultsPage() {
   );
 
   const selfHref = `/(pages)/(user)/results?gameId=${gameId}`;
+  const tableLabel =
+    tableNumber !== null
+      ? t("tableHeader").replace("{n}", String(tableNumber))
+      : null;
+
+  const openMenu = useCallback(
+    () => navigation.dispatch(DrawerActions.openDrawer()),
+    [navigation],
+  );
 
   const handleBack = useCallback(() => {
     goBackTo(from ?? (gameId ? `/game?gameId=${gameId}` : "/"));
@@ -370,24 +384,32 @@ export default function ResultsPage() {
 
   return (
     <View style={styles.container}>
-      <BackButton onPress={handleBack} />
+      <GameHeader
+        title={game.title || t("title")}
+        round={null}
+        tableNumber={null}
+        subtitle={[t("title"), tableLabel].filter(Boolean).join(" · ")}
+        onMenuPress={openMenu}
+      />
 
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.header}>
-          <Text style={styles.tableHeading}>
-            {tableNumber !== null ? t("tableHeader").replace("{n}", String(tableNumber)) : "—"}
-          </Text>
-          {isSubmitted && (
+      <View style={styles.body}>
+        <View style={styles.backButton}>
+          <BackButton onPress={handleBack} />
+        </View>
+
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+        {isSubmitted && (
+          <View style={styles.submittedRow}>
             <View style={styles.submittedBadge}>
               <Ionicons name="checkmark-circle" size={14} color={colors.success} />
               <Text style={styles.submittedBadgeText}>{t("submitted")}</Text>
             </View>
-          )}
-        </View>
+          </View>
+        )}
 
         <View style={styles.card}>
           <PlayerResultColumnHeaders
@@ -528,7 +550,8 @@ export default function ResultsPage() {
             </>
           )}
         </TouchableOpacity>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </View>
   );
 }
@@ -538,23 +561,23 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     container: {
       flex: 1,
       backgroundColor: colors.background,
-      padding: inset.screen,
-      paddingTop: inset.group,
+    },
+    body: {
+      flex: 1,
+      paddingHorizontal: inset.card,
+      paddingTop: inset.card,
+    },
+    backButton: {
+      paddingBottom: inset.card,
     },
     scroll: {
       paddingBottom: inset.screenBottom,
       gap: inset.group,
     },
-    header: {
+    submittedRow: {
       flexDirection: "row",
       alignItems: "center",
-      gap: inset.tight,
-      paddingTop: inset.group,
-    },
-    tableHeading: {
-      ...type.h2,
-      color: colors.text,
-      flex: 1,
+      justifyContent: "flex-end",
     },
     submittedBadge: {
       flexDirection: "row",

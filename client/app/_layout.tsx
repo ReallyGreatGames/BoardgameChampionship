@@ -115,7 +115,11 @@ function AppNavigator() {
       />
       <Drawer.Screen
         name="(pages)/(user)/rules"
-        options={{ drawerLabel: t("entries.rules"), title: t("entries.rules") }}
+        options={{
+          drawerLabel: t("entries.rules"),
+          title: t("entries.rules"),
+          headerShown: false,
+        }}
       />
       <Drawer.Screen
         name="(pages)/(user)/timer"
@@ -131,7 +135,7 @@ function AppNavigator() {
         options={{
           title: t("entries.results"),
           drawerItemStyle: { display: "none" },
-          headerShown: true,
+          headerShown: false,
           swipeEnabled: false,
         }}
       />
@@ -149,7 +153,7 @@ function AppNavigator() {
         options={{
           title: t("entries.lottery"),
           drawerItemStyle: { display: "none" },
-          headerShown: true,
+          headerShown: false,
           swipeEnabled: false,
         }}
       />

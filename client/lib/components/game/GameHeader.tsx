@@ -11,10 +11,17 @@ interface Props {
   title: string;
   round: number | null;
   tableNumber: number | null;
+  subtitle?: string;
   onMenuPress: () => void;
 }
 
-export function GameHeader({ title, round, tableNumber, onMenuPress }: Props) {
+export function GameHeader({
+  title,
+  round,
+  tableNumber,
+  subtitle,
+  onMenuPress,
+}: Props) {
   const { colors, isDark } = useTheme();
   const { t } = useTranslation(["game", "home"]);
   const insets = useSafeAreaInsets();
@@ -53,12 +60,16 @@ export function GameHeader({ title, round, tableNumber, onMenuPress }: Props) {
     });
   }, [colors, isDark, foreground, muted]);
 
-  const meta = [
-    round !== null ? t("home:round", { round }) : null,
-    tableNumber !== null ? t("home:table", { table: tableNumber }) : t("home:tableToBeAnnounced"),
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const meta =
+    subtitle ??
+    [
+      round !== null ? t("home:round", { round }) : null,
+      tableNumber !== null
+        ? t("home:table", { table: tableNumber })
+        : t("home:tableToBeAnnounced"),
+    ]
+      .filter(Boolean)
+      .join(" · ");
 
   return (
     <View style={[styles.hero, { paddingTop: insets.top + space[2] }]}>
