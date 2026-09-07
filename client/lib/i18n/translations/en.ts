@@ -203,6 +203,23 @@ const translations = {
   },
   game: {
     title: "Game Overview",
+    state: {
+      live: "Running",
+      planned: "Scheduled",
+      finished: "Finished",
+    },
+    seating: {
+      title: "Participants",
+      seat: "Player {{seat}}",
+    },
+    bell: {
+      idle: "Call a judge to your table",
+      ringing: "Called {{elapsed}} ago — tap to cancel",
+      acknowledged: "A judge is on the way · {{elapsed}}",
+      notActive: "Only while the game is running",
+      finished: "This game has finished",
+      noTable: "Available once you have a table",
+    },
     actions: {
       lottery: "Lottery",
       rules: "Rules",

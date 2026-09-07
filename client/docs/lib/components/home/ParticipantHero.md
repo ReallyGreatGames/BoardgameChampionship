@@ -52,6 +52,8 @@ that white text disappears into. So the hero picks its three colors from
 `surface`/`text`/`textSecondary` (a raised band, the standard dark
 treatment), light ones get `primary`/`onAccent`/`surfaceHigh`.
 
+The hamburger itself is [`MenuButton`](../shell/MenuButton.md), which repeats the same `isDark` switch internally so it can be dropped into any of these bands unchanged.
+
 ### Status bar
 
 The top padding is `useSafeAreaInsets().top` plus a small gap, because the
@@ -65,3 +67,4 @@ it the menu button would sit under the status bar/notch.
 ## Related
 
 - [`lib/components/onboarding/WelcomeScreen.tsx`](../onboarding/WelcomeScreen.md) — the logged-out counterpart, sharing the logo mapping
+- [`lib/components/shell/MenuButton.tsx`](../shell/MenuButton.md) — the shared hamburger button this band renders

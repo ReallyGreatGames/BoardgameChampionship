@@ -1,38 +1,35 @@
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { BackButton } from "@/lib/components/ui/BackButton";
+import { Badge } from "@/lib/components/ui/Badge";
+import { GameActionRow, type GameAction } from "@/lib/components/game/GameActionRow";
+import { GameHeader } from "@/lib/components/game/GameHeader";
+import { GameSeatingList } from "@/lib/components/game/GameSeatingList";
 import { PlayerColorSetupModal } from "@/lib/components/onboarding/PlayerColorSetupModal";
 import { PlayerSelectionCard } from "@/lib/components/ui/PlayerSelectionCard";
-import { Table } from "@/lib/components/game/Table";
+import { TableBellBar, type TableBellState } from "@/lib/components/game/TableBellBar";
 import { FeatureFlagSlugs } from "@/lib/feature-flags/feature-flag-slugs";
 import { useFeatureFlags } from "@/lib/feature-flags/useFeatureFlags";
+import { useGameScheduleInfo } from "@/lib/hooks/useGameScheduleInfo";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
 import { getItemAsync, setItemAsync } from "@/lib/secureStorage";
 import { useLotteryStore } from "@/lib/stores/appwrite/lottery-store";
 import { useOptionsLotteryStore } from "@/lib/stores/appwrite/options-lottery-store";
-import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { useTableStore } from "@/lib/stores/appwrite/table-store";
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
 import { resolveGameId } from "@/lib/utils";
 import { getLotteryPhotosForGame } from "@/lib/utils/lottery";
 import { getOptionsLotteriesForGame, getResultForTable } from "@/lib/utils/options-lottery";
-import { inset } from "@/lib/theme/spacing";
-import { type } from "@/lib/theme/typography";
+import { inset, space } from "@/lib/theme/spacing";
 import { goBackTo, goTo } from "@/lib/utils/navigation";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
+import { DrawerActions } from "expo-router/react-navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 
 type ActionButton = {
   key: string;
@@ -95,7 +92,7 @@ export default function GamePage() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useTranslation(["game"]);
-  const scheduleStore = useScheduleStore();
+  const navigation = useNavigation();
   const tableBellStore = useTableBellStore();
   const bellActions = useTableBellActions();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -106,6 +103,7 @@ export default function GamePage() {
   const timerStore = useTimerStore();
   const lotteryCollection = useLotteryStore((s) => s.collection);
   const optionsLotteryCollection = useOptionsLotteryStore((s) => s.collection);
+  const gameSchedule = useGameScheduleInfo(gameId);
 
   const optionsLotteryCount = useMemo(() => {
     if (tableNumber === null) {
@@ -133,10 +131,7 @@ export default function GamePage() {
 
   const [colorSetupVisible, setColorSetupVisible] = useState(false);
 
-  const isActiveGame = useMemo(
-    () => scheduleStore.collection.find((s) => s.isActive)?.gameId === gameId,
-    [scheduleStore.collection, gameId],
-  );
+  const isActiveGame = gameSchedule.isActive;
 
   const bell = useMemo(
     () => tableBellStore.collection.find((x) => x.table === tableNumber),
@@ -165,6 +160,11 @@ export default function GamePage() {
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
   }, [bell]);
+
+  const openMenu = useCallback(
+    () => navigation.dispatch(DrawerActions.openDrawer()),
+    [navigation],
+  );
 
   const handleBack = () => {
     goBackTo(from ?? "/(pages)/(user)/schedule");
@@ -235,138 +235,90 @@ export default function GamePage() {
     }
   }
 
-  const bellColor = !isActiveGame
-    ? colors.textSecondary
-    : bell?.acknowledgeTime
-      ? colors.success
-      : bell
-        ? colors.accent
-        : colors.primary;
+  const actions: GameAction[] = ACTION_BUTTONS.map(
+    ({ key, icon, labelKey, onPress, requiresActiveGame, featureFlag }) => ({
+      key,
+      icon,
+      label: t(labelKey),
+      badgeCount: key === "lottery" ? lotteryCount : undefined,
+      disabled:
+        (tableNumber === null && key !== "rules" && key !== "lottery") ||
+        (requiresActiveGame === true && !isActiveGame) ||
+        (featureFlag !== undefined && !isFeatureEnabled(featureFlag)),
+      onPress:
+        key === "timer" ? handleTimerPress : () => onPress(gameId, selfHref),
+    }),
+  );
 
-  const bellIcon: React.ComponentProps<typeof Ionicons>["name"] = bell
-    ? "notifications-off-outline"
-    : "notifications-outline";
+  const badge = gameSchedule.isFinished
+    ? { label: t("state.finished"), tone: "success" as const }
+    : isActiveGame
+      ? { label: t("state.live"), tone: "info" as const }
+      : { label: t("state.planned"), tone: "neutral" as const };
+
+  const bellState: TableBellState =
+    tableNumber === null || !isActiveGame
+      ? "unavailable"
+      : bell?.acknowledgeTime
+        ? "acknowledged"
+        : bell
+          ? "ringing"
+          : "idle";
+
+  const bellHint =
+    tableNumber === null
+      ? t("bell.noTable")
+      : bellState === "unavailable"
+        ? gameSchedule.isFinished
+          ? t("bell.finished")
+          : t("bell.notActive")
+        : bellState === "acknowledged"
+          ? t("bell.acknowledged", { elapsed: formatElapsed(elapsedSeconds) })
+          : bellState === "ringing"
+            ? t("bell.ringing", { elapsed: formatElapsed(elapsedSeconds) })
+            : t("bell.idle");
 
   return (
     <View style={styles.container}>
-      <BackButton onPress={handleBack} />
+      <GameHeader
+        title={gameSchedule.title}
+        round={gameSchedule.round}
+        tableNumber={tableNumber}
+        onMenuPress={openMenu}
+      />
 
       <ScrollView
-        contentContainerStyle={styles.list}
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.topRow}>
+          <BackButton onPress={handleBack} />
+          <Badge label={badge.label} tone={badge.tone} />
+        </View>
+
         {tableNumber !== null ? (
-          <Table gameId={gameId} />
+          <GameSeatingList table={currentTable} />
         ) : (
           <PlayerSelectionCard from="game" forceAllow gameId={gameId} />
         )}
 
-        <View style={styles.actionsGrid}>
-          {ACTION_BUTTONS.map(
-            ({
-              key,
-              icon,
-              labelKey,
-              onPress,
-              requiresActiveGame,
-              featureFlag,
-            }) => {
-              const disabled =
-                (tableNumber === null && key !== "rules" && key !== "lottery") ||
-                (requiresActiveGame && !isActiveGame) ||
-                (featureFlag !== undefined && !isFeatureEnabled(featureFlag));
-              const press =
-                key === "timer" ? handleTimerPress : () => onPress(gameId, selfHref);
-              return (
-                <TouchableOpacity
-                  key={key}
-                  style={[
-                    styles.actionBtn,
-                    disabled ? styles.actionBtnDisabled : undefined,
-                  ]}
-                  activeOpacity={0.7}
-                  onPress={press}
-                  disabled={disabled}
-                >
-                  <View style={styles.actionIconWrap}>
-                    <Ionicons
-                      name={icon}
-                      size={28}
-                      color={disabled ? colors.textSecondary : colors.primary}
-                    />
-                    {key === "lottery" && lotteryCount > 0 && (
-                      <View style={styles.actionBadge}>
-                        <Text style={styles.actionBadgeText}>
-                          {lotteryCount > 99 ? "99+" : lotteryCount}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text
-                    style={[
-                      styles.actionLabel,
-                      disabled ? styles.actionLabelDisabled : undefined,
-                    ]}
-                  >
-                    {t(labelKey)}
-                  </Text>
-                </TouchableOpacity>
-              );
-            },
-          )}
-        </View>
-
-        <TouchableOpacity
-          style={[
-            styles.bellBtn,
-            !isActiveGame
-              ? styles.actionBtnDisabled
-              : bell?.acknowledgeTime
-                ? styles.bellBtnSuccess
-                : bell
-                  ? styles.bellBtnActive
-                  : undefined,
-          ]}
-          activeOpacity={0.7}
-          onPress={toggleBell}
-          disabled={
-            tableNumber === null ||
-            (!isFeatureEnabled(FeatureFlagSlugs.TABLE_BELL) &&
-              (!isActiveGame ||
-                bellActions.isLoading ||
-                (!!bell && !bellActions.canDelete(bell))))
-          }
-        >
-          <View style={styles.bellIconRow}>
-            {bell?.acknowledgeTime && (
-              <Ionicons name="walk-outline" size={24} color={bellColor} />
-            )}
-            <Ionicons name={bellIcon} size={28} color={bellColor} />
-            {!!bell && !bellActions.canDelete(bell) && (
-              <Ionicons
-                name="lock-closed-outline"
-                size={16}
-                color={bellColor}
-              />
-            )}
-          </View>
-
-          <View style={styles.bellLabelRow}>
-            <Text style={[styles.actionLabel, { color: bellColor }]}>
-              {t("actions.tableBell")}
-            </Text>
-            {bellActions.isLoading && (
-              <ActivityIndicator size="small" color={bellColor} />
-            )}
-          </View>
-
-          {bell && (
-            <Text style={[styles.bellTimer, { color: bellColor }]}>
-              {formatElapsed(elapsedSeconds)}
-            </Text>
-          )}
-        </TouchableOpacity>
+        <GameActionRow actions={actions} />
       </ScrollView>
+
+      <TableBellBar
+        state={bellState}
+        hint={bellHint}
+        disabled={
+          tableNumber === null ||
+          (!isFeatureEnabled(FeatureFlagSlugs.TABLE_BELL) &&
+            (!isActiveGame ||
+              bellActions.isLoading ||
+              (!!bell && !bellActions.canDelete(bell))))
+        }
+        isLoading={bellActions.isLoading}
+        locked={!!bell && !bellActions.canDelete(bell)}
+        onPress={toggleBell}
+      />
 
       <PlayerColorSetupModal
         visible={colorSetupVisible}
@@ -384,99 +336,17 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     container: {
       flex: 1,
       backgroundColor: colors.background,
-      padding: inset.screen,
-      paddingTop: inset.group,
     },
-    header: {
-      marginBottom: inset.group,
+    content: {
+      padding: inset.card,
+      paddingBottom: inset.group,
+      gap: space[5],
     },
-    title: {
-      ...type.h1,
-      color: colors.text,
-    },
-    list: {
-      paddingBottom: inset.screenBottom,
-      gap: inset.group,
-    },
-    actionsGrid: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: inset.card,
-    },
-    actionBtn: {
-      width: "47%",
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 8,
-      paddingVertical: inset.card,
-      justifyContent: "center",
-      alignItems: "center",
-      gap: inset.tight,
-    },
-    actionIconWrap: {
-      position: "relative",
-    },
-    actionBadge: {
-      position: "absolute",
-      top: -6,
-      right: -10,
-      minWidth: 18,
-      height: 18,
-      borderRadius: 9,
-      paddingHorizontal: 4,
-      backgroundColor: colors.accent,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    actionBadgeText: {
-      ...type.caption,
-      color: colors.onAccent,
-      fontSize: 10,
-      fontWeight: "700",
-    },
-    bellBtn: {
-      width: "100%",
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 12,
-      paddingVertical: inset.card,
-      alignItems: "center",
-      gap: 8,
-    },
-    bellBtnActive: {
-      backgroundColor: colors.accent + "18",
-      borderColor: colors.accent,
-    },
-    bellBtnSuccess: {
-      backgroundColor: colors.success + "18",
-      borderColor: colors.success,
-    },
-    bellIconRow: {
+    topRow: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 6,
-    },
-    bellLabelRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-    },
-    bellTimer: {
-      ...type.caption,
-      letterSpacing: 1,
-    },
-    actionBtnDisabled: {
-      opacity: 0.4,
-    },
-    actionLabel: {
-      ...type.bodySmall,
-      color: colors.text,
-      fontWeight: "600",
-    },
-    actionLabelDisabled: {
-      color: colors.textSecondary,
+      justifyContent: "space-between",
+      gap: space[3],
     },
   });
 }

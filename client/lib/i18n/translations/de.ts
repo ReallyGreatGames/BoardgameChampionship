@@ -203,6 +203,23 @@ const translations = {
   },
   game: {
     title: "Spielübersicht",
+    state: {
+      live: "Läuft",
+      planned: "Geplant",
+      finished: "Beendet",
+    },
+    seating: {
+      title: "Teilnehmer",
+      seat: "Spieler {{seat}}",
+    },
+    bell: {
+      idle: "Schiedsrichter an den Tisch rufen",
+      ringing: "Gerufen vor {{elapsed}} — tippen zum Abbrechen",
+      acknowledged: "Schiedsrichter ist unterwegs · {{elapsed}}",
+      notActive: "Erst im laufenden Spiel",
+      finished: "Spiel ist beendet",
+      noTable: "Erst mit Tischzuteilung verfügbar",
+    },
     actions: {
       lottery: "Auslosung",
       rules: "Regeln",

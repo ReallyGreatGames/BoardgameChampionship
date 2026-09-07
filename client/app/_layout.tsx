@@ -78,7 +78,11 @@ function AppNavigator() {
       />
       <Drawer.Screen
         name="(pages)/(user)/game"
-        options={{ drawerLabel: t("entries.game"), title: t("entries.game") }}
+        options={{
+          drawerLabel: t("entries.game"),
+          title: t("entries.game"),
+          headerShown: false,
+        }}
       />
       <Drawer.Screen
         name="(pages)/(user)/schedule"

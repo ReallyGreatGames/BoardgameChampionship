@@ -29,5 +29,8 @@ widget, not a general table browser.
 
 ## Used by
 
-- [`app/(pages)/(user)/game.tsx`](../../../app/(pages)/(user)/game.md)
 - [`lib/components/schedule/Schedule.tsx`](../schedule/Schedule.md) — inside an expanded schedule item
+
+## Related
+
+- [`GameSeatingList.tsx`](GameSeatingList.md) — the richer seating card used on the game page, showing seat tiles, country and team per player

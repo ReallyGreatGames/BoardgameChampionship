@@ -1,9 +1,10 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePlayer } from "@/lib/bootstrap/PlayerProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
+import { MenuButton } from "@/lib/components/shell/MenuButton";
 import { useTournament } from "@/lib/bootstrap/TournamentProvider";
 import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
@@ -41,38 +42,6 @@ export function ParticipantHero({ onMenuPress }: Props) {
         paddingBottom: space[6],
         gap: space[4],
       },
-      menuRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: space[2],
-      },
-      menuButton: {
-        width: 44,
-        height: 44,
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 5,
-        borderRadius: 10,
-      },
-      menuButtonPressed: {
-        opacity: 0.6,
-      },
-      menuBar: {
-        width: 20,
-        height: 2,
-        borderRadius: 1,
-        backgroundColor: foreground,
-      },
-      menuBarShort: {
-        width: 14,
-        height: 2,
-        borderRadius: 1,
-        backgroundColor: muted,
-      },
-      menuLabel: {
-        ...type.caption,
-        color: muted,
-      },
       identityRow: {
         flexDirection: "row",
         alignItems: "center",
@@ -106,19 +75,7 @@ export function ParticipantHero({ onMenuPress }: Props) {
 
   return (
     <View style={[styles.hero, { paddingTop: insets.top + space[2] }]}>
-      <View style={styles.menuRow}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t("openMenu")}
-          onPress={onMenuPress}
-          style={({ pressed }) => [styles.menuButton, pressed && styles.menuButtonPressed]}
-        >
-          <View style={styles.menuBar} />
-          <View style={styles.menuBar} />
-          <View style={styles.menuBarShort} />
-        </Pressable>
-        <Text style={styles.menuLabel}>{t("openMenu")}</Text>
-      </View>
+      <MenuButton onPress={onMenuPress} />
 
       <View style={styles.identityRow}>
         {logo && <Image source={logo} style={styles.logo} accessibilityIgnoresInvertColors />}
