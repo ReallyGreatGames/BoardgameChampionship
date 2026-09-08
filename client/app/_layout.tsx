@@ -144,7 +144,7 @@ function AppNavigator() {
         options={{
           title: t("entries.signature"),
           drawerItemStyle: { display: "none" },
-          headerShown: true,
+          headerShown: false,
           swipeEnabled: false,
         }}
       />

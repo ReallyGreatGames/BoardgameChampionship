@@ -52,6 +52,7 @@
     "expo-system-ui": "~57.0.3",
     "expo-web-browser": "~57.0.2",
     "i18next": "^26.0.4",
+    "lucide-react-native": "^1.43.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-i18next": "^17.0.2",

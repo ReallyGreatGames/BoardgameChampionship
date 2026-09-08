@@ -20,7 +20,7 @@ signature-count requirements) are specific to self-service.
 
 | Export | Signature | Purpose |
 | --- | --- | --- |
-| `ResultsPage` (default) | `(): JSX.Element \| null` | Screen component for `/results?gameId=...`. Renders a `PlayerResultColumnHeaders` row followed by the four `PlayerResultRow`s (placement/score/signature per seat), a note field, and a save/submit button, all backed by local form state synced to the player's table `Result` document. Returns `null` while auth is loading or unauthenticated. |
+| `ResultsPage` (default) | `(): JSX.Element \| null` | Screen component for `/results?gameId=...`. Renders the shared [`GameHeader`](../../../lib/components/game/GameHeader.md), an entry-status `Badge`, a `PlayerResultColumnHeaders` row followed by the four `PlayerResultRow`s (placement/score/signature per seat), a tie hint, a note field, a footer gate hint, and a submit button — all backed by local form state synced to the player's table `Result` document. Returns `null` while auth is loading or unauthenticated. |
 
 ### Module constants
 
@@ -62,7 +62,15 @@ Returns a copy of `arr` padded with `fill` up to `length` (or truncated if longe
 
 ### `handleOpenSignature(seat: number): Promise<void>`
 
-`useCallback` keyed on `[canSave, handleSave, gameId, selfHref, signatureIds]`. Saves first if `canSave` (aborting navigation if the save fails), then pushes to `/(pages)/(user)/signature?gameId=...&place=${seat}&sig=...` — guarantees the signature screen never signs against stale/unsaved placement or score edits. The `sig` param carries this screen's own view of that seat's signature id (or `NO_SIGNATURE` when there is none) so the pad doesn't have to consult the store, whose copy may not have caught up with the save that just cleared it — see [`signature.tsx`](signature.md).
+`useCallback` keyed on `[canSave, handleSave, gameId, selfHref, signatureIds]`. Saves first if `canSave` (aborting navigation if the save fails), then pushes to `/(pages)/(user)/signature?gameId=...&place=${seat}&sigs=...` — guarantees the signature screen never signs against stale/unsaved placement or score edits. `place` is only the seat to open on; `sigs` carries this screen's own view of **all four** seats' signature ids (comma-separated, `NO_SIGNATURE` for an empty seat) so the tab bar on the signature screen doesn't have to consult the store, whose copy may not have caught up with the save that just cleared it — see [`signature.tsx`](signature.md).
+
+### `tiedPlaces: number[]`
+
+`useMemo` keyed on `[placements, allPlacementsSet, placementComboValid]`. Empty unless every seat has a placement and the combination is valid (ties are a legitimate outcome of `isValidPlacementCombo`, e.g. `1,2,2,4`); otherwise the sorted list of place numbers held by more than one seat. Rendered as an informational line under the card (`tieDetected`), not an error.
+
+### `gateMessage: string` / `gateReady: boolean`
+
+`gateMessage` is a `useMemo` that explains, in priority order, why the result can't be submitted yet: already submitted (`gateSubmitted`), the game isn't active (`notActiveGame`), everything is in place (`gateReady`), or otherwise a comma-joined list of what's still missing (scores/placements/signatures, via `gateMissingPrefix`). `gateReady` (`isSubmitted || resultReady`, where `resultReady` mirrors `canSave`/`canSubmit`'s conditions without the `isActiveGame`/`isSubmitted` gates) just picks the hint's ink color. This text sits above the submit button. The button is disabled and dimmed whenever `canSubmit` is false (including while any of the four signatures are missing), or while saving or submitting.
 
 ### `handleBack(): void`
 
@@ -74,22 +82,21 @@ Builds all card/row/badge/button/hint styles from theme colors; memoized via `us
 
 ## How it works
 
-### Labelling the three columns
+### Labelling the columns, and the stacked placement row
 
 The card opens with a single
 [`PlayerResultColumnHeaders`](../../../lib/components/results/PlayerResultRow.md)
-row (`colScore` / `colPlace` / `colSignature`), because nothing about a bare
-number box, four numbered chips and an icon button says which is the score,
-which is the finishing place, and that the last one collects a signature —
-players reported exactly that confusion. One shared header row costs a
-single caption line of height instead of repeating labels on all four rows,
-which matters on a screen whose input row is already ~292px wide against a
-~264px card on a 360px phone.
-
-On phones the header sits above the first player's name line rather than
-directly against the inputs (the compact layout puts each player's name on
-its own line above their row); the columns still line up, because the header
-and the row share the same width constants.
+row (`colPlayer` / `colScore` / `colSignature`, with `hidePlacementColumn`
+set), because nothing about a bare number box and an icon button says which
+is the score and which collects a signature — players reported exactly that
+confusion. Each `PlayerResultRow` is rendered with `stackPlacement` and
+`placementRowLabel={t("colPlace")}`: the name/score/signature stay on one
+line, and the four placement chips move to their own full-width row
+labelled "Place" underneath, each chip stretched to share the row's width
+evenly instead of the fixed-size squares `ResultsAdminTab`'s (non-stacked)
+rows use. This is the layout the design's "2a" screen specifies, and it's
+opt-in via `stackPlacement` specifically so `ResultsAdminTab`'s wider,
+multi-column table isn't affected.
 
 ### Editability gates
 
@@ -139,6 +146,10 @@ successful local save doesn't immediately re-trigger this same conflict
 check against its own just-written data.
 
 ### Signature flow
+
+Missing signatures show Lucide's `Signature` icon. Collected signatures show a
+green `Check` with a green button border and tinted background, retaining their
+full color even when signing is disabled or the result has been submitted.
 
 Opening a signature ([`handleOpenSignature`](signature.md)) saves first if
 `canSave` — so navigating to the signature screen never leaves unsaved
@@ -194,5 +205,7 @@ The `useFocusEffect` re-sync for `signatureIds` is intentionally exempt from the
 ## Related
 
 - [`lib/components/results/PlayerResultRow.tsx`](../../../lib/components/results/PlayerResultRow.md)
+- [`lib/components/ui/Badge.tsx`](../../../lib/components/ui/Badge.md) — entry-status badge (`entryOpen`/`submitted`) next to the back button
+- [`lib/components/game/GameHeader.tsx`](../../../lib/components/game/GameHeader.md) — the screen's hero header
 - [`lib/utils/placements.ts`](../../../lib/utils/placements.md)
 - [`app/(pages)/(user)/signature.tsx`](signature.md)

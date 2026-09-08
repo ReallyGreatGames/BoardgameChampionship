@@ -53,6 +53,7 @@ bar/notch itself.
 ## Used by
 
 - [`app/(pages)/(user)/game.tsx`](../../../app/(pages)/(user)/game.md)
+- [`app/(pages)/(user)/results.tsx`](../../../app/(pages)/(user)/results.md) — passes a combined `subtitle` (`"Results · Table N"`) instead of `round`/`tableNumber`
 
 ## Related
 

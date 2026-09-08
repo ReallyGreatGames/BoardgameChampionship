@@ -287,15 +287,15 @@ export default function GamePage() {
         onMenuPress={openMenu}
       />
 
+      <View style={styles.topRow}>
+        <BackButton onPress={handleBack} />
+        <Badge label={badge.label} tone={badge.tone} />
+      </View>
+
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.topRow}>
-          <BackButton onPress={handleBack} />
-          <Badge label={badge.label} tone={badge.tone} />
-        </View>
-
         {tableNumber !== null ? (
           <GameSeatingList table={currentTable} />
         ) : (
@@ -339,10 +339,14 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     content: {
       padding: inset.card,
+      paddingTop: 0,
       paddingBottom: inset.group,
       gap: space[5],
     },
     topRow: {
+      paddingHorizontal: inset.card,
+      paddingTop: inset.card,
+      paddingBottom: space[5],
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
