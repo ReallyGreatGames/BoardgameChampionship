@@ -1,388 +1,36 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ActivityIndicator,
-  Animated,
-  Easing,
   LayoutAnimation,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  UIManager,
   View,
 } from "react-native";
 import { useAuth } from "@/lib/auth";
-import { usePlayer } from "@/lib/bootstrap/PlayerProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { Schedule } from "@/lib/models/schedule";
 import { useResultStore } from "@/lib/stores/appwrite/result-store";
 import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
 import { useTableStore } from "@/lib/stores/appwrite/table-store";
-import { inset } from "@/lib/theme/spacing";
+import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
-import { addMinutesToTime, deepClone } from "@/lib/utils";
+import { ui } from "@/lib/theme/ui";
+import { computeTableElapsedSeconds, deepClone } from "@/lib/utils";
 import { useDialog } from "@/lib/components/ui/Dialog";
-import { Markdown } from "@/lib/components/ui/Markdown";
-import { ScheduleFormData, ScheduleItemModal } from "@/lib/components/schedule/ScheduleItemModal";
-import { Table } from "@/lib/components/game/Table";
+import { RunningNowCard } from "@/lib/components/schedule/RunningNowCard";
+import { ScheduleRow } from "@/lib/components/schedule/ScheduleRow";
+import {
+  ScheduleFormData,
+  ScheduleItemModal,
+} from "@/lib/components/schedule/ScheduleItemModal";
 import { TimerSettingsModal } from "@/lib/components/schedule/TimerSettingsModal";
 import { goTo } from "@/lib/utils/navigation";
 
-if (Platform.OS === "android") {
-  UIManager.setLayoutAnimationEnabledExperimental?.(true);
-}
-
-function PulsingDot({
-  isActive,
-  isFinished,
-  colors,
-}: {
-  isActive: boolean;
-  isFinished: boolean;
-  colors: ReturnType<typeof useTheme>["colors"];
-}) {
-  const pingScale = useRef(new Animated.Value(1)).current;
-  const pingOpacity = useRef(new Animated.Value(0)).current;
-  const activeRef = useRef(false);
-
-  useEffect(() => {
-    if (!isActive) {
-      activeRef.current = false;
-      pingScale.stopAnimation();
-      pingOpacity.stopAnimation();
-      pingScale.setValue(1);
-      pingOpacity.setValue(0);
-      return;
-    }
-
-    activeRef.current = true;
-
-    const pulse = () => {
-      if (!activeRef.current) {
-        return;
-      }
-      pingScale.setValue(1);
-      pingOpacity.setValue(0.7);
-      Animated.parallel([
-        Animated.timing(pingScale, {
-          toValue: 2.5,
-          duration: 1200,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pingOpacity, {
-          toValue: 0,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-      ]).start(({ finished }) => {
-        if (finished) {
-          pulse();
-        }
-      });
-    };
-
-    pulse();
-
-    return () => {
-      activeRef.current = false;
-    };
-  }, [isActive, pingOpacity, pingScale]);
-
-  const dotColor = isFinished
-    ? colors.text
-    : isActive
-      ? colors.success
-      : colors.accent;
-
-  return (
-    <View
-      style={{
-        alignItems: "center",
-        justifyContent: "center",
-        marginVertical: 4,
-      }}
-    >
-      {isActive && (
-        <Animated.View
-          style={{
-            position: "absolute",
-            width: 10,
-            height: 10,
-            borderRadius: 5,
-            backgroundColor: colors.success,
-            transform: [{ scale: pingScale }],
-            opacity: pingOpacity,
-          }}
-        />
-      )}
-      <View
-        style={{
-          width: 10,
-          height: 10,
-          borderRadius: 5,
-          backgroundColor: dotColor,
-        }}
-      />
-    </View>
-  );
-}
-
-type AdminActions = {
-  onMoveUp: () => void;
-  onMoveDown: () => void;
-  onSetActive: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  isFirst: boolean;
-  isLast: boolean;
-  disabled: boolean;
-  canSetActive: boolean;
-};
-
-export function ScheduleItem({
-  schedule,
-  admin,
-}: {
-  schedule: Schedule;
-  admin?: AdminActions;
-}) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const [expanded, setExpanded] = useState(schedule.isActive);
-  const { t } = useTranslation(["components"]);
-  const { player } = usePlayer();
-  const endTime = addMinutesToTime(
-    schedule.startTimePlanned,
-    schedule.durationPlanned,
-  );
-
-  const chevronRotation = useRef(
-    new Animated.Value(schedule.isActive ? 1 : 0),
-  ).current;
-  const chevronStyle = {
-    transform: [
-      {
-        rotate: chevronRotation.interpolate({
-          inputRange: [0, 1],
-          outputRange: ["0deg", "180deg"],
-        }),
-      },
-    ],
-  };
-
-  const prevIsActiveRef = useRef(schedule.isActive);
-  useEffect(() => {
-    const wasActive = prevIsActiveRef.current;
-    prevIsActiveRef.current = schedule.isActive;
-    if (schedule.isActive && !wasActive) {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setExpanded(true);
-      Animated.timing(chevronRotation, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [chevronRotation, schedule.isActive]);
-
-  const handleToggle = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    const next = !expanded;
-    setExpanded(next);
-    Animated.timing(chevronRotation, {
-      toValue: next ? 1 : 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  return (
-    <View style={styles.card}>
-      <TouchableOpacity
-        style={styles.itemHeader}
-        onPress={handleToggle}
-        activeOpacity={0.7}
-      >
-        <View style={styles.itemLeft}>
-          {schedule.icon ? (
-            <Ionicons
-              name={schedule.icon as any}
-              size={20}
-              color={
-                schedule.isActive
-                  ? colors.success
-                  : schedule.isFinished
-                    ? colors.textMuted
-                    : colors.text
-              }
-            />
-          ) : null}
-          <Text
-            style={[
-              styles.itemTitle,
-              {
-                fontWeight: schedule.isActive ? "bold" : "normal",
-                color: schedule.isActive
-                  ? colors.text
-                  : schedule.isFinished
-                    ? colors.textMuted
-                    : colors.text,
-              },
-            ]}
-          >
-            {schedule.title}
-          </Text>
-        </View>
-        <View style={styles.itemRight}>
-          <Text style={styles.itemTime}>{schedule.startTimePlanned}</Text>
-          <Animated.View style={chevronStyle}>
-            <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
-          </Animated.View>
-        </View>
-      </TouchableOpacity>
-
-      {expanded && (
-        <>
-          <View style={styles.divider} />
-          <View style={styles.expandedContent}>
-            <View style={styles.expandedTimeSection}>
-              <View style={styles.expandedTimeSectionInfo}>
-                <View style={styles.timeRow}>
-                  <Ionicons name="time" size={16} color={colors.primary} />
-                  <Text style={styles.timeValue}>
-                    {schedule.startTimePlanned} – {endTime}
-                  </Text>
-                </View>
-                <View style={styles.timeRow}>
-                  <Ionicons name="hourglass" size={16} color={colors.primary} />
-                  <Text style={styles.timeValue}>
-                    {schedule.durationPlanned} min
-                  </Text>
-                </View>
-              </View>
-              {schedule.gameId ? (
-                <TouchableOpacity
-                  style={styles.goToGameButton}
-                  onPress={() => {
-                    if (player?.team && player?.$id) {
-                      goTo(
-                        "/(pages)/(user)/schedule",
-                        `/game?gameId=${schedule.gameId}&from=/(pages)/(user)/schedule`,
-                      );
-                    } else {
-                      router.push({
-                        pathname:
-                          "/(pages)/(team-player)/choose-your-character",
-                        params: { gameId: schedule.gameId },
-                      });
-                    }
-                  }}
-                >
-                  <Text style={styles.goToGameButtonText}>
-                    {t("schedule.goToGameButton")}
-                  </Text>
-                  <Ionicons name="arrow-forward" size={16} color={colors.onAccent} />
-                </TouchableOpacity>
-              ) : null}
-            </View>
-
-            {schedule.gameId ? <Table gameId={schedule.gameId} /> : null}
-
-            {schedule.description ? (
-              <Markdown textStyle={styles.description}>
-                {schedule.description}
-              </Markdown>
-            ) : null}
-          </View>
-        </>
-      )}
-      {admin && (
-        <View style={styles.adminBar}>
-          <TouchableOpacity
-            style={[
-              styles.adminBtn,
-              (admin.isFirst || admin.disabled) && styles.adminBtnDisabled,
-            ]}
-            onPress={admin.onMoveUp}
-            disabled={admin.isFirst || admin.disabled}
-          >
-            <Ionicons
-              name="arrow-up"
-              size={16}
-              color={
-                admin.isFirst || admin.disabled ? colors.textMuted : colors.text
-              }
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.adminBtn,
-              (admin.isLast || admin.disabled) && styles.adminBtnDisabled,
-            ]}
-            onPress={admin.onMoveDown}
-            disabled={admin.isLast || admin.disabled}
-          >
-            <Ionicons
-              name="arrow-down"
-              size={16}
-              color={
-                admin.isLast || admin.disabled ? colors.textMuted : colors.text
-              }
-            />
-          </TouchableOpacity>
-
-          {!schedule.isActive && admin.canSetActive && (
-            <TouchableOpacity
-              style={[
-                styles.adminBtn,
-                admin.disabled && styles.adminBtnDisabled,
-              ]}
-              onPress={admin.onSetActive}
-              disabled={admin.disabled}
-            >
-              <Ionicons
-                name="play-circle-outline"
-                size={16}
-                color={admin.disabled ? colors.textMuted : colors.success}
-              />
-            </TouchableOpacity>
-          )}
-
-          <View style={styles.adminBarSpacer} />
-          {admin.disabled && (
-            <ActivityIndicator size="small" color={colors.textMuted} />
-          )}
-          <TouchableOpacity
-            style={[styles.adminBtn, admin.disabled && styles.adminBtnDisabled]}
-            onPress={admin.onEdit}
-            disabled={admin.disabled}
-          >
-            <Ionicons
-              name="create-outline"
-              size={16}
-              color={admin.disabled ? colors.textMuted : colors.text}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.adminBtn, admin.disabled && styles.adminBtnDisabled]}
-            onPress={admin.onDelete}
-            disabled={admin.disabled}
-          >
-            <Ionicons
-              name="trash-outline"
-              size={16}
-              color={admin.disabled ? colors.textMuted : colors.error}
-            />
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
-  );
+function initialActiveResumedAt(item: Schedule): string | null {
+  return item.gameId ? null : new Date().toISOString();
 }
 
 export function ScheduleList() {
@@ -401,6 +49,7 @@ export function ScheduleList() {
   );
   const [timerModalVisible, setTimerModalVisible] = useState(false);
   const [timerGameId, setTimerGameId] = useState<string | null>(null);
+  const [doneOpen, setDoneOpen] = useState(true);
   const sortedScheduleItems = useMemo(
     () => [...collection].sort((a, b) => a.sortIndex - b.sortIndex),
     [collection],
@@ -448,7 +97,11 @@ export function ScheduleList() {
     }
   }
 
-  async function handleSetActive(storeIndex: number) {
+  /**
+   * The two confirmation prompts every activation goes through. Returns
+   * whether the admin confirmed all of them.
+   */
+  async function confirmActiveChange() {
     const currentActive = sortedScheduleItems.find((s) => s.isActive);
     const gameTables = tableCollection.filter((t) => {
       const tGameId = typeof t.game === "string" ? t.game : t.game.$id;
@@ -458,7 +111,8 @@ export function ScheduleList() {
       !!currentActive?.gameId &&
       (gameTables.length === 0
         ? resultCollection.some(
-            (r) => r.gameId === currentActive.gameId && r.signatureIds?.some(Boolean),
+            (r) =>
+              r.gameId === currentActive.gameId && r.signatureIds?.some(Boolean),
           )
         : !gameTables.every((table) =>
             resultCollection.some(
@@ -478,7 +132,7 @@ export function ScheduleList() {
       destructive: hasSigned,
     });
     if (!ok) {
-      return;
+      return false;
     }
 
     if (hasSigned) {
@@ -492,8 +146,16 @@ export function ScheduleList() {
         destructive: hasSigned,
       });
       if (!ok) {
-        return;
+        return false;
       }
+    }
+
+    return true;
+  }
+
+  async function handleSetActive(storeIndex: number) {
+    if (!(await confirmActiveChange())) {
+      return;
     }
 
     setIsLoading(true);
@@ -511,8 +173,43 @@ export function ScheduleList() {
             ...s,
             isActive: shouldBeActive,
             isFinished: shouldBeActive ? false : s.isFinished,
+            activeAccumulatedMs: shouldBeActive ? 0 : s.activeAccumulatedMs,
+            activeResumedAt: shouldBeActive
+              ? initialActiveResumedAt(s)
+              : s.activeResumedAt,
           });
         }),
+      );
+    } finally {
+      setTimeout(() => setIsLoading(false), debounceTimeOut);
+    }
+  }
+
+  /**
+   * Restarts a finished item: it becomes the running one, and everything after
+   * it is un-finished, so the whole rest of the day moves back to "up next".
+   * Items before it stay done.
+   */
+  async function handleRestart(storeIndex: number) {
+    if (!(await confirmActiveChange())) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await Promise.all(
+        sortedScheduleItems.map((s, i) =>
+          i < storeIndex
+            ? update({ ...s, isActive: false })
+            : update({
+                ...s,
+                isActive: i === storeIndex,
+                isFinished: false,
+                activeAccumulatedMs: i === storeIndex ? 0 : s.activeAccumulatedMs,
+                activeResumedAt:
+                  i === storeIndex ? initialActiveResumedAt(s) : s.activeResumedAt,
+              }),
+        ),
       );
     } finally {
       setTimeout(() => setIsLoading(false), debounceTimeOut);
@@ -534,6 +231,36 @@ export function ScheduleList() {
     setIsLoading(true);
     try {
       await deleteItem(sortedScheduleItems[storeIndex]);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handlePause(storeIndex: number) {
+    const item = sortedScheduleItems[storeIndex];
+    const elapsedMs =
+      computeTableElapsedSeconds(
+        item.activeAccumulatedMs ?? 0,
+        item.activeResumedAt,
+        Date.now(),
+      ) * 1000;
+    setIsLoading(true);
+    try {
+      await update({
+        ...item,
+        activeAccumulatedMs: elapsedMs,
+        activeResumedAt: null,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleResume(storeIndex: number) {
+    const item = sortedScheduleItems[storeIndex];
+    setIsLoading(true);
+    try {
+      await update({ ...item, activeResumedAt: new Date().toISOString() });
     } finally {
       setIsLoading(false);
     }
@@ -565,6 +292,53 @@ export function ScheduleList() {
 
   const lastIndex = sortedScheduleItems.length - 1;
   const activeIndex = sortedScheduleItems.findIndex((s) => s.isActive);
+  const activeItem = activeIndex === -1 ? null : sortedScheduleItems[activeIndex];
+
+  // Both groups keep the item's index in `sortedScheduleItems`, because every
+  // admin handler addresses items by that index.
+  const { upcoming, done } = useMemo(() => {
+    const upcomingItems: { item: Schedule; index: number }[] = [];
+    const doneItems: { item: Schedule; index: number }[] = [];
+    sortedScheduleItems.forEach((item, index) => {
+      if (item.isActive) {
+        return;
+      }
+      (item.isFinished ? doneItems : upcomingItems).push({ item, index });
+    });
+    return { upcoming: upcomingItems, done: doneItems };
+  }, [sortedScheduleItems]);
+
+  /**
+   * Mirrors the old timeline's rule for starting an *upcoming* item: only the
+   * one directly after the active item (or the very first item when nothing is
+   * active) may be started, so the day can't skip ahead. Finished items are not
+   * bound by it — they all offer "restart".
+   */
+  const canSetActive = (index: number) =>
+    activeIndex === -1
+      ? index === 0
+      : index === activeIndex + 1 || index === activeIndex - 1;
+
+  const adminActions = (index: number, variant: "upcoming" | "done") => ({
+    onMoveUp: variant === "upcoming" ? () => handleMoveUp(index) : undefined,
+    onMoveDown: variant === "upcoming" ? () => handleMoveDown(index) : undefined,
+    onSetActive:
+      variant === "done"
+        ? () => handleRestart(index)
+        : canSetActive(index)
+          ? () => handleSetActive(index)
+          : undefined,
+    onEdit: () => handleEdit(index),
+    onDelete: () => handleDelete(index),
+    isFirst: index === 0,
+    isLast: index === lastIndex,
+    disabled: isLoading,
+  });
+
+  function toggleDone() {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setDoneOpen((prev) => !prev);
+  }
 
   return (
     <>
@@ -608,93 +382,95 @@ export function ScheduleList() {
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       >
-        {sortedScheduleItems.map((schedule, index) => {
-          const isFirst = index === 0;
-          const isLast = index === lastIndex;
-          return (
-            <View key={schedule.$id} style={styles.timelineRow}>
-              <View style={styles.timelineTrack}>
-                <View
-                  style={[
-                    styles.timelineLine,
-                    isFirst && styles.timelineLineHidden,
-                  ]}
-                />
-                <PulsingDot
-                  isActive={schedule.isActive ?? false}
-                  isFinished={schedule.isFinished ?? false}
-                  colors={colors}
-                />
-                <View
-                  style={
-                    isLast && isAdmin
-                      ? styles.timelineLineDashed
-                      : [
-                          styles.timelineLine,
-                          isLast && styles.timelineLineHidden,
-                        ]
+        {activeItem && (
+          <RunningNowCard
+            key={`${activeItem.$id}-${activeItem.$updatedAt ?? ""}`}
+            item={activeItem}
+            admin={
+              isAdmin
+                ? {
+                    onEdit: () => handleEdit(activeIndex),
+                    onStartNext:
+                      activeIndex < lastIndex
+                        ? () => handleSetActive(activeIndex + 1)
+                        : null,
+                    onTogglePause: activeItem.activeResumedAt
+                      ? () => handlePause(activeIndex)
+                      : () => handleResume(activeIndex),
+                    isPaused: !activeItem.activeResumedAt,
+                    disabled: isLoading,
                   }
-                />
-              </View>
-              <View
-                style={[
-                  styles.timelineCard,
-                  (!isLast || isAdmin) && styles.timelineCardGap,
-                ]}
-              >
-                <ScheduleItem
-                  key={`${schedule.$id}-${schedule.$updatedAt ?? ""}`}
-                  schedule={schedule}
-                  admin={
-                    isAdmin
-                      ? {
-                          isFirst,
-                          isLast,
-                          disabled: isLoading,
-                          canSetActive:
-                            activeIndex === -1
-                              ? index === 0
-                              : index === activeIndex + 1 ||
-                                index === activeIndex - 1,
-                          onMoveUp: () => handleMoveUp(index),
-                          onMoveDown: () => handleMoveDown(index),
-                          onSetActive: () => handleSetActive(index),
-                          onEdit: () => handleEdit(index),
-                          onDelete: () => handleDelete(index),
-                        }
-                      : undefined
-                  }
-                />
-              </View>
-            </View>
-          );
-        })}
-        {isAdmin && (
-          <View style={styles.timelineRow}>
-            <View style={styles.timelineTrack}>
-              <View style={styles.timelineLineDashed} />
-              <View
-                style={[styles.timelineDot, { backgroundColor: colors.border }]}
+                : undefined
+            }
+          />
+        )}
+
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>{t("schedule.upcoming")}</Text>
+          <View style={styles.group}>
+            {upcoming.map(({ item, index }) => (
+              <ScheduleRow
+                key={`${item.$id}-${item.$updatedAt ?? ""}`}
+                schedule={item}
+                variant="upcoming"
+                admin={isAdmin ? adminActions(index, "upcoming") : undefined}
               />
-              <View style={[styles.timelineLine, styles.timelineLineHidden]} />
-            </View>
-            <View style={styles.timelineCard}>
+            ))}
+
+            {upcoming.length === 0 && !isAdmin && (
+              <Text style={styles.emptyText}>
+                {t("schedule.noUpcomingItems")}
+              </Text>
+            )}
+
+            {isAdmin && (
               <TouchableOpacity
-                style={[
-                  styles.addItemCard,
-                  isLoading && styles.addItemCardDisabled,
-                ]}
+                style={[styles.addItem, isLoading && styles.addItemDisabled]}
                 onPress={addSchedule}
                 disabled={isLoading}
+                accessibilityRole="button"
               >
                 <Ionicons
                   name="add-circle-outline"
-                  size={18}
-                  color={colors.textMuted}
+                  size={19}
+                  color={colors.textSecondary}
                 />
                 <Text style={styles.addItemText}>{t("schedule.addItem")}</Text>
               </TouchableOpacity>
-            </View>
+            )}
+          </View>
+        </View>
+
+        {done.length > 0 && (
+          <View style={styles.section}>
+            <TouchableOpacity
+              style={styles.doneHeader}
+              onPress={toggleDone}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: doneOpen }}
+            >
+              <Text style={styles.sectionLabel}>
+                {t("schedule.doneSection", { count: done.length })}
+              </Text>
+              <Ionicons
+                name={doneOpen ? "chevron-up" : "chevron-down"}
+                size={16}
+                color={colors.textMuted}
+              />
+            </TouchableOpacity>
+            {doneOpen && (
+              <View style={styles.groupTight}>
+                {done.map(({ item, index }) => (
+                  <ScheduleRow
+                    key={`${item.$id}-${item.$updatedAt ?? ""}`}
+                    schedule={item}
+                    variant="done"
+                    admin={isAdmin ? adminActions(index, "done") : undefined}
+                  />
+                ))}
+              </View>
+            )}
           </View>
         )}
       </ScrollView>
@@ -704,214 +480,54 @@ export function ScheduleList() {
 
 function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
   return StyleSheet.create({
-    header: {
-      marginBottom: inset.group,
-    },
-    title: {
-      ...type.h1,
-      color: colors.text,
-    },
     list: {
+      // Horizontal padding is the embedding screen's job — the admin dashboard
+      // wraps this list in its own, wider gutter.
       paddingBottom: inset.screenBottom,
+      gap: space[6],
     },
-    timelineRow: {
-      flexDirection: "row",
-      alignItems: "stretch",
+    section: {
+      gap: space[3],
     },
-    timelineTrack: {
-      width: 32,
-      alignItems: "center",
-    },
-    timelineLine: {
-      flex: 1,
-      width: 2,
-      backgroundColor: colors.border,
-    },
-    timelineLineHidden: {
-      opacity: 0,
-    },
-    timelineLineDashed: {
-      flex: 1,
-      width: 2,
-      borderLeftWidth: 2,
-      borderStyle: "dashed",
-      borderColor: colors.border,
-    },
-    timelineDot: {
-      width: 10,
-      height: 10,
-      borderRadius: 5,
-      backgroundColor: colors.accent,
-      marginVertical: 4,
-    },
-    timelineCard: {
-      flex: 1,
-    },
-    timelineCardGap: {
-      paddingBottom: inset.list,
-    },
-    card: {
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 12,
-      overflow: "hidden",
-    },
-    itemHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      padding: inset.card,
-    },
-    itemLeft: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      flex: 1,
-    },
-    itemTitle: {
-      ...type.body,
-      color: colors.text,
-      flex: 1,
-    },
-    itemRight: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-    },
-    itemTime: {
-      ...type.bodySmall,
-      color: colors.textSecondary,
-    },
-    itemTimeDelay: {
-      ...type.bodySmall,
-      color: colors.error,
-    },
-    divider: {
-      height: 1,
-      backgroundColor: colors.divider,
-    },
-    expandedContent: {
-      padding: inset.card,
-      gap: inset.tight,
-    },
-    timeRow: {
-      flexDirection: "row",
-      gap: 8,
-      alignItems: "flex-start",
-    },
-    timeLabel: {
-      ...type.caption,
+    sectionLabel: {
+      ...type.eyebrow,
       color: colors.textMuted,
-      width: 40,
     },
-    timeValue: {
-      ...type.bodySmall,
-      color: colors.textSecondary,
-      flex: 1,
+    group: {
+      gap: space[2],
     },
-    description: {
-      ...type.bodySmall,
-      color: colors.textSecondary,
-      marginTop: inset.tight,
+    groupTight: {
+      gap: space[1] + 2,
     },
-    expandedTimeSection: {
+    doneHeader: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      gap: inset.group,
+      gap: space[2],
+      minHeight: 32,
     },
-    expandedTimeSectionInfo: {
-      flex: 1,
-      gap: inset.tight,
-    },
-    goToGameButton: {
-      backgroundColor: colors.accent,
-      borderRadius: 8,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-    },
-    goToGameButtonText: {
+    emptyText: {
       ...type.bodySmall,
-      color: colors.onAccent,
-      fontWeight: "600",
+      color: colors.textMuted,
     },
-    gameSection: {
-      marginTop: inset.tight,
+    addItem: {
+      minHeight: 48,
       borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 8,
-      overflow: "hidden",
-    },
-    gameSectionHeader: {
-      color: colors.text,
-      fontWeight: "bold",
-      backgroundColor: colors.surfaceHigh,
-      paddingHorizontal: inset.card,
-      paddingVertical: 6,
-      textTransform: "uppercase",
-      letterSpacing: 0.5,
-    },
-    gameTable: {
-      gap: 0,
-    },
-    gameRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      paddingHorizontal: inset.card,
-      paddingVertical: 8,
-      borderTopWidth: 1,
-      borderTopColor: colors.divider,
-    },
-    gameTeam: {
-      ...type.bodySmall,
-      color: colors.text,
-    },
-    gamePlayer: {
-      ...type.bodySmall,
-      color: colors.textSecondary,
-    },
-    adminBar: {
-      flexDirection: "row",
-      alignItems: "center",
-      borderTopWidth: 1,
-      borderTopColor: colors.divider,
-      paddingHorizontal: inset.card,
-      paddingVertical: 6,
-      gap: 4,
-    },
-    adminBtn: {
-      padding: 6,
-      borderRadius: 6,
-    },
-    adminBtnDisabled: {
-      opacity: 0.3,
-    },
-    adminBarSpacer: {
-      flex: 1,
-    },
-    addItemCard: {
-      borderWidth: 1,
-      borderColor: colors.border,
       borderStyle: "dashed",
-      borderRadius: 12,
+      borderColor: colors.border,
+      borderRadius: ui.cardRadius,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      gap: 8,
-      paddingVertical: inset.card,
-      paddingHorizontal: inset.card,
+      gap: space[2],
     },
-    addItemCardDisabled: {
-      opacity: 0.4,
+    addItemDisabled: {
+      opacity: ui.disabledOpacity,
     },
     addItemText: {
       ...type.bodySmall,
-      color: colors.textMuted,
+      fontFamily: type.eyebrow.fontFamily,
+      color: colors.textSecondary,
     },
   });
 }

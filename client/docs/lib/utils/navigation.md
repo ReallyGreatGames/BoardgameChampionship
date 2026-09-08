@@ -91,7 +91,7 @@ in the middle of a flow. Each screen also keeps a hardcoded final fallback
 - [`app/(pages)/(user)/signature.tsx`](../../app/(pages)/(user)/signature.md)
 - [`app/(pages)/(user)/timer.tsx`](../../app/(pages)/(user)/timer.md)
 - [`lib/components/schedule/ActiveScheduleCard.tsx`](../components/schedule/ActiveScheduleCard.md) — records home as the origin
-- [`lib/components/schedule/Schedule.tsx`](../components/schedule/Schedule.md) — records the schedule as the origin
+- [`lib/components/schedule/Schedule.tsx`](../components/schedule/Schedule.md), [`useOpenGame.ts`](../components/schedule/useOpenGame.md) — record the schedule as the origin
 - [`lib/components/shell/AppDrawer.tsx`](../components/shell/AppDrawer.md) — resets the history on a drawer jump
 
 ## Related

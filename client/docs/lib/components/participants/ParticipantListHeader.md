@@ -33,6 +33,8 @@ light and high-contrast palettes. So the three colors are picked from
 `isDark` ([`useTheme`](../../bootstrap/ThemeProvider.md)) — dark schemes get
 `surface`/`text`/`textSecondary`, light ones `primary`/`onAccent`/`surfaceHigh`.
 
+The hamburger itself is [`MenuButton`](../shell/MenuButton.md), which repeats the same `isDark` switch internally so it can be dropped into any of these bands unchanged.
+
 ### Status bar
 
 Top padding is `useSafeAreaInsets().top` plus a small gap, because the screen
@@ -52,3 +54,4 @@ scale instead of introducing a one-off font size.
 ## Related
 
 - [`lib/components/home/ParticipantHero.tsx`](../home/ParticipantHero.md) — the home screen's equivalent band
+- [`lib/components/shell/MenuButton.tsx`](../shell/MenuButton.md) — the shared hamburger button this band renders

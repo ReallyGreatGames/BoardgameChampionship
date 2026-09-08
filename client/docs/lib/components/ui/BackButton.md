@@ -5,6 +5,8 @@
 ## Purpose
 
 Themed back-navigation button (arrow icon + translated "back" label).
+Uses a 40-point minimum height with vertically centered content, keeping the
+label at the same height on game screens with or without adjacent controls.
 
 ## Exports
 

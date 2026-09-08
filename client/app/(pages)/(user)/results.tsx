@@ -1,5 +1,6 @@
 import { SIGNATURES_BUCKET_ID, storage } from "@/lib/appwrite";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
+import { GameHeader } from "@/lib/components/game/GameHeader";
 import { BackButton } from "@/lib/components/ui/BackButton";
 import { useDialog } from "@/lib/components/ui/Dialog";
 import {
@@ -8,6 +9,7 @@ import {
   SIGNATURE_COLUMN_WIDTH,
   type PlayerResultRowHandle,
 } from "@/lib/components/results/PlayerResultRow";
+import { useGameScheduleInfo } from "@/lib/hooks/useGameScheduleInfo";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { NO_SIGNATURE } from "@/lib/models/result";
@@ -21,7 +23,9 @@ import { hasScorePlacementConflict, isValidPlacementCombo } from "@/lib/utils/pl
 import { teamName } from "@/lib/utils";
 import { goBackTo, goTo } from "@/lib/utils/navigation";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useNavigation } from "expo-router";
+import { DrawerActions } from "expo-router/react-navigation";
+import { Check, Signature } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -50,6 +54,8 @@ export default function ResultsPage() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useTranslation(["results"]);
   const { confirm } = useDialog();
+  const navigation = useNavigation();
+  const game = useGameScheduleInfo(gameId);
   const resultStore = useResultStore();
   const scheduleStore = useScheduleStore();
   const tableNumber = usePlayerTable(gameId);
@@ -139,6 +145,15 @@ export default function ResultsPage() {
   );
 
   const selfHref = `/(pages)/(user)/results?gameId=${gameId}`;
+  const tableLabel =
+    tableNumber !== null
+      ? t("tableHeader").replace("{n}", String(tableNumber))
+      : null;
+
+  const openMenu = useCallback(
+    () => navigation.dispatch(DrawerActions.openDrawer()),
+    [navigation],
+  );
 
   const handleBack = useCallback(() => {
     goBackTo(from ?? (gameId ? `/game?gameId=${gameId}` : "/"));
@@ -167,7 +182,48 @@ export default function ResultsPage() {
   const canSubmit = !isSubmitted && isActiveGame && signatureCount === PLAYER_COUNT;
 
   const canSign = canSave;
-  const signaturesMissing = !isSubmitted && isActiveGame && signatureCount < PLAYER_COUNT;
+
+  const tiedPlaces = useMemo(() => {
+    if (!allPlacementsSet || !placementComboValid) {
+      return [];
+    }
+    const counts = new Map<string, number>();
+    placements.forEach((p) => counts.set(p, (counts.get(p) ?? 0) + 1));
+    return [...counts.entries()]
+      .filter(([, count]) => count > 1)
+      .map(([p]) => Number(p))
+      .sort((a, b) => a - b);
+  }, [placements, allPlacementsSet, placementComboValid]);
+
+  const resultReady = allPlacementsSet && allScoresValid && placementComboValid && !scoreConflict && signatureCount === PLAYER_COUNT;
+
+  const gateMessage = useMemo(() => {
+    if (isSubmitted) {
+      return t("gateSubmitted");
+    }
+    if (!isActiveGame) {
+      return t("notActiveGame");
+    }
+    if (resultReady) {
+      return t("gateReady");
+    }
+    const missing: string[] = [];
+    if (!allScoresValid) {
+      missing.push(t("gateMissingScores"));
+    }
+    if (!allPlacementsSet || !placementComboValid || scoreConflict) {
+      missing.push(t("gateMissingPlacements"));
+    }
+    const messages = missing.length
+      ? [t("gateMissingPrefix").replace("{items}", missing.join(", "))]
+      : [];
+    if (signatureCount < PLAYER_COUNT) {
+      messages.push(t(`gateMissingSignatures${PLAYER_COUNT - signatureCount}`));
+    }
+    return messages.join(" ");
+  }, [isSubmitted, isActiveGame, resultReady, allScoresValid, allPlacementsSet, placementComboValid, scoreConflict, signatureCount, t]);
+
+  const gateReady = isSubmitted || resultReady;
 
   const buildPayload = useCallback(
     (submittedFlag: boolean) => ({
@@ -356,11 +412,10 @@ export default function ResultsPage() {
         const saved = await handleSave();
         if (!saved) return;
       }
+      const sigsParam = signatureIds.map((id) => id || NO_SIGNATURE).join(",");
       goTo(
         selfHref,
-        `/(pages)/(user)/signature?gameId=${gameId}&place=${seat}&sig=${
-          signatureIds[seat] || NO_SIGNATURE
-        }`,
+        `/(pages)/(user)/signature?gameId=${gameId}&place=${seat}&sigs=${sigsParam}`,
       );
     },
     [canSave, handleSave, gameId, selfHref, signatureIds],
@@ -370,30 +425,32 @@ export default function ResultsPage() {
 
   return (
     <View style={styles.container}>
-      <BackButton onPress={handleBack} />
+      <GameHeader
+        title={game.title || t("title")}
+        round={null}
+        tableNumber={null}
+        subtitle={[t("title"), tableLabel].filter(Boolean).join(" · ")}
+        onMenuPress={openMenu}
+      />
 
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.header}>
-          <Text style={styles.tableHeading}>
-            {tableNumber !== null ? t("tableHeader").replace("{n}", String(tableNumber)) : "—"}
-          </Text>
-          {isSubmitted && (
-            <View style={styles.submittedBadge}>
-              <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-              <Text style={styles.submittedBadgeText}>{t("submitted")}</Text>
-            </View>
-          )}
+      <View style={styles.body}>
+        <View style={styles.backButton}>
+          <BackButton onPress={handleBack} />
         </View>
 
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         <View style={styles.card}>
           <PlayerResultColumnHeaders
+            playerLabel={t("colPlayer")}
             scoreLabel={t("colScore")}
             placementLabel={t("colPlace")}
             signatureLabel={t("colSignature")}
+            hidePlacementColumn
           />
 
           {Array.from({ length: PLAYER_COUNT }, (_, i) => {
@@ -428,12 +485,14 @@ export default function ResultsPage() {
                 }}
                 disabled={disabled}
                 placementError={scoreConflict}
+                stackPlacement
+                placementRowLabel={t("colPlace")}
                 signatureSlot={
                   <TouchableOpacity
                     style={[
                       styles.sigBtn,
                       !!sigId && styles.sigBtnSigned,
-                      !canSign && styles.sigBtnDisabled,
+                      !canSign && !sigId && styles.sigBtnDisabled,
                     ]}
                     onPress={() => handleOpenSignature(i)}
                     disabled={!canSign}
@@ -441,21 +500,28 @@ export default function ResultsPage() {
                     // @ts-expect-error — web-only: remove sig from tab order
                     tabIndex={Platform.OS === "web" ? -1 : undefined}
                   >
-                    <Ionicons
-                      name={sigId ? "checkmark-circle" : "pencil-outline"}
-                      size={20}
-                      color={
-                        sigId ? colors.success : canSign ? colors.primary : colors.textMuted
-                      }
-                    />
+                    {sigId ? (
+                      <Check size={20} color={colors.success} />
+                    ) : (
+                      <Signature
+                        size={20}
+                        color={canSign ? colors.primary : colors.textMuted}
+                      />
+                    )}
                   </TouchableOpacity>
                 }
               />
             );
           })}
 
+          {tiedPlaces.length > 0 && (
+            <Text style={styles.tieHint}>
+              {t("tieDetected").replace("{places}", tiedPlaces.join(", "))}
+            </Text>
+          )}
+
           {}
-          {(scoreConflict || !placementComboValid || signaturesMissing) && (
+          {(scoreConflict || !placementComboValid || signaturesReset) && (
             <View style={styles.cardErrors}>
               {scoreConflict && (
                 <View style={styles.cardErrorRow}>
@@ -469,12 +535,10 @@ export default function ResultsPage() {
                   <Text style={styles.cardErrorText}>{t("warnPlacementInvalid")}</Text>
                 </View>
               )}
-              {signaturesMissing && (
+              {signaturesReset && (
                 <View style={styles.cardErrorRow}>
                   <Ionicons name="pencil-outline" size={14} color={colors.error} />
-                  <Text style={styles.cardErrorText}>
-                    {signaturesReset ? t("hintSignaturesReset") : t("hintSignatures")}
-                  </Text>
+                  <Text style={styles.cardErrorText}>{t("hintSignaturesReset")}</Text>
                 </View>
               )}
             </View>
@@ -495,40 +559,39 @@ export default function ResultsPage() {
             textAlignVertical="top"
             editable={!isSubmitted}
           />
-          {!isActiveGame && !isSubmitted && (
-            <View style={styles.hint}>
-              <Ionicons name="lock-closed-outline" size={13} color={colors.textMuted} />
-              <Text style={styles.hintMuted}>{t("notActiveGame")}</Text>
-            </View>
-          )}
         </View>
+        </ScrollView>
 
-        {}
-        <TouchableOpacity
-          style={[
-            styles.submitBtn,
-            (isSubmitted || (!canSave && !canSubmit)) && styles.btnDisabled,
-          ]}
-          onPress={handleSubmit}
-          disabled={isSubmitted || submitting || saving}
-          activeOpacity={0.7}
-        >
-          {submitting || saving ? (
-            <ActivityIndicator size="small" color={colors.onAccent} />
-          ) : (
-            <>
-              <Ionicons
-                name="checkmark-done-outline"
-                size={18}
-                color={isSubmitted ? colors.textMuted : colors.onAccent}
-              />
-              <Text style={[styles.submitBtnText, isSubmitted && styles.submitBtnTextMuted]}>
-                {t("submit")}
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </ScrollView>
+        <View style={styles.footer}>
+          <Text style={[styles.gateHint, gateReady && styles.gateHintReady]}>
+            {gateMessage}
+          </Text>
+          <TouchableOpacity
+            style={[
+              styles.submitBtn,
+              (!canSubmit || submitting || saving) && styles.btnDisabled,
+            ]}
+            onPress={handleSubmit}
+            disabled={!canSubmit || submitting || saving}
+            activeOpacity={0.7}
+          >
+            {submitting || saving ? (
+              <ActivityIndicator size="small" color={colors.onAccent} />
+            ) : (
+              <>
+                <Ionicons
+                  name="checkmark-done-outline"
+                  size={18}
+                  color={isSubmitted ? colors.textMuted : colors.onAccent}
+                />
+                <Text style={[styles.submitBtnText, isSubmitted && styles.submitBtnTextMuted]}>
+                  {t("submit")}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 }
@@ -538,55 +601,26 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     container: {
       flex: 1,
       backgroundColor: colors.background,
-      padding: inset.screen,
-      paddingTop: inset.group,
+    },
+    body: {
+      flex: 1,
+      paddingHorizontal: inset.card,
+      paddingTop: inset.card,
+    },
+    backButton: {
+      paddingBottom: inset.card,
+    },
+    scrollView: {
+      flex: 1,
     },
     scroll: {
-      paddingBottom: inset.screenBottom,
+      paddingBottom: inset.card,
       gap: inset.group,
     },
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: inset.tight,
-      paddingTop: inset.group,
-    },
-    tableHeading: {
-      ...type.h2,
-      color: colors.text,
-      flex: 1,
-    },
-    submittedBadge: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 4,
-      backgroundColor: colors.success + "20",
-      borderRadius: 12,
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      borderWidth: 1,
-      borderColor: colors.success + "60",
-    },
-    submittedBadgeText: {
+    tieHint: {
       ...type.caption,
-      color: colors.success,
-      fontWeight: "600",
-    },
-    warnRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      backgroundColor: colors.error + "18",
-      borderRadius: 8,
-      paddingHorizontal: inset.card,
-      paddingVertical: 8,
-      borderWidth: 1,
-      borderColor: colors.error + "40",
-    },
-    warnText: {
-      ...type.caption,
-      color: colors.error,
-      flex: 1,
+      color: colors.textSecondary,
+      marginTop: space[2],
     },
     cardErrors: {
       marginTop: space[2],
@@ -619,8 +653,8 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     sigBtn: {
       width: SIGNATURE_COLUMN_WIDTH,
-      height: 40,
-      borderRadius: 8,
+      height: SIGNATURE_COLUMN_WIDTH,
+      borderRadius: ui.inputRadius,
       backgroundColor: colors.surfaceHigh,
       borderWidth: 1,
       borderColor: colors.border,
@@ -656,14 +690,19 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     noteInput: {
       minHeight: 96,
     },
-    hint: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 5,
+    footer: {
+      gap: space[2],
+      paddingTop: space[3],
+      paddingBottom: inset.screenBottom,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.divider,
     },
-    hintMuted: {
+    gateHint: {
       ...type.caption,
       color: colors.textMuted,
+    },
+    gateHintReady: {
+      color: colors.success,
     },
     submitBtn: {
       flexDirection: "row",

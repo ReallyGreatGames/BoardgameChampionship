@@ -25,6 +25,7 @@ Zustand store for the `schedule` collection ([`Schedule`](../../models/schedule.
 ## Used by
 
 - [`lib/components/schedule/ActiveScheduleCard.tsx`](../../components/schedule/ActiveScheduleCard.md), [`Schedule.tsx`](../../components/schedule/Schedule.md), [`ScheduleItemModal.tsx`](../../components/schedule/ScheduleItemModal.md), [`UpcomingList.tsx`](../../components/schedule/UpcomingList.md)
+- [`app/(pages)/(user)/schedule.tsx`](../../../app/(pages)/(user)/schedule.md) — the header's item count
 - [`lib/components/admin/RankingsTab.tsx`](../../components/admin/RankingsTab.md), [`StatisticsTab.tsx`](../../components/admin/StatisticsTab.md), [`ImportRules.tsx`](../../components/admin/ImportRules.md)
 - [`lib/components/results/ResultsAdminTab.tsx`](../../components/results/ResultsAdminTab.md)
 - [`lib/components/ui/PlayerSelectionCard.tsx`](../../components/ui/PlayerSelectionCard.md)

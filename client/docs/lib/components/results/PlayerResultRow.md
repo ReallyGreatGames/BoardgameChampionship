@@ -16,8 +16,8 @@ columns once above a list of rows.
 |---|---|
 | `PlayerResultRow` (component, `forwardRef<PlayerResultRowHandle, Props>`) | See props below |
 | `PlayerResultRowHandle` | `{ focusScore(): void; focusChips(): void }` — imperative handle for cross-row keyboard navigation |
-| `PlayerResultColumnHeaders` (component) | `({ scoreLabel, placementLabel, signatureLabel }: { scoreLabel: string; placementLabel: string; signatureLabel: string }): JSX.Element` — one muted caption row whose cells line up with the score input, the chip row and the signature slot. Rendered once above a list of rows; takes its labels as props so the component stays free of i18n namespaces. |
-| `SIGNATURE_COLUMN_WIDTH` | `number` (`40`) — the width a caller must give its `signatureSlot` for the signature header to sit over it. |
+| `PlayerResultColumnHeaders` (component) | `({ playerLabel?, scoreLabel, placementLabel, signatureLabel, hidePlacementColumn? }): JSX.Element` — one muted caption row whose cells line up with the score input, the chip row and the signature slot. Rendered once above a list of rows; takes its labels as props so the component stays free of i18n namespaces. `playerLabel`, given, renders a left-aligned label over the name column instead of the default blank spacer (and shows even when compact); `hidePlacementColumn` drops the placement header cell entirely, for a caller that labels placement per-row instead (see `stackPlacement`). |
+| `SIGNATURE_COLUMN_WIDTH` | `number` (`44`) — the width a caller must give its `signatureSlot` for the signature header to sit over it. |
 
 ### `Props`
 
@@ -37,6 +37,8 @@ columns once above a list of rows.
 | `signatureSlot` | `ReactNode` | Caller-owned signature UI rendered at the end of the row; this component has no signature logic of its own. |
 | `disabled` | `boolean` (optional, default `false`) | Dims the row and makes the score input/chips non-interactive. |
 | `placementError` | `boolean` (optional, default `false`) | Highlights the active placement chip in the error color (e.g. duplicate placement across the table). |
+| `stackPlacement` | `boolean` (optional, default `false`) | Moves the placement chips out of the main row and onto their own full-width row below it (see "Stacked placement layout"), and forces the name/team block inline in the main row regardless of `isCompact`. |
+| `placementRowLabel` | `string` (optional) | Label shown to the left of the chips when `stackPlacement` is on (e.g. "Place"); omitted, the chips just span the full row width. |
 
 ### `PlayerResultRowHandle`
 
@@ -57,7 +59,7 @@ or the score box is resized. The header repeats the row's `gap: space[2]`
 and, above the tablet breakpoint, a leading `playerInfo` spacer, since that
 is where the row puts the name column.
 
-The signature column is the constrained one at 40px wide, which is what
+The signature column is the constrained one at 44px wide, which is what
 keeps its label short (`"Sign"` / `"Sign."`) — the full word does not fit
 over the button at caption size.
 
@@ -65,7 +67,27 @@ over the button at caption size.
 
 Below `ui.breakpointTablet`, the name/team pair moves to its own row above
 the score+chips row instead of sitting inline — `isCompact`, derived from
-`useWindowDimensions()`.
+`useWindowDimensions()`. `stackPlacement` overrides this: the name/team
+block stays inline in the main row at every width (`showInlineName =
+stackPlacement || !isCompact`), since it's meant for a screen that's always
+phone-width anyway.
+
+### Stacked placement layout
+
+`stackPlacement` (used by the participant-facing
+[`results.tsx`](../../../app/(pages)/(user)/results.md), not by
+`ResultsAdminTab`) pulls the four placement chips out of the main
+name/score/signature row and renders them on their own row underneath,
+each stretched to fill an equal share of the row's width (`flex: 1` on
+`wideChip`, vs. the fixed `CHIP_SIZE` square used inline) with an optional
+`placementRowLabel` caption to its left. `renderChips(chipStyle,
+chipLabelStyle)` is the one piece of chip-rendering logic (active/error/
+disabled styling, the press handler, the `tabIndex`) shared between the
+inline `chip`/`chipLabel` styles and this row's `wideChip`/`wideChipLabel`
+styles, so the two visual variants can't drift apart in behavior. The
+`chipRowRef`/`chipRowWebProps` keyboard wiring is attached to whichever
+one actually renders — never both, since `stackPlacement` is a per-row
+constant, not per-render state.
 
 ### Score input filtering
 

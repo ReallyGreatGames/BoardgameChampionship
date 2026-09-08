@@ -42,4 +42,4 @@ own default handling from also firing).
 ## Used by
 
 - [`lib/components/rules/RuleList.tsx`](../rules/RuleList.md)
-- [`lib/components/schedule/Schedule.tsx`](../schedule/Schedule.md)
+- [`lib/components/schedule/ScheduleRow.tsx`](../schedule/ScheduleRow.md), [`RunningNowCard.tsx`](../schedule/RunningNowCard.md)

@@ -25,6 +25,7 @@ export function BackButton({ onPress }: Props) {
 function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
   return StyleSheet.create({
     btn: {
+      minHeight: 40,
       flexDirection: "row",
       alignItems: "center",
       gap: 4,

@@ -45,3 +45,4 @@ than as an ordinary button that does nothing.
 ## Used by
 
 - [`lib/components/home/NowPlayingCard.tsx`](../home/NowPlayingCard.md)
+- [`app/(pages)/(user)/signature.tsx`](../../../app/(pages)/(user)/signature.md) — Clear/Confirm actions
