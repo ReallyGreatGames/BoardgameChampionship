@@ -17,6 +17,9 @@ export default function ScheduleScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const navigation = useNavigation();
   const count = useScheduleStore((s) => s.collection.length);
+  const totalMinutes = useScheduleStore((s) =>
+    s.collection.reduce((sum, item) => sum + item.durationPlanned, 0),
+  );
 
   const openMenu = useCallback(
     () => navigation.dispatch(DrawerActions.openDrawer()),
@@ -25,7 +28,12 @@ export default function ScheduleScreen() {
 
   return (
     <View style={styles.container}>
-      <ScheduleHeader count={count} isAdmin={isAdmin} onMenuPress={openMenu} />
+      <ScheduleHeader
+        count={count}
+        totalMinutes={totalMinutes}
+        isAdmin={isAdmin}
+        onMenuPress={openMenu}
+      />
       <View style={styles.body}>
         <ScheduleList />
       </View>

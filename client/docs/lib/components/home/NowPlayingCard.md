@@ -20,7 +20,7 @@ screen still falls back to for non-game schedule items.
 
 | Prop | Type | Meaning |
 |---|---|---|
-| `match` | [`ParticipantMatch`](../../hooks/useParticipantOverview.md) | The running match: its schedule `item` (title + planned window), `gameId` (navigation target), `round`, `tableNumber`, and `opponents`. |
+| `match` | [`ParticipantMatch`](../../hooks/useParticipantOverview.md) | The running match: its schedule `item` (title + planned duration), `gameId` (navigation target), `round`, `tableNumber`, and `opponents`. |
 
 ### Internal: `openMatch(): void`
 
@@ -42,10 +42,14 @@ memoized via `useMemo` on `colors`.
 The countdown comes from
 [`useRoundCountdown`](../../hooks/useRoundCountdown.md) on the match's
 schedule item, and drives three things at once: the `MM:SS` figure, the
-caption below it ("left in this round" vs. "over the planned round time"),
-and the [`Badge`](../ui/Badge.md) in the title row (`info`/"Live" flipping
-to `danger`/"Overtime"). Rendering all three off one hook value is what
-keeps them from ever disagreeing mid-tick.
+caption below it ("left in this round" / "over the planned round time" /
+"Paused"), and the [`Badge`](../ui/Badge.md) in the title row
+(`info`/"Live", `danger`/"Overtime", or `warning`/"Paused" — checked in
+that priority order, paused first). Rendering all three off one hook value
+is what keeps them from ever disagreeing mid-tick. While
+`countdown.isPaused`, the `MM:SS` figure itself keeps showing the frozen
+remaining time (not blanked out) — only the caption and badge change — so
+an admin can see at a glance how much time is left whenever they resume.
 
 The countdown row is built so nothing shifts while it ticks: the caption
 is `textAlign: "right"` inside a `flex: 1` cell, so it stays pinned to the

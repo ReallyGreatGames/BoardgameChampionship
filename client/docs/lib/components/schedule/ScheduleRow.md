@@ -4,11 +4,12 @@
 
 ## Purpose
 
-One non-running schedule entry: a tappable header (start time, duration,
-icon, title, chevron), an expandable body (time range, seating table,
-description, "go to game"), and an optional admin action bar. Used for
-both groups of [`Schedule.tsx`](Schedule.md)'s list — "up next" and
-"done" — with `variant` deciding the treatment.
+One non-running schedule entry: a tappable header (planned duration, icon,
+title, chevron), an expandable body (planned duration, seating table,
+description, "go to game"), and an optional admin action bar. No fixed
+clock time is shown anywhere — items are admin-paced, not scheduled to a
+time of day. Used for both groups of [`Schedule.tsx`](Schedule.md)'s list
+— "up next" and "done" — with `variant` deciding the treatment.
 
 ## Exports
 
@@ -37,7 +38,7 @@ both groups of [`Schedule.tsx`](Schedule.md)'s list — "up next" and
 
 `isDone` is derived once and threaded through `makeStyles`, so the two
 looks come out of one stylesheet: done rows sit on `colors.background`
-with a `divider` border, muted time and title, `type.body` instead of
+with a `divider` border, muted duration and title, `type.body` instead of
 `type.h3`, and a `checkmark-circle` before the chevron. It also flips the
 activate button's icon, color and label.
 

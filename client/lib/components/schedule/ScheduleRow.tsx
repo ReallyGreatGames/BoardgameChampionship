@@ -21,7 +21,6 @@ import { Schedule } from "@/lib/models/schedule";
 import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
-import { addMinutesToTime } from "@/lib/utils";
 
 if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -59,11 +58,6 @@ export function ScheduleRow({ schedule, variant, admin }: Props) {
   const openGame = useOpenGame();
   const [expanded, setExpanded] = useState(false);
 
-  const endTime = addMinutesToTime(
-    schedule.startTimePlanned,
-    schedule.durationPlanned,
-  );
-
   const chevronRotation = useRef(new Animated.Value(0)).current;
   const chevronStyle = {
     transform: [
@@ -99,11 +93,9 @@ export function ScheduleRow({ schedule, variant, admin }: Props) {
         accessibilityState={{ expanded }}
       >
         <View style={styles.timeBlock}>
-          <Text style={styles.startTime}>{schedule.startTimePlanned}</Text>
-          <Text style={styles.duration}>
-            {t("schedule.durationMinutes", {
-              minutes: schedule.durationPlanned,
-            })}
+          <Text style={styles.durationNumber}>{schedule.durationPlanned}</Text>
+          <Text style={styles.durationLabel}>
+            {t("schedule.minutesUnit")}
           </Text>
         </View>
         {schedule.icon ? (
@@ -129,7 +121,9 @@ export function ScheduleRow({ schedule, variant, admin }: Props) {
           <View style={styles.metaRow}>
             <Ionicons name="time" size={15} color={colors.primary} />
             <Text style={styles.metaText}>
-              {schedule.startTimePlanned} – {endTime}
+              {t("schedule.durationPlannedMinutes", {
+                minutes: schedule.durationPlanned,
+              })}
             </Text>
           </View>
 
@@ -299,13 +293,13 @@ function makeStyles(
     timeBlock: {
       width: 46,
     },
-    startTime: {
+    durationNumber: {
       ...type.h2,
       fontSize: 20,
       lineHeight: 22,
       color: isDone ? colors.textMuted : colors.text,
     },
-    duration: {
+    durationLabel: {
       ...type.caption,
       fontSize: 11,
       lineHeight: 14,

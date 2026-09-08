@@ -8,7 +8,6 @@ import { usePlayer } from "@/lib/bootstrap/PlayerProvider";
 import { Schedule } from "@/lib/models/schedule";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
-import { addMinutesToTime } from "@/lib/utils";
 import { goTo } from "@/lib/utils/navigation";
 
 interface Props {
@@ -37,7 +36,7 @@ export function ActiveScheduleCard({ item }: Props) {
       ...type.h1,
       color: colors.text,
     },
-    cardTime: {
+    cardDuration: {
       ...type.bodySmall,
       color: colors.textSecondary,
     },
@@ -61,8 +60,8 @@ export function ActiveScheduleCard({ item }: Props) {
     <View style={styles.card}>
       <View style={styles.cardInner}>
         <Text style={styles.cardTitle}>{item.title}</Text>
-        <Text style={styles.cardTime}>
-          {item.startTimePlanned} – {addMinutesToTime(item.startTimePlanned, item.durationPlanned)}
+        <Text style={styles.cardDuration}>
+          {t("duration", { minutes: item.durationPlanned })}
         </Text>
       </View>
       {item.gameId && (

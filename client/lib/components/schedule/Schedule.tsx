@@ -18,7 +18,7 @@ import { useTableStore } from "@/lib/stores/appwrite/table-store";
 import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
-import { deepClone } from "@/lib/utils";
+import { computeTableElapsedSeconds, deepClone } from "@/lib/utils";
 import { useDialog } from "@/lib/components/ui/Dialog";
 import { RunningNowCard } from "@/lib/components/schedule/RunningNowCard";
 import { ScheduleRow } from "@/lib/components/schedule/ScheduleRow";
@@ -28,6 +28,10 @@ import {
 } from "@/lib/components/schedule/ScheduleItemModal";
 import { TimerSettingsModal } from "@/lib/components/schedule/TimerSettingsModal";
 import { goTo } from "@/lib/utils/navigation";
+
+function initialActiveResumedAt(item: Schedule): string | null {
+  return item.gameId ? null : new Date().toISOString();
+}
 
 export function ScheduleList() {
   const { colors } = useTheme();
@@ -169,6 +173,10 @@ export function ScheduleList() {
             ...s,
             isActive: shouldBeActive,
             isFinished: shouldBeActive ? false : s.isFinished,
+            activeAccumulatedMs: shouldBeActive ? 0 : s.activeAccumulatedMs,
+            activeResumedAt: shouldBeActive
+              ? initialActiveResumedAt(s)
+              : s.activeResumedAt,
           });
         }),
       );
@@ -193,7 +201,14 @@ export function ScheduleList() {
         sortedScheduleItems.map((s, i) =>
           i < storeIndex
             ? update({ ...s, isActive: false })
-            : update({ ...s, isActive: i === storeIndex, isFinished: false }),
+            : update({
+                ...s,
+                isActive: i === storeIndex,
+                isFinished: false,
+                activeAccumulatedMs: i === storeIndex ? 0 : s.activeAccumulatedMs,
+                activeResumedAt:
+                  i === storeIndex ? initialActiveResumedAt(s) : s.activeResumedAt,
+              }),
         ),
       );
     } finally {
@@ -216,6 +231,36 @@ export function ScheduleList() {
     setIsLoading(true);
     try {
       await deleteItem(sortedScheduleItems[storeIndex]);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handlePause(storeIndex: number) {
+    const item = sortedScheduleItems[storeIndex];
+    const elapsedMs =
+      computeTableElapsedSeconds(
+        item.activeAccumulatedMs ?? 0,
+        item.activeResumedAt,
+        Date.now(),
+      ) * 1000;
+    setIsLoading(true);
+    try {
+      await update({
+        ...item,
+        activeAccumulatedMs: elapsedMs,
+        activeResumedAt: null,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleResume(storeIndex: number) {
+    const item = sortedScheduleItems[storeIndex];
+    setIsLoading(true);
+    try {
+      await update({ ...item, activeResumedAt: new Date().toISOString() });
     } finally {
       setIsLoading(false);
     }
@@ -349,6 +394,10 @@ export function ScheduleList() {
                       activeIndex < lastIndex
                         ? () => handleSetActive(activeIndex + 1)
                         : null,
+                    onTogglePause: activeItem.activeResumedAt
+                      ? () => handlePause(activeIndex)
+                      : () => handleResume(activeIndex),
+                    isPaused: !activeItem.activeResumedAt,
                     disabled: isLoading,
                   }
                 : undefined

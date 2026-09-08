@@ -18,10 +18,12 @@ Appwrite document type `Schedule` — one item in the tournament schedule.
 | `description?` | `string` | Description |
 | `durationPlanned` | `number` | Planned duration in minutes |
 | `gameId?` | `string` | Id of the [`Game`](game.md) this item plays, when applicable; absent for non-game agenda items (e.g. breaks, briefings) |
-| `startTimePlanned` | `string` | Planned start time (ISO) |
+| `startTimePlanned` | `string` | Legacy, unused field kept only because it is a required Appwrite attribute — no longer read or written by any code. Superseded by `activeAccumulatedMs`/`activeResumedAt`. |
 | `isActive?` | `boolean` | Whether this is the currently-running schedule item; set directly by an admin action (not derived from timestamps), and expected to be true for at most one item at a time — starting a new item clears the previous one's `isActive` and marks it `isFinished` (see `Schedule.tsx`) |
 | `isFinished?` | `boolean` | Whether the item has already run to completion |
 | `allowUserChange?` | `boolean` | Whether players may change their team/player selection while this item is the active one; gates `PlayerSelectionCard`'s "change" action (`activeItem?.allowUserChange !== false`, so absent/undefined defaults to allowed — only an explicit `false` locks it) |
+| `activeAccumulatedMs?` | `number` | Milliseconds already banked from past running (not paused) stretches of the current activation. `0`/absent when freshly activated. Not admin-editable — [`Schedule.tsx`](../components/schedule/Schedule.md) manages it (`handleSetActive`/`handleRestart` reset it to `0`; `handlePause` folds the just-finished stretch into it). Same accumulated-time/resumed-at pattern as `Timer`'s `tableActiveAccumulatedMs`/`tableActiveResumedAt` (see [`computeTableElapsedSeconds`](../utils.md)). |
+| `activeResumedAt?` | `string \| null` | Datetime attribute; ISO timestamp of when the item was last (re)started, or `null`/absent while paused (or never started). [`useRoundCountdown`](../hooks/useRoundCountdown.md) treats an item as paused exactly when this is falsy — see "Pausing" in `Schedule.tsx`'s doc. |
 
 ## Used by
 

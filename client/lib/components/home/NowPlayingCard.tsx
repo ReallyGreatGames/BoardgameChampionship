@@ -40,8 +40,14 @@ export function NowPlayingCard({ match }: Props) {
       <View style={styles.titleRow}>
         <Text style={styles.title}>{match.item.title}</Text>
         <Badge
-          label={countdown.isOvertime ? t("overtime") : t("live")}
-          tone={countdown.isOvertime ? "danger" : "info"}
+          label={
+            countdown.isPaused
+              ? t("paused")
+              : countdown.isOvertime
+                ? t("overtime")
+                : t("live")
+          }
+          tone={countdown.isPaused ? "warning" : countdown.isOvertime ? "danger" : "info"}
         />
       </View>
 
@@ -70,7 +76,11 @@ export function NowPlayingCard({ match }: Props) {
       <View style={styles.countdownRow}>
         <Text style={styles.countdown}>{countdown.label}</Text>
         <Text style={styles.countdownCaption}>
-          {countdown.isOvertime ? t("overRoundTime") : t("leftInRound")}
+          {countdown.isPaused
+            ? t("paused")
+            : countdown.isOvertime
+              ? t("overRoundTime")
+              : t("leftInRound")}
         </Text>
       </View>
 

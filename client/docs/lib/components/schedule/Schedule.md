@@ -36,12 +36,15 @@ and the admin dashboard's schedule tab use different gutters.
 
 | Function | Signature | Behavior |
 |---|---|---|
+| `initialActiveResumedAt` | `initialActiveResumedAt(item: Schedule): string \| null` | Module-level helper (not a `ScheduleList` method). The `activeResumedAt` a freshly-activated item should start with: `null` (paused) if `item.gameId` is set, otherwise "now" (running) — see "Pausing the active item" below. |
 | `handleMoveUp` | `handleMoveUp(index: number): Promise<void>` | Swaps `sortIndex` between `sortedScheduleItems[index]` and its predecessor via two parallel `update` calls; sets `isLoading` for the duration plus a trailing `debounceTimeOut` (2s) after completion. |
 | `handleMoveDown` | `handleMoveDown(index: number): Promise<void>` | Symmetric to `handleMoveUp`, swapping with the successor instead. |
 | `confirmActiveChange` | `confirmActiveChange(): Promise<boolean>` | The one or two confirmation dialogs every activation goes through (see "Setting the active item" below). Returns whether the admin confirmed all of them. |
-| `handleSetActive` | `handleSetActive(storeIndex: number): Promise<void>` | Confirms, then marks the previously active item `isFinished`/inactive as appropriate and sets `sortedScheduleItems[storeIndex]` active, all via parallel `update` calls. Backs "start" and "start next". |
-| `handleRestart` | `handleRestart(storeIndex: number): Promise<void>` | Confirms, then makes `sortedScheduleItems[storeIndex]` the running item and clears `isFinished` on it *and everything after it*, moving the rest of the day back to "up next". Items before it stay done. Backs "restart". |
+| `handleSetActive` | `handleSetActive(storeIndex: number): Promise<void>` | Confirms, then marks the previously active item `isFinished`/inactive as appropriate and sets `sortedScheduleItems[storeIndex]` active, all via parallel `update` calls. Also resets that item's `activeAccumulatedMs` to `0` and `activeResumedAt` to `initialActiveResumedAt(item)` (see "Pausing the active item" below). Backs "start" and "start next". |
+| `handleRestart` | `handleRestart(storeIndex: number): Promise<void>` | Confirms, then makes `sortedScheduleItems[storeIndex]` the running item and clears `isFinished` on it *and everything after it*, moving the rest of the day back to "up next". Items before it stay done. Also resets the restarted item's `activeAccumulatedMs`/`activeResumedAt` the same way `handleSetActive` does — a restart always resumes the countdown from full duration (or paused, for a game), not from wherever it was paused before finishing. Backs "restart". |
 | `handleDelete` | `handleDelete(storeIndex: number): Promise<void>` | Confirms (destructive) via `useDialog().confirm`, then deletes `sortedScheduleItems[storeIndex]` through `deleteItem`, toggling `isLoading` around the call. |
+| `handlePause` | `handlePause(storeIndex: number): Promise<void>` | Folds the item's current running stretch into `activeAccumulatedMs` (via `computeTableElapsedSeconds`) and clears `activeResumedAt` to `null`, freezing [`useRoundCountdown`](../../hooks/useRoundCountdown.md)'s remaining time. Backs "pause". |
+| `handleResume` | `handleResume(storeIndex: number): Promise<void>` | Sets `activeResumedAt` to now, leaving `activeAccumulatedMs` untouched — the countdown continues from exactly where it was paused rather than resetting. Backs "resume". |
 | `handleEdit` | `handleEdit(storeIndex: number): void` | Clones `sortedScheduleItems[storeIndex]` into `editingItem` and opens the item modal. |
 | `addSchedule` | `addSchedule(): void` | Clears `editingItem` (add mode) and opens the item modal. |
 | `handleModalSave` | `handleModalSave(data: ScheduleFormData): Promise<void>` | Passed as `onSave` to `ScheduleItemModal`. Updates `editingItem` merged with `data` if editing, otherwise calls `add(data)`; throws if the store call reports failure. |
@@ -68,6 +71,55 @@ items would otherwise renumber them, so each entry keeps its original
 index alongside the item and the group only decides where it renders.
 
 ## How it works
+
+### Admin-paced, not clock-scheduled
+
+The schedule shows no fixed clock time anywhere — items are admin-paced
+(started by an admin action), not scheduled to a time of day; every row and
+card shows planned duration instead (see [`ScheduleRow`](ScheduleRow.md),
+[`RunningNowCard`](RunningNowCard.md)). `Schedule.startTimePlanned` is a
+legacy, unused field kept only because it's a required Appwrite attribute;
+[`ScheduleItemModal`](ScheduleItemModal.md) dropped it from the form
+entirely. Timing state for the active item instead lives in
+`activeAccumulatedMs`/`activeResumedAt`, described next.
+
+### Pausing the active item (`handlePause`/`handleResume`)
+
+`activeAccumulatedMs`/`activeResumedAt` follow the same accumulated-time +
+resumed-at pattern as `Timer`'s `tableActiveAccumulatedMs`/
+`tableActiveResumedAt` (see
+[`computeTableElapsedSeconds`](../../utils.md)): `activeResumedAt` is the
+ISO timestamp of when the item was last (re)started, and
+`activeAccumulatedMs` is however much running time was already banked
+before that. `handleSetActive`/`handleRestart` always reset
+`activeAccumulatedMs` to `0`, so every fresh activation (including a
+restart) counts down from the full planned duration, never from wherever a
+previous run left off.
+
+`activeResumedAt`'s reset value comes from the module-level
+`initialActiveResumedAt(item)` instead of unconditionally "now": a game
+item (`item.gameId` set) activates *paused* (`null`), on the assumption an
+admin still needs to seat players/settle the table before the round
+actually starts; a non-game item (a break, a briefing — no `gameId`)
+activates running, since there's nothing to wait on. Both handlers call it
+per-item — inline in the same `Promise.all().map()`/ternary that resets
+`activeAccumulatedMs` — since it depends on the specific item being
+activated, not on `storeIndex` alone.
+
+`handlePause` folds the elapsed time of the just-ended running stretch into
+`activeAccumulatedMs` (via `computeTableElapsedSeconds`) and clears
+`activeResumedAt` to `null`; `handleResume` sets `activeResumedAt` back to
+now without touching `activeAccumulatedMs`. Neither needs
+`confirmActiveChange`'s prompts — pausing doesn't change which item is
+active, so the already-signed-results concern that guards activation
+doesn't apply.
+
+[`useRoundCountdown`](../../hooks/useRoundCountdown.md) — used by both
+`RunningNowCard` and the home screen's
+[`NowPlayingCard`](../home/NowPlayingCard.md) — reads these two fields
+directly: while `activeResumedAt` is `null` it reports `isPaused: true` and
+freezes `secondsLeft` at whatever `activeAccumulatedMs` already holds,
+regardless of real wall-clock time passing.
 
 ### Admin reordering (`handleMoveUp`/`handleMoveDown`)
 
@@ -141,3 +193,4 @@ also present in [`useOpenGame`](useOpenGame.md).
 
 - [`lib/stores/appwrite/schedule-store.ts`](../../stores/appwrite/schedule-store.md), [`result-store.ts`](../../stores/appwrite/result-store.md), [`table-store.ts`](../../stores/appwrite/table-store.md)
 - [`RunningNowCard.tsx`](RunningNowCard.md), [`ScheduleRow.tsx`](ScheduleRow.md) — the two row renderers
+- [`computeTableElapsedSeconds`](../../utils.md) in `lib/utils.ts`, [`useTimerState.ts`](../../hooks/useTimerState.md) — the same pause/resume pattern applied to the per-table clock

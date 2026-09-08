@@ -31,10 +31,11 @@ The navigator header is off for this route (`headerShown: false` in
 [`app/_layout.tsx`](../../_layout.md)); the hero replaces it and opens the
 drawer itself via `DrawerActions.openDrawer()`.
 
-The item count for the hero's eyebrow is read straight off the schedule
-store with a selector (`(s) => s.collection.length`), so the screen
-re-renders on a count change but not on every unrelated item edit —
-`ScheduleList` subscribes to the collection itself.
+The item count and total planned duration for the hero's eyebrow are read
+straight off the schedule store with selectors (`(s) => s.collection.length`
+and `(s) => s.collection.reduce((sum, item) => sum + item.durationPlanned, 0)`),
+so the screen re-renders when either changes but not on every unrelated
+item edit — `ScheduleList` subscribes to the collection itself.
 
 The horizontal gutter lives here rather than in `ScheduleList` because the
 admin dashboard embeds the same list inside its own, wider one.

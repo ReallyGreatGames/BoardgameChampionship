@@ -9,14 +9,29 @@ import { type } from "@/lib/theme/typography";
 
 interface Props {
   count: number;
+  totalMinutes: number;
   isAdmin: boolean;
   onMenuPress: () => void;
 }
 
-export function ScheduleHeader({ count, isAdmin, onMenuPress }: Props) {
+export function ScheduleHeader({
+  count,
+  totalMinutes,
+  isAdmin,
+  onMenuPress,
+}: Props) {
   const { colors, isDark } = useTheme();
   const { t } = useTranslation(["components"]);
   const insets = useSafeAreaInsets();
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const durationLabel =
+    hours > 0
+      ? minutes > 0
+        ? t("schedule.totalDuration", { hours, minutes })
+        : t("schedule.totalDurationHours", { hours })
+      : t("schedule.durationMinutes", { minutes });
 
   const styles = useMemo(() => {
     const background = isDark ? colors.surface : colors.primary;
@@ -73,7 +88,7 @@ export function ScheduleHeader({ count, isAdmin, onMenuPress }: Props) {
       <View style={styles.titleRow}>
         <View style={styles.titleText}>
           <Text style={styles.eyebrow} numberOfLines={1}>
-            {t("schedule.itemCount", { count })}
+            {t("schedule.itemCount", { count })} · {durationLabel}
           </Text>
           <Text style={styles.title} numberOfLines={1}>
             {t("schedule.title")}

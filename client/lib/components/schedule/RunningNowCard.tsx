@@ -1,6 +1,7 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Animated, Easing, StyleSheet, Text, View } from "react-native";
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { Button } from "@/lib/components/ui/Button";
 import { Markdown } from "@/lib/components/ui/Markdown";
@@ -10,11 +11,13 @@ import { useRoundCountdown } from "@/lib/hooks/useRoundCountdown";
 import { Schedule } from "@/lib/models/schedule";
 import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
-import { addMinutesToTime } from "@/lib/utils";
+import { ui } from "@/lib/theme/ui";
 
 export type RunningNowAdmin = {
   onEdit: () => void;
   onStartNext: (() => void) | null;
+  onTogglePause: () => void;
+  isPaused: boolean;
   disabled: boolean;
 };
 
@@ -23,13 +26,19 @@ interface Props {
   admin?: RunningNowAdmin;
 }
 
-/** The green "live" dot, pinging once per 1.2s for as long as it is mounted. */
-function LiveDot({ color }: { color: string }) {
+/**
+ * The "live" dot, pinging once per 1.2s for as long as it is mounted and not
+ * paused. While paused it renders as a static, muted dot instead.
+ */
+function LiveDot({ color, paused }: { color: string; paused: boolean }) {
   const scale = useRef(new Animated.Value(1)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const mounted = useRef(true);
 
   useEffect(() => {
+    if (paused) {
+      return;
+    }
     mounted.current = true;
     const pulse = () => {
       if (!mounted.current) {
@@ -59,7 +68,7 @@ function LiveDot({ color }: { color: string }) {
     return () => {
       mounted.current = false;
     };
-  }, [opacity, scale]);
+  }, [opacity, scale, paused]);
 
   return (
     <View style={{ width: 8, height: 8, alignItems: "center", justifyContent: "center" }}>
@@ -79,6 +88,52 @@ function LiveDot({ color }: { color: string }) {
   );
 }
 
+/** Fixed 44×44 icon-only admin control — Edit and pause/resume share this shape. */
+function AdminIconButton({
+  icon,
+  label,
+  disabled,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        adminIconButtonStyles.button,
+        { borderColor: colors.border, backgroundColor: colors.surfaceHigh },
+        pressed && { backgroundColor: colors.surface },
+        disabled && adminIconButtonStyles.disabled,
+      ]}
+    >
+      <Ionicons name={icon} size={20} color={disabled ? colors.textMuted : colors.text} />
+    </Pressable>
+  );
+}
+
+const adminIconButtonStyles = StyleSheet.create({
+  button: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: ui.buttonRadius,
+    borderWidth: 1,
+  },
+  disabled: {
+    opacity: ui.disabledOpacity,
+  },
+});
+
 export function RunningNowCard({ item, admin }: Props) {
   const { colors } = useTheme();
   const { t } = useTranslation(["components"]);
@@ -91,21 +146,37 @@ export function RunningNowCard({ item, admin }: Props) {
     1,
     Math.max(0, (totalSeconds - countdown.secondsLeft) / totalSeconds),
   );
-  const remaining = countdown.isOvertime
-    ? t("schedule.overtime")
-    : t("schedule.remaining", { minutes: Math.ceil(countdown.secondsLeft / 60) });
+  const remaining = countdown.isPaused
+    ? t("schedule.paused")
+    : countdown.isOvertime
+      ? t("schedule.overtime")
+      : t("schedule.remaining", { minutes: Math.ceil(countdown.secondsLeft / 60) });
 
   return (
     <View style={styles.card}>
       <View style={styles.topRow}>
         <View style={styles.liveLabel}>
-          <LiveDot color={colors.success} />
-          <Text style={styles.liveText}>{t("schedule.runningNow")}</Text>
+          <LiveDot
+            color={countdown.isPaused ? colors.textMuted : colors.success}
+            paused={countdown.isPaused}
+          />
+          <Text
+            style={[
+              styles.liveText,
+              countdown.isPaused && styles.liveTextPaused,
+            ]}
+          >
+            {countdown.isPaused ? t("schedule.paused") : t("schedule.runningNow")}
+          </Text>
         </View>
-        <Text style={styles.range}>
-          {item.startTimePlanned} –{" "}
-          {addMinutesToTime(item.startTimePlanned, item.durationPlanned)}
-        </Text>
+        <View style={styles.plannedDuration}>
+          <Ionicons name="time" size={15} color={colors.textSecondary} />
+          <Text style={styles.range}>
+            {t("schedule.durationPlannedMinutes", {
+              minutes: item.durationPlanned,
+            })}
+          </Text>
+        </View>
       </View>
 
       <Text style={styles.title}>{item.title}</Text>
@@ -133,13 +204,19 @@ export function RunningNowCard({ item, admin }: Props) {
 
       {admin && (
         <View style={styles.adminRow}>
-          <Button
-            label={t("schedule.actions.edit")}
+          <AdminIconButton
             icon="create-outline"
-            variant="secondary"
+            label={t("schedule.actions.edit")}
             disabled={admin.disabled}
             onPress={admin.onEdit}
-            style={styles.adminButton}
+          />
+          <AdminIconButton
+            icon={admin.isPaused ? "play-circle-outline" : "pause-circle-outline"}
+            label={t(
+              admin.isPaused ? "schedule.actions.resume" : "schedule.actions.pause",
+            )}
+            disabled={admin.disabled}
+            onPress={admin.onTogglePause}
           />
           {admin.onStartNext && (
             <Button
@@ -181,6 +258,14 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     liveText: {
       ...type.eyebrow,
       color: colors.success,
+    },
+    liveTextPaused: {
+      color: colors.textMuted,
+    },
+    plannedDuration: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: space[1],
     },
     range: {
       ...type.bodySmall,

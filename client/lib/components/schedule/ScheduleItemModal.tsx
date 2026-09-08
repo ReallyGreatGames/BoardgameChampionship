@@ -45,14 +45,6 @@ type Props = {
   onLotteries?: (gameId: string) => void;
 };
 
-function isValidTime(v: string): boolean {
-  if (!/^\d{2}:\d{2}$/.test(v)) {
-    return false;
-  }
-  const [h, m] = v.split(":").map(Number);
-  return h < 24 && m < 60;
-}
-
 function isValidDuration(v: string): boolean {
   const n = parseInt(v, 10);
   return !isNaN(n) && n > 0;
@@ -141,13 +133,11 @@ export function ScheduleItemModal({
 
   const [title, setTitle] = useState("");
   const [icon, setIcon] = useState("");
-  const [startTime, setStartTime] = useState("");
   const [duration, setDuration] = useState("");
   const [description, setDescription] = useState("");
   const [gameId, setGameId] = useState("");
   const [allowUserChange, setAllowUserChange] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [timeBlurred, setTimeBlurred] = useState(false);
   const [durBlurred, setDurBlurred] = useState(false);
 
   useEffect(() => {
@@ -157,7 +147,6 @@ export function ScheduleItemModal({
     if (item) {
       setTitle(item.title);
       setIcon(item.icon ?? "");
-      setStartTime(item.startTimePlanned);
       setDuration(String(item.durationPlanned));
       setDescription(item.description ?? "");
       setGameId(item.gameId ?? "");
@@ -165,21 +154,17 @@ export function ScheduleItemModal({
     } else {
       setTitle("");
       setIcon("");
-      setStartTime("");
       setDuration("");
       setDescription("");
       setGameId("");
       setAllowUserChange(false);
     }
     setSaving(false);
-    setTimeBlurred(false);
     setDurBlurred(false);
   }, [visible, item]);
 
-  const timeValid = isValidTime(startTime);
   const durValid = isValidDuration(duration);
-  const isValid =
-    title.trim().length > 0 && icon !== "" && timeValid && durValid;
+  const isValid = title.trim().length > 0 && icon !== "" && durValid;
 
   async function handleSave() {
     if (!isValid || saving) {
@@ -190,7 +175,7 @@ export function ScheduleItemModal({
       await onSave({
         title: title.trim(),
         icon,
-        startTimePlanned: startTime,
+        startTimePlanned: item?.startTimePlanned ?? "",
         durationPlanned: parseInt(duration, 10),
         description: description.trim(),
         gameId: gameId.trim(),
@@ -325,38 +310,6 @@ export function ScheduleItemModal({
         required
       >
         <IconPicker value={icon} onChange={setIcon} />
-      </FormField>
-
-      <FormField
-        icon="time-outline"
-        label={t("schedule.form.startTimeField")}
-        required
-        error={
-          timeBlurred && startTime !== "" && !timeValid
-            ? t("schedule.form.validationStartTime")
-            : undefined
-        }
-      >
-        <TextInput
-          style={[
-            sheetStyles.input,
-            timeBlurred &&
-            startTime !== "" &&
-            !timeValid &&
-            sheetStyles.inputError,
-          ]}
-          value={startTime}
-          onChangeText={(v) => {
-            setStartTime(v);
-            if (timeBlurred && isValidTime(v)) {
-              setTimeBlurred(false);
-            }
-          }}
-          onBlur={() => setTimeBlurred(true)}
-          placeholder={t("schedule.form.startTimePlaceholder")}
-          placeholderTextColor={colors.textPlaceholder}
-          keyboardType="numbers-and-punctuation"
-        />
       </FormField>
 
       <FormField
