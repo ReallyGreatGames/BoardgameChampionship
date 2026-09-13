@@ -66,12 +66,14 @@ function AppNavigator() {
         name="(pages)/settings"
         options={{
           title: t("entries.settings"),
+          headerShown: false,
         }}
       />
       <Drawer.Screen
         name="(pages)/info"
         options={{
           title: t("entries.info"),
+          headerShown: false,
         }}
       />
       <Drawer.Screen
@@ -191,6 +193,7 @@ function AppNavigator() {
         options={{
           title: t("entries.legal"),
           drawerItemStyle: { display: "none" },
+          headerShown: false,
         }}
       />
     </Drawer>

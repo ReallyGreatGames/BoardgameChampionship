@@ -13,7 +13,7 @@ to change or (if none set) pick a player.
 
 | Export | Signature | Purpose |
 |---|---|---|
-| `PlayerSelectionCard` | `(props: Props): JSX` | Renders the current team/player (or a "select player" prompt if none set) and, when allowed, a row that navigates to `choose-your-character`. |
+| `PlayerSelectionCard` | `(props: Props): JSX` | Renders label/value rows for the current team and player (value = `settings:playerValue`, i.e. "Player N · Name", in bold), or a primary-colored "select player" prompt if none set, and, when allowed, a primary-colored row that navigates to `choose-your-character`. No row icons. |
 
 ### Props
 

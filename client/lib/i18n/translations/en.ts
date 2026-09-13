@@ -192,6 +192,7 @@ const translations = {
     account: "Account",
     currentTeam: "Team",
     currentPlayer: "Player",
+    playerValue: "Player {{n}} · {{name}}",
     changeTeam: "Change Team / Player",
     selectPlayer: "Select Team & Player",
     continueSetup: "Continue",
