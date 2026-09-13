@@ -294,12 +294,28 @@ const translations = {
     search: "Regeln suchen...",
     empty: "Noch keine Regeln",
     noResults: "Keine Regeln gefunden",
+    filters: {
+      all: "Alle",
+      change: "Änd.",
+      addition: "Erg.",
+      clarification: "Klar.",
+    },
+    typeShort: {
+      change: "Änderung",
+      addition: "Ergänzung",
+      clarification: "Klarstellung",
+    },
+    actions: {
+      edit: "Bearbeiten",
+      delete: "Löschen",
+    },
     types: {
       change: "Änderungen",
       addition: "Ergänzungen",
       clarification: "Klarstellungen",
     },
     form: {
+      addShort: "Regel",
       addTitle: "Regel hinzufügen",
       editTitle: "Regel bearbeiten",
       typeField: "Typ",

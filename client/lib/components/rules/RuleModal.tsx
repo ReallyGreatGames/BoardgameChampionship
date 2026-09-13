@@ -13,6 +13,11 @@ import {
 } from "react-native";
 import { Models } from "react-native-appwrite";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
+import {
+  RULE_TYPES,
+  TYPE_CONFIGS,
+  typeColor,
+} from "@/lib/components/rules/types";
 import { Rule, RuleType } from "@/lib/models/rule";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
@@ -29,22 +34,6 @@ type Props = {
   onClose: () => void;
   onSave: (data: RuleFormData) => Promise<void>;
 };
-
-type TypeConfig = {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
-  labelKey: string;
-};
-
-const TYPE_CONFIGS: Record<RuleType, TypeConfig> = {
-  change: { icon: "swap-horizontal-outline", labelKey: "types.change" },
-  addition: { icon: "add-circle-outline", labelKey: "types.addition" },
-  clarification: {
-    icon: "information-circle-outline",
-    labelKey: "types.clarification",
-  },
-};
-
-const RULE_TYPES: RuleType[] = ["change", "addition", "clarification"];
 
 export function RuleModal({ visible, item, gameId, onClose, onSave }: Props) {
   const { colors } = useTheme();
@@ -175,20 +164,6 @@ export function RuleModal({ visible, item, gameId, onClose, onSave }: Props) {
       </FormField>
     </BottomSheet>
   );
-}
-
-export function typeColor(
-  ruleType: RuleType,
-  colors: ReturnType<typeof useTheme>["colors"],
-): string {
-  switch (ruleType) {
-    case "change":
-      return colors.accent;
-    case "addition":
-      return colors.success;
-    case "clarification":
-      return colors.primary;
-  }
 }
 
 function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {

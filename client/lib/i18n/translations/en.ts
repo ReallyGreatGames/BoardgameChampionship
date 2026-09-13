@@ -294,12 +294,28 @@ const translations = {
     search: "Search rules...",
     empty: "No rules yet",
     noResults: "No rules match your search",
+    filters: {
+      all: "All",
+      change: "Chg.",
+      addition: "Add.",
+      clarification: "Clar.",
+    },
+    typeShort: {
+      change: "Change",
+      addition: "Addition",
+      clarification: "Clarification",
+    },
+    actions: {
+      edit: "Edit",
+      delete: "Delete",
+    },
     types: {
       change: "Changes",
       addition: "Additions",
       clarification: "Clarifications",
     },
     form: {
+      addShort: "Rule",
       addTitle: "Add Rule",
       editTitle: "Edit Rule",
       typeField: "Type",
