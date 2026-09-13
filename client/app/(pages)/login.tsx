@@ -1,8 +1,8 @@
-import { router, useFocusEffect } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { router, useFocusEffect, useNavigation } from "expo-router";
+import { DrawerActions } from "expo-router/react-navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ActivityIndicator,
   Animated,
   Keyboard,
   KeyboardAvoidingView,
@@ -17,9 +17,13 @@ import {
 import { useAuth } from "../../lib/auth";
 import { useTheme } from "../../lib/bootstrap/ThemeProvider";
 import { useTournament } from "../../lib/bootstrap/TournamentProvider";
+import { WelcomeHero } from "@/lib/components/onboarding/WelcomeHero";
+import { BackButton } from "@/lib/components/ui/BackButton";
+import { Button } from "@/lib/components/ui/Button";
 import { useDialog } from "@/lib/components/ui/Dialog";
-import { type } from "../../lib/theme/typography";
-import { inset } from "../../lib/theme/spacing";
+import { fonts, type } from "../../lib/theme/typography";
+import { inset, space } from "../../lib/theme/spacing";
+import { ui } from "../../lib/theme/ui";
 import { useRouter } from "@/lib/routing/useRouter";
 
 const SECRET_TAPS = 7;
@@ -29,6 +33,7 @@ export default function LoginScreen() {
   const { login, loginWithPin } = useAuth();
   const { confirm } = useDialog();
   const { colors } = useTheme();
+  const navigation = useNavigation();
   const [pin, setPin] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,7 +44,6 @@ export default function LoginScreen() {
   const tapCount = useRef(0);
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const passwordRef = useRef<TextInput>(null);
-  const buttonScale = useRef(new Animated.Value(1)).current;
   const badgeAnim = useRef(new Animated.Value(0)).current;
   const { user } = useAuth();
   const { navigate } = useRouter();
@@ -47,6 +51,11 @@ export default function LoginScreen() {
   const eventInactive = !adminMode && !eventActive;
 
   const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  const openMenu = useCallback(
+    () => navigation.dispatch(DrawerActions.openDrawer()),
+    [navigation],
+  );
 
   useFocusEffect(() => {
     if (user) {
@@ -138,30 +147,31 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      <WelcomeHero
+        onMenuPress={openMenu}
+        title={adminMode ? "Admin Login" : t("welcome")}
+        onTitlePress={handleTitleTap}
+      >
+        {adminMode && (
+          <Animated.View
+            style={{
+              opacity: badgeAnim,
+              transform: [{ scale: badgeAnim }],
+            }}
+          >
+            <Text style={styles.adminBadge}>ADMIN MODE</Text>
+          </Animated.View>
+        )}
+      </WelcomeHero>
+
       <TouchableWithoutFeedback
         onPress={Platform.OS !== "web" ? Keyboard.dismiss : undefined}
       >
-        <View style={styles.inner}>
-          {}
-          <View style={styles.headerZone}>
-            <Pressable onPress={handleTitleTap}>
-              <Text style={styles.title}>
-                {adminMode ? "Admin Login" : t("welcome")}
-              </Text>
-            </Pressable>
-            {adminMode && (
-              <Animated.View
-                style={{
-                  opacity: badgeAnim,
-                  transform: [{ scale: badgeAnim }],
-                }}
-              >
-                <Text style={styles.adminBadge}>ADMIN MODE</Text>
-              </Animated.View>
-            )}
+        <View style={styles.body}>
+          <View style={styles.backButton}>
+            <BackButton onPress={() => navigate("/")} />
           </View>
 
-          {}
           <View style={styles.formZone}>
             {adminMode ? (
               <>
@@ -211,6 +221,7 @@ export default function LoginScreen() {
                   editable={!eventInactive}
                   onFocus={() => setPinFocused(true)}
                   onBlur={() => setPinFocused(false)}
+                  onSubmitEditing={handleLogin}
                 />
                 {eventInactive && (
                   <View style={styles.eventInactiveHint}>
@@ -228,37 +239,14 @@ export default function LoginScreen() {
             )}
           </View>
 
-          {}
           <View style={styles.actionZone}>
-            {loading ? (
-              <ActivityIndicator size="large" color={colors.accent} />
-            ) : (
-              <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-                <Pressable
-                  style={[styles.button, eventInactive && styles.buttonDisabled]}
-                  onPress={handleLogin}
-                  disabled={eventInactive}
-                  onPressIn={() =>
-                    Animated.spring(buttonScale, {
-                      toValue: 0.96,
-                      useNativeDriver: true,
-                      speed: 60,
-                      bounciness: 0,
-                    }).start()
-                  }
-                  onPressOut={() =>
-                    Animated.spring(buttonScale, {
-                      toValue: 1,
-                      useNativeDriver: true,
-                      speed: 30,
-                      bounciness: 6,
-                    }).start()
-                  }
-                >
-                  <Text style={styles.buttonText}>{t("login")}</Text>
-                </Pressable>
-              </Animated.View>
-            )}
+            <Button
+              label={t("login")}
+              onPress={handleLogin}
+              disabled={eventInactive}
+              loading={loading}
+              style={styles.loginButton}
+            />
           </View>
         </View>
       </TouchableWithoutFeedback>
@@ -272,18 +260,14 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       flex: 1,
       backgroundColor: colors.background,
     },
-    inner: {
+    body: {
       flex: 1,
-      paddingHorizontal: inset.screen,
-      paddingTop: inset.screenTopTall,
+      paddingHorizontal: inset.card,
+      paddingTop: space[5],
       paddingBottom: inset.screenBottom,
     },
-    headerZone: {
-      marginBottom: inset.section,
-    },
-    title: {
-      ...type.h1,
-      color: colors.text,
+    backButton: {
+      paddingBottom: space[5],
     },
     adminBadge: {
       ...type.eyebrow,
@@ -297,10 +281,10 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       ...type.body,
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: 8,
+      borderRadius: ui.inputRadius,
       padding: inset.card,
       color: colors.text,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceHigh,
     },
     pinContainer: {
       gap: inset.tight,
@@ -314,17 +298,20 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       color: colors.textMuted,
     },
     pinInput: {
-      ...type.h2,
+      marginTop: inset.tight,
+      fontFamily: fonts.displayBold,
+      fontSize: 32,
+      lineHeight: 36,
       letterSpacing: 10,
       color: colors.text,
       textAlign: "center",
     },
     pinInputFocused: {
       borderColor: colors.primary,
-      backgroundColor: colors.surfaceHigh,
+      backgroundColor: colors.surface,
     },
     inputDisabled: {
-      opacity: 0.4,
+      opacity: ui.disabledOpacity,
     },
     eventInactiveHint: {
       marginTop: inset.tight,
@@ -340,20 +327,11 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       textDecorationLine: "underline",
     },
     actionZone: {
-      marginTop: inset.section,
+      marginTop: space[10],
     },
-    button: {
-      backgroundColor: colors.accent,
-      borderRadius: 8,
-      padding: inset.card,
-      alignItems: "center",
-    },
-    buttonDisabled: {
-      opacity: 0.4,
-    },
-    buttonText: {
-      ...type.button,
-      color: colors.onAccent,
+    loginButton: {
+      alignSelf: "stretch",
+      minHeight: 52,
     },
   });
 }

@@ -9,7 +9,9 @@
 ## Purpose
 
 Two logins in one screen: a PIN field for participants (default), and a
-hidden email/password admin form revealed by a secret gesture.
+hidden email/password admin form revealed by a secret gesture. Rendered
+under the same dark [`WelcomeHero`](../../lib/components/onboarding/WelcomeHero.md)
+band as the logged-out home screen, with a back button to `/`.
 
 ## Exports
 
@@ -25,7 +27,11 @@ hidden email/password admin form revealed by a secret gesture.
 
 ### `handleTitleTap(): void`
 
-Increments `tapCount` and resets a 2-second `tapTimer` on every tap (so taps must land in quick succession); once `tapCount` reaches `SECRET_TAPS`, resets the counter and toggles `adminMode`. Bound to the screen title's `onPress`.
+Increments `tapCount` and resets a 2-second `tapTimer` on every tap (so taps must land in quick succession); once `tapCount` reaches `SECRET_TAPS`, resets the counter and toggles `adminMode`. Passed to `WelcomeHero` as `onTitlePress`, so the gesture target is the big "Willkommen" headline in the hero band.
+
+### Internal: `openMenu(): void`
+
+`useCallback` keyed on `[navigation]`. Dispatches `DrawerActions.openDrawer()` for the hero's menu button — the route hides the navigator header in [`app/_layout.tsx`](../_layout.md).
 
 ### `handleLogin(): Promise<void>`
 
@@ -35,11 +41,14 @@ Branches on `adminMode`. Admin branch: validates `email`/`password` are non-empt
 
 ### Admin mode reveal
 
-Tapping the screen title `SECRET_TAPS` (7) times within a rolling 2-second
+Tapping the hero title `SECRET_TAPS` (7) times within a rolling 2-second
 window (`tapTimer`, reset on every tap) toggles `adminMode`. This is a
 deliberately undiscoverable gesture — there's no visible admin-login
 button — so this screen also carries a small entrance animation
-(`badgeAnim`, spring) revealing an "ADMIN MODE" badge once triggered.
+(`badgeAnim`, spring) revealing an "ADMIN MODE" badge, rendered as the
+hero's `children` under the (now "Admin Login") title. In admin mode the
+body swaps the PIN field for email + password inputs; the submit button
+stays the same.
 
 ### Event-inactive gating
 
@@ -61,5 +70,7 @@ A `useEffect` keyed on `[adminMode, badgeAnim]` resets `badgeAnim` to `0` and, o
 
 ## Related
 
+- [`lib/components/onboarding/WelcomeHero.tsx`](../../lib/components/onboarding/WelcomeHero.md) — the header band
+- [`lib/components/ui/Button.tsx`](../../lib/components/ui/Button.md), [`BackButton`](../../lib/components/ui/BackButton.md)
 - [`lib/auth.tsx`](../../lib/auth.md) — `login`, `loginWithPin`
 - [`lib/routing/useRouter.ts`](../../lib/routing/useRouter.md)

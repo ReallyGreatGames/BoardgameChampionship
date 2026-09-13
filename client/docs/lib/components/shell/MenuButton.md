@@ -34,6 +34,7 @@ bars themselves (20×2) are far smaller than it.
 ## Used by
 
 - [`lib/components/home/ParticipantHero.tsx`](../home/ParticipantHero.md)
+- [`lib/components/onboarding/WelcomeHero.tsx`](../onboarding/WelcomeHero.md)
 - [`lib/components/participants/ParticipantListHeader.tsx`](../participants/ParticipantListHeader.md)
 - [`lib/components/game/GameHeader.tsx`](../game/GameHeader.md)
 - [`lib/components/schedule/ScheduleHeader.tsx`](../schedule/ScheduleHeader.md)

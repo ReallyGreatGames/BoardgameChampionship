@@ -22,4 +22,4 @@ label at the same height on game screens with or without adjacent controls.
 
 ## Used by
 
-[`game.tsx`](../../../app/(pages)/(user)/game.md), [`lottery.tsx`](../../../app/(pages)/(user)/lottery.md), [`results.tsx`](../../../app/(pages)/(user)/results.md), [`rules.tsx`](../../../app/(pages)/(user)/rules.md), [`signature.tsx`](../../../app/(pages)/(user)/signature.md), [`PlayerPickerForm.tsx`](../onboarding/PlayerPickerForm.md)
+[`game.tsx`](../../../app/(pages)/(user)/game.md), [`lottery.tsx`](../../../app/(pages)/(user)/lottery.md), [`results.tsx`](../../../app/(pages)/(user)/results.md), [`rules.tsx`](../../../app/(pages)/(user)/rules.md), [`signature.tsx`](../../../app/(pages)/(user)/signature.md), [`PlayerPickerForm.tsx`](../onboarding/PlayerPickerForm.md), [`login.tsx`](../../../app/(pages)/login.md)

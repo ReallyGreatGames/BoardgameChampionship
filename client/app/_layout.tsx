@@ -52,12 +52,14 @@ function AppNavigator() {
         name="(pages)/login"
         options={{
           title: t(type),
+          headerShown: false,
         }}
       />
       <Drawer.Screen
         name="index"
         options={{
           title: "",
+          headerShown: false,
         }}
       />
       <Drawer.Screen
