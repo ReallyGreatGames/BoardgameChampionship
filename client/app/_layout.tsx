@@ -108,6 +108,7 @@ function AppNavigator() {
         name="(pages)/(team-player)/choose-your-character"
         options={{
           title: t("entries.chooseYourCharacter"),
+          headerShown: false,
         }}
       />
       <Drawer.Screen

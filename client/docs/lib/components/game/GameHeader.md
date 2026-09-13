@@ -57,6 +57,7 @@ bar/notch itself.
 - [`app/(pages)/settings.tsx`](../../../app/(pages)/settings.md) — `subtitle` = "player · team" or the tournament name
 - [`app/(pages)/info.tsx`](../../../app/(pages)/info.md) — title "FAQ", `subtitle` = tournament name
 - [`app/(pages)/legal.tsx`](../../../app/(pages)/legal.md) — title "Impressum & Datenschutz", `subtitle` = tournament name
+- [`app/(pages)/(team-player)/choose-your-character.tsx`](../../../app/(pages)/(team-player)/choose-your-character.md) — title "Choose Team", `subtitle` = "player · team" or the tournament name; rendered above both the picker and the setup step
 
 ## Related
 
