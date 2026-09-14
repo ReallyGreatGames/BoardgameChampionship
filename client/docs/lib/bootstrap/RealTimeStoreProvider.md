@@ -51,13 +51,14 @@ another. Resolves once every store in the tier has finished its own
 #### `openTier(tier: Tier, stores: any[]): Promise<void>` — `useCallback`, deps `[]`
 
 `tier` — which of `"global" | "user" | "admin"` is being (re)opened.
-`stores` — that tier's store list. First calls whatever unsubscribe
-function is currently stored for `tier` (if any) and clears the ref slot,
-so a re-open never leaves a stale subscription running alongside the new
-one. Then awaits `loadTier(stores)` so each store has fresh data before
-subscribing, and finally opens one shared subscription via
-`subscribeTier(tierEntries(stores))`, storing the returned unsubscribe
-function back into `tierUnsubscribes.current[tier]`. Has no dependencies
+`stores` — that tier's store list. Awaits `loadTier(stores)` so each store
+has fresh data, opens the new shared subscription via
+`subscribeTier(tierEntries(stores))`, stores its unsubscribe function in
+`tierUnsubscribes.current[tier]`, and only *then* calls the previous
+unsubscribe function for that tier (if any) — see "Subscribe before
+unsubscribe" below. Two overlapping calls for the same tier can't leak a
+subscription either: whichever finishes second unsubscribes the first
+one's. Has no dependencies
 because it only touches the ref (stable identity) and its own arguments —
 this lets it be called safely from effects and from `reconnectAll` without
 those needing `openTier` as a re-triggering dependency.
@@ -66,12 +67,45 @@ those needing `openTier` as a re-triggering dependency.
 
 `reason` — a short human-readable string logged via `console.debug` for
 diagnosing why a reconnect happened (e.g. `"network restored"`,
-`"app foregrounded"`). Tears down all three tiers' subscriptions
-unconditionally, resets `tierUnsubscribes.current` to
-`{ global: null, user: null, admin: null }`, then re-opens `"global"`
-unconditionally, `"user"` if `isAuthenticated`, and `"admin"` if `isAdmin`.
-The re-opens are fire-and-forget (`openTier`'s returned promise isn't
-awaited) since there's no caller waiting on reconnect completion.
+`"app foregrounded"`). Re-opens `"global"` unconditionally, `"user"` if
+`isAuthenticated`, and `"admin"` if `isAdmin` via `openTier` (which swaps
+each subscription in place); a tier the user is no longer entitled to is
+closed with `closeTier` instead. The re-opens are fire-and-forget
+(`openTier`'s returned promise isn't awaited) since there's no caller
+waiting on reconnect completion.
+
+#### `closeTier(tier: Tier): void` — `useCallback`, deps `[]`
+
+Calls the tier's stored unsubscribe function (if any) and clears its slot.
+Used by `reconnectAll` for the `user`/`admin` tiers when auth no longer
+covers them.
+
+### Subscribe before unsubscribe
+
+The Appwrite SDK derives its WebSocket URL from the set of all subscribed
+channels and rebuilds the socket whenever that set changes (debounced by
+50 ms). The old `openTier` unsubscribed first and re-subscribed only after
+the `await loadTier(...)` fetch, so every re-open emptied the channel set
+for the length of a network round trip: the SDK closed the socket, opened
+a smaller one, then closed that too once the tier came back. Closing a
+socket that is still connecting shows up in the browser console as
+"WebSocket connection … failed", and because the SDK tracks "this close
+was intentional" in one shared flag, a second close landing before the
+first close event had been handled was taken for a real drop — "Realtime
+got disconnected. Reconnect will be attempted in 1 seconds."
+
+On web this ran on every tab switch, because react-native-web's `AppState`
+reports `"active"` whenever the tab becomes visible again, which triggers
+`reconnectAll`. It affected all users, not just admins — the `user` tier
+(schedule, results, tables …) is the bulk of the channels.
+
+Subscribing the replacement first keeps the channel set identical, so the
+SDK sees the same URL and an open socket and leaves it alone; the old
+subscription's removal then changes nothing either. The fresh `init()`
+fetch still happens, which is what actually makes up for events missed
+while backgrounded. A socket that has really died is still covered: the
+SDK rebuilds a socket that is closed or closing on the next `connect()`,
+and its own close handler reconnects on unexpected drops.
 
 ## How it works
 
@@ -124,8 +158,9 @@ that actually became ready.
 
 ### Reconnection
 
-`reconnectAll(reason)` tears down and reopens all three tiers at once.
-Triggered by two listeners:
+`reconnectAll(reason)` re-fetches and re-subscribes every tier the user
+is entitled to (see "Subscribe before unsubscribe"). Triggered by two
+listeners:
 
 - `NetInfo.addEventListener` — reconnects when the device's network
   transitions from disconnected to connected.

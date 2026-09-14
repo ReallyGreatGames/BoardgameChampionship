@@ -212,6 +212,7 @@ const translations = {
     },
     seating: {
       title: "Participants",
+      table: "Table",
       seat: "Player {{seat}}",
     },
     bell: {
@@ -582,6 +583,12 @@ const translations = {
     summaryEmpty: "Not yet entered",
     alreadySigned: "This player has already signed.",
     confirmHint: "By signing, {name} confirms this game's score and placement.",
+    discardConfirm: {
+      title: "Discard signature?",
+      message: "{name}'s signature hasn't been confirmed yet. Switching players will discard it.",
+      confirm: "Discard",
+      cancel: "Cancel",
+    },
   },
   lottery: {
     title: "Lottery",

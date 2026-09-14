@@ -212,6 +212,7 @@ const translations = {
     },
     seating: {
       title: "Teilnehmer",
+      table: "Tisch",
       seat: "Spieler {{seat}}",
     },
     bell: {
@@ -584,6 +585,12 @@ const translations = {
     summaryEmpty: "Noch nicht eingetragen",
     alreadySigned: "Dieser Spieler hat bereits unterschrieben.",
     confirmHint: "Mit der Unterschrift bestätigt {name} Punkte und Platzierung dieses Spiels.",
+    discardConfirm: {
+      title: "Unterschrift verwerfen?",
+      message: "Die Unterschrift von {name} wurde noch nicht bestätigt. Beim Wechsel geht sie verloren.",
+      confirm: "Verwerfen",
+      cancel: "Abbrechen",
+    },
   },
   lottery: {
     title: "Auslosung",

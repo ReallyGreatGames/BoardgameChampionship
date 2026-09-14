@@ -35,6 +35,13 @@ first (passing the `gameId` through as a param). The game route is opened
 with [`goTo`](../../utils/navigation.md), recording `/` as the origin so the
 game screen's back button returns to the home screen.
 
+The button is rendered with `item.gameId ? … : null`, not
+`item.gameId && …`: non-game items store `gameId` as `""`, and `&&` would
+hand that empty string to the card's `View`, which react-native-web rejects
+("Unexpected text node"). The home screen stays mounted in the drawer, so
+this fired even while the admin was on the schedule — e.g. right after
+restarting a finished break.
+
 ## Used by
 
 - [`app/index.tsx`](../../../app/index.md)

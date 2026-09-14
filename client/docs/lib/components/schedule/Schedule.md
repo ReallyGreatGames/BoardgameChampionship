@@ -171,13 +171,13 @@ item modal's "timer" action) as children, wiring their save callbacks back
 into this component's own store calls. `onRules` opens
 `/rules?gameId=...` through `goTo` with the schedule recorded as the origin
 (so the rules screen's back button returns to the schedule rather than a
-game hub the admin never opened) and closes the modal; `onLotteries` pushes
-`/(pages)/(user)/lottery-add?gameId=...&from=/(pages)/(user)/schedule`
-(URL-encoded) and closes the modal — the same screen tapping the "+"
-button on [`lottery.tsx`](../../../app/(pages)/(user)/lottery.md)
-navigates to, but with `from` set so that screen's back button returns
-here instead of detouring through a lottery list this entry point never
-visited (see [`lottery-add.tsx`'s "Why `from` exists"](../../../app/(pages)/(user)/lottery-add.md#why-from-exists)).
+game hub the admin never opened) and closes the modal; `onLotteries` opens
+`/(pages)/(user)/lottery?gameId=...&from=/(pages)/(user)/schedule` the same
+way and closes the modal. It targets the game's lottery *list*, not
+[`lottery-add`](../../../app/(pages)/(user)/lottery-add.md): the list shows
+the photos and options lotteries (drafts included, for admins) that already
+exist, and its "+" button leads on to `lottery-add` — opening the type
+picker directly hid lotteries the admin had already created.
 `ScheduleList` is also embedded in the admin dashboard's schedule tab
 (`app/(pages)/(admin)/admin/index.tsx`), but this hardcoded `from` value
 always points at the standalone `/schedule` route regardless of which

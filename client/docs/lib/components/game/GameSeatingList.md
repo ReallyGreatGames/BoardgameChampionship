@@ -4,9 +4,10 @@
 
 ## Purpose
 
-The "Teilnehmer" card on the game page: one row per player at the table,
-showing seat number, name, country chip and team, with the current
-player's row highlighted. The richer sibling of
+The "Teilnehmer" card on the game page: a large table-number tile
+("Tisch 7") on top, then one row per player at the table, showing seat
+number, name, country chip and team, with the current player's row
+highlighted. The richer sibling of
 [`Table`](Table.md) — that one is the compact variant still used inside an
 expanded schedule item.
 
@@ -31,6 +32,13 @@ object, in which case both fields are `""` and the country chip/team line
 simply don't render.
 
 ## How it works
+
+The table tile sits above the seating card and repeats what
+[`GameHeader`](GameHeader.md)'s meta line already says, deliberately: in
+the header the table number is a small uppercase caption, but it is the
+one thing a player walking through the hall needs to find, so the tile
+renders it in `type.bigNumber` (primary color, `tabular-nums`) next to a
+`type.h2` `seating.table` label.
 
 The current player is read from [`usePlayer`](../../bootstrap/PlayerProvider.md)
 rather than passed in, since every consumer would otherwise have to thread

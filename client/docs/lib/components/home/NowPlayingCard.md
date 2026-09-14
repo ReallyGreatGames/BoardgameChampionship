@@ -24,8 +24,12 @@ screen still falls back to for non-game schedule items.
 
 ### Internal: `openMatch(): void`
 
-Pushes to `/game?gameId=…&from=/` when the player already has a team and
-id, otherwise to
+Opens `/game?gameId=…&from=/` through [`goTo`](../../utils/navigation.md)
+with `/` as the origin when the player already has a team and id, so the
+game screen's back button returns home even after a detour through one of
+its sub-screens (results, rules, …) — a plain `router.push` recorded
+nothing, and the game screen re-entered from a sub-screen has lost its
+`from` param, so back fell through to the schedule. Otherwise pushes to
 [`choose-your-character`](../../../app/(pages)/(team-player)/choose-your-character.md)
 with the `gameId` as a param — the same gate
 [`ActiveScheduleCard`](../schedule/ActiveScheduleCard.md) applies, so a

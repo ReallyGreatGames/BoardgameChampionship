@@ -12,7 +12,7 @@ import {
 import { useGameScheduleInfo } from "@/lib/hooks/useGameScheduleInfo";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
-import { NO_SIGNATURE } from "@/lib/models/result";
+import { NO_SIGNATURE, type Result } from "@/lib/models/result";
 import { useResultStore } from "@/lib/stores/appwrite/result-store";
 import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
 import { useTableStore } from "@/lib/stores/appwrite/table-store";
@@ -100,48 +100,65 @@ export default function ResultsPage() {
   const acknowledgedAtRef = useRef<string | null>(null);
   const ownSaveRef = useRef(false);
   const droppedSignatureIdsRef = useRef<string[]>([]);
+  const editedRef = useRef(false);
 
   const scoreRefs = useRef<(PlayerResultRowHandle | null)[]>([null, null, null, null]);
   const noteRef = useRef<TextInput | null>(null);
 
-  useEffect(() => {
-    acknowledgedAtRef.current = null;
+  const seedForm = useCallback((result: Result | undefined) => {
+    acknowledgedAtRef.current = result?.$updatedAt ?? null;
     ownSaveRef.current = false;
-    setPlacements(Array(PLAYER_COUNT).fill(""));
-    setScores(Array(PLAYER_COUNT).fill(""));
-    setNote("");
-    setSignatureIds(Array(PLAYER_COUNT).fill(""));
-    setSignaturesReset(false);
+    editedRef.current = false;
     droppedSignatureIdsRef.current = [];
-  }, [gameId, tableNumber]);
+    setSignaturesReset(false);
+    setPlacements(padArray(result?.placements ?? [], PLAYER_COUNT, ""));
+    setScores(padArray((result?.scores ?? []).map(String), PLAYER_COUNT, ""));
+    setNote(result?.note ?? "");
+    setSignatureIds(padArray(result?.signatureIds ?? [], PLAYER_COUNT, ""));
+  }, []);
 
   useEffect(() => {
-    if (!existingResult) return;
+    if (!existingResult) {
+      return;
+    }
     if (acknowledgedAtRef.current === null) {
-      acknowledgedAtRef.current = existingResult.$updatedAt;
-      setPlacements(padArray(existingResult.placements ?? [], PLAYER_COUNT, ""));
-      setScores(
-        padArray((existingResult.scores ?? []).map(String), PLAYER_COUNT, ""),
-      );
-      setNote(existingResult.note ?? "");
-      setSignatureIds(
-        padArray(existingResult.signatureIds ?? [], PLAYER_COUNT, ""),
-      );
+      seedForm(existingResult);
     } else if (ownSaveRef.current) {
       ownSaveRef.current = false;
       acknowledgedAtRef.current = existingResult.$updatedAt;
       setSignaturesReset(false);
     }
-  }, [existingResult]);
+  }, [existingResult, seedForm]);
 
   useFocusEffect(
     useCallback(() => {
-      if (existingResult && acknowledgedAtRef.current !== null && !signaturesReset) {
-        setSignatureIds(
-          padArray(existingResult.signatureIds ?? [], PLAYER_COUNT, ""),
-        );
-      }
-    }, [existingResult, signaturesReset]),
+      const findResult = () =>
+        useResultStore
+          .getState()
+          .collection.find((r) => r.gameId === gameId && r.table === tableNumber);
+
+      seedForm(findResult());
+
+      let focused = true;
+      useResultStore
+        .getState()
+        .init()
+        .then(() => {
+          if (!focused) {
+            return;
+          }
+          const fresh = findResult();
+          if (!editedRef.current) {
+            seedForm(fresh);
+          } else if (droppedSignatureIdsRef.current.length === 0) {
+            setSignatureIds(padArray(fresh?.signatureIds ?? [], PLAYER_COUNT, ""));
+          }
+        });
+
+      return () => {
+        focused = false;
+      };
+    }, [gameId, tableNumber, seedForm]),
   );
 
   const selfHref = `/(pages)/(user)/results?gameId=${gameId}`;
@@ -381,6 +398,7 @@ export default function ResultsPage() {
       if (placements[i] === v) {
         return;
       }
+      editedRef.current = true;
       setPlacements((prev) => {
         const next = [...prev];
         next[i] = v;
@@ -396,6 +414,7 @@ export default function ResultsPage() {
       if (scores[i] === v) {
         return;
       }
+      editedRef.current = true;
       setScores((prev) => {
         const next = [...prev];
         next[i] = v;
@@ -405,6 +424,11 @@ export default function ResultsPage() {
     },
     [scores, invalidateSignatures],
   );
+
+  const handleSetNote = useCallback((v: string) => {
+    editedRef.current = true;
+    setNote(v);
+  }, []);
 
   const handleOpenSignature = useCallback(
     async (seat: number) => {
@@ -551,7 +575,7 @@ export default function ResultsPage() {
             ref={noteRef}
             style={[styles.input, styles.noteInput]}
             value={note}
-            onChangeText={setNote}
+            onChangeText={handleSetNote}
             placeholder={t("notePlaceholder")}
             placeholderTextColor={colors.textPlaceholder}
             multiline

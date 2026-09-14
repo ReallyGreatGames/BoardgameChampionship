@@ -40,7 +40,7 @@ Renders one options-lottery instance's card: its `name`, and either "not pulled 
 
 ### `handleBack(): void`
 
-Pops the recorded origin via [`goBackTo`](../../../lib/utils/navigation.md), returning to whichever screen opened the lottery list. Falls back to the `from` query param, then `/game?gameId=${gameId}` (or `/`). The screen also builds its own `selfHref` and passes it as the `origin` when opening `lottery-add` or the options editor (the latter through `OptionsLotterySection`'s `origin` prop).
+Pops the recorded origin via [`goBackTo`](../../../lib/utils/navigation.md), returning to whichever screen opened the lottery list — the game hub, or the schedule when an admin came in through the schedule item modal's "lotteries" action. Falls back to the `from` query param, then `/game?gameId=${gameId}` (or `/`). The screen also builds its own `selfHref` and passes it as the `origin` when opening `lottery-add` or the options editor (the latter through `OptionsLotterySection`'s `origin` prop).
 
 ### `handleDelete(fileId: string): Promise<void>`
 

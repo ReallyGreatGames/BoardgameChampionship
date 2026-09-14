@@ -64,7 +64,7 @@ export function ActiveScheduleCard({ item }: Props) {
           {t("duration", { minutes: item.durationPlanned })}
         </Text>
       </View>
-      {item.gameId && (
+      {item.gameId ? (
         <TouchableOpacity
           style={styles.goToGameBtn}
           activeOpacity={0.85}
@@ -79,7 +79,7 @@ export function ActiveScheduleCard({ item }: Props) {
           <Text style={styles.goToGameBtnText}>{t("goToGame")}</Text>
           <Ionicons name="arrow-forward" size={16} color={colors.onAccent} />
         </TouchableOpacity>
-      )}
+      ) : null}
     </View>
   );
 }
