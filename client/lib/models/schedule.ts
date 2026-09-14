@@ -11,4 +11,6 @@ export type Schedule = {
   isActive?: boolean;
   isFinished?: boolean;
   allowUserChange?: boolean;
+  activeAccumulatedMs?: number;
+  activeResumedAt?: string | null;
 } & Models.Document;

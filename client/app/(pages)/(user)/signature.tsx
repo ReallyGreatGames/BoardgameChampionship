@@ -1,23 +1,26 @@
 import { ID, SIGNATURES_BUCKET_ID, storage } from "@/lib/appwrite";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
+import { GameHeader } from "@/lib/components/game/GameHeader";
 import { BackButton } from "@/lib/components/ui/BackButton";
+import { Button } from "@/lib/components/ui/Button";
+import { useDialog } from "@/lib/components/ui/Dialog";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { NO_SIGNATURE } from "@/lib/models/result";
 import { useResultStore } from "@/lib/stores/appwrite/result-store";
-import { inset } from "@/lib/theme/spacing";
-import { ui } from "@/lib/theme/ui";
-import { type } from "@/lib/theme/typography";
+import { useTableStore } from "@/lib/stores/appwrite/table-store";
+import { inset, space } from "@/lib/theme/spacing";
+import { fonts, type } from "@/lib/theme/typography";
 import { goBackTo } from "@/lib/utils/navigation";
+import { createSignatureFile } from "@/lib/utils/signature-file";
 import { Ionicons } from "@expo/vector-icons";
-import { File as FSFile, Paths } from "expo-file-system";
-import { useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useNavigation } from "expo-router";
+import { DrawerActions } from "expo-router/react-navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   PanResponder,
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -25,8 +28,26 @@ import {
 } from "react-native";
 import Svg, { Path, SvgXml } from "react-native-svg";
 
+const PLAYER_COUNT = 4;
+
 type Point = { x: number; y: number };
 type Stroke = Point[];
+
+function padArray<T>(arr: T[], length: number, fill: T): T[] {
+  const copy = [...arr];
+  while (copy.length < length) {
+    copy.push(fill);
+  }
+  return copy.slice(0, length);
+}
+
+function parseSigsParam(sigs: string): string[] {
+  return padArray(
+    sigs.split(",").map((s) => (s === NO_SIGNATURE ? "" : s)),
+    PLAYER_COUNT,
+    "",
+  );
+}
 
 function strokeToD(stroke: Stroke): string {
   if (stroke.length === 0) {
@@ -53,19 +74,31 @@ function buildSvgContent(
 
 export default function SignaturePage() {
   useRequireAuth();
-  const { gameId, place, from, sig } = useLocalSearchParams<{
+  const { gameId, place, from, sigs } = useLocalSearchParams<{
     gameId: string;
     from?: string;
     place: string;
-    sig?: string;
+    sigs?: string;
   }>();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const navigation = useNavigation();
   const { t } = useTranslation(["signature"]);
   const resultStore = useResultStore();
-
-  const placeIdx = parseInt(place ?? "0", 10);
   const tableNumber = usePlayerTable(gameId);
+  const tables = useTableStore((s) => s.collection);
+  const { confirm } = useDialog();
+
+  const playerData = useMemo(() => {
+    if (!gameId || tableNumber === null) {
+      return [];
+    }
+    const entry = tables.find((tbl) => {
+      const tGameId = typeof tbl.game === "string" ? tbl.game : tbl.game.$id;
+      return tGameId === gameId && tbl.tableNumber === tableNumber;
+    });
+    return entry?.players ?? [];
+  }, [tables, gameId, tableNumber]);
 
   const existingResult = useMemo(
     () =>
@@ -76,11 +109,23 @@ export default function SignaturePage() {
           ),
     [resultStore.collection, gameId, tableNumber],
   );
-  const existingFileId = sig
-    ? sig === NO_SIGNATURE
-      ? ""
-      : sig
-    : (existingResult?.signatureIds?.[placeIdx] ?? "");
+
+  const [active, setActive] = useState(() => parseInt(place ?? "0", 10));
+
+  const [sigIds, setSigIds] = useState<string[]>(() =>
+    sigs
+      ? parseSigsParam(sigs)
+      : padArray(existingResult?.signatureIds ?? [], PLAYER_COUNT, ""),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      setActive(parseInt(place ?? "0", 10));
+      if (sigs) {
+        setSigIds(parseSigsParam(sigs));
+      }
+    }, [place, sigs]),
+  );
 
   const [existingSvg, setExistingSvg] = useState<string | null>(null);
   const [loadingExisting, setLoadingExisting] = useState(false);
@@ -98,27 +143,37 @@ export default function SignaturePage() {
 
   useFocusEffect(clearDrawing);
 
+  const activeFileId = sigIds[active];
+
   useEffect(() => {
     setExistingSvg(null);
     clearDrawing();
 
-    if (!existingFileId) {
+    if (!activeFileId) {
       setLoadingExisting(false);
       return;
     }
     setLoadingExisting(true);
     storage
-      .getFileView({ bucketId: SIGNATURES_BUCKET_ID, fileId: existingFileId })
+      .getFileView({ bucketId: SIGNATURES_BUCKET_ID, fileId: activeFileId })
       .then((buffer) => {
         const xml = new TextDecoder("utf-8").decode(buffer);
         setExistingSvg(xml);
       })
       .catch(() => setExistingSvg(null))
       .finally(() => setLoadingExisting(false));
-  }, [existingFileId, clearDrawing]);
+  }, [active, activeFileId, clearDrawing]);
 
   const hasExisting = loadingExisting || existingSvg !== null;
   const isEmpty = strokes.length === 0 && currentStroke.length === 0;
+  const signedCount = sigIds.filter(Boolean).length;
+
+  const activePlayer = playerData[active];
+  const activeName = activePlayer?.name ?? `P${active + 1}`;
+  const activeTeam =
+    activePlayer?.team && typeof activePlayer.team === "object"
+      ? activePlayer.team
+      : null;
 
   const panResponder = useRef(
     PanResponder.create({
@@ -154,11 +209,38 @@ export default function SignaturePage() {
     currentStrokeRef.current = [];
   }, []);
 
+  const openMenu = useCallback(
+    () => navigation.dispatch(DrawerActions.openDrawer()),
+    [navigation],
+  );
+
   const handleBack = useCallback(() => {
     goBackTo(from ?? (gameId ? `/(pages)/(user)/results?gameId=${gameId}` : "/"));
   }, [from, gameId]);
 
-  const handleSave = useCallback(async () => {
+  const handleSelectSeat = useCallback(
+    async (i: number) => {
+      if (i === active) {
+        return;
+      }
+      if (!isEmpty && !hasExisting) {
+        const ok = await confirm({
+          title: t("discardConfirm.title"),
+          message: t("discardConfirm.message").replace("{name}", activeName),
+          confirmLabel: t("discardConfirm.confirm"),
+          cancelLabel: t("discardConfirm.cancel"),
+          destructive: true,
+        });
+        if (!ok) {
+          return;
+        }
+      }
+      setActive(i);
+    },
+    [active, isEmpty, hasExisting, confirm, t, activeName],
+  );
+
+  const handleConfirm = useCallback(async () => {
     if (isEmpty || saving || tableNumber === null) {
       return;
     }
@@ -167,166 +249,203 @@ export default function SignaturePage() {
       const { width, height } = canvasDims;
       const svgContent = buildSvgContent(strokes, width, height);
 
-      let fileArg: any;
-      if (Platform.OS === "web") {
-        const blob = new Blob([svgContent], { type: "image/svg+xml" });
-        fileArg = new globalThis.File(
-          [blob],
-          `signature_${gameId}_${placeIdx}.svg`,
-          {
-            type: "image/svg+xml",
-          },
-        );
-      } else {
-        const fsFile = new FSFile(
-          Paths.cache,
-          `sig_${gameId}_${placeIdx}_${Date.now()}.svg`,
-        );
-        fsFile.write(svgContent);
-        fileArg = {
-          name: `signature_${gameId}_${placeIdx}.svg`,
-          type: "image/svg+xml",
-          size: fsFile.size,
-          uri: fsFile.uri,
-        };
-      }
+      const fileArg = createSignatureFile(svgContent, gameId, active);
 
       const uploaded = await storage.createFile({
         bucketId: SIGNATURES_BUCKET_ID,
         fileId: ID.unique(),
-        file: fileArg,
+        // The native SDK types require a URI, while web uploads accept a browser File.
+        file: fileArg as Parameters<typeof storage.createFile>[2],
       });
 
-      const existingResult = resultStore.collection.find(
+      const freshResult = resultStore.collection.find(
         (r) => r.gameId === gameId && r.table === tableNumber,
       );
-      const sigIds = [...(existingResult?.signatureIds ?? [])];
-      while (sigIds.length <= placeIdx) {
-        sigIds.push("");
-      }
-      sigIds[placeIdx] = uploaded.$id;
+      const nextSigIds = padArray(freshResult?.signatureIds ?? [], PLAYER_COUNT, "");
+      nextSigIds[active] = uploaded.$id;
 
-      if (existingResult) {
+      if (freshResult) {
         await resultStore.update({
-          $id: existingResult.$id,
-          signatureIds: sigIds,
+          $id: freshResult.$id,
+          signatureIds: nextSigIds,
         });
       } else {
         await resultStore.add({
           gameId: gameId ?? "",
           table: tableNumber,
-          signatureIds: sigIds,
+          signatureIds: nextSigIds,
           submitted: false,
         });
       }
 
-      goBackTo(from ?? `/(pages)/(user)/results?gameId=${gameId}`);
+      setSigIds(nextSigIds);
+      const nextUnsigned = nextSigIds.findIndex((id) => !id);
+      setActive(nextUnsigned === -1 ? active : nextUnsigned);
     } finally {
       setSaving(false);
     }
-  }, [isEmpty, saving, tableNumber, strokes, canvasDims, placeIdx, gameId, from, resultStore]);
+  }, [isEmpty, saving, tableNumber, strokes, canvasDims, active, gameId, resultStore]);
 
   const allStrokes = [
     ...strokes,
     ...(currentStroke.length > 0 ? [currentStroke] : []),
   ];
 
+  const activeScore = existingResult?.scores?.[active];
+  const activePlacement = existingResult?.placements?.[active];
+  const activeTied =
+    activePlacement != null &&
+    (existingResult?.placements ?? []).filter((p) => p === activePlacement).length > 1;
+
+  const activeSummary =
+    activeScore != null && activePlacement != null
+      ? t(activeTied ? "summaryTie" : "summary")
+          .replace("{score}", String(activeScore))
+          .replace("{place}", String(activePlacement))
+      : t("summaryEmpty");
+
+  const foreground = isDark ? colors.text : colors.onAccent;
+
   return (
     <View style={styles.container}>
-      <BackButton onPress={handleBack} />
+      <GameHeader
+        title={t("title")}
+        round={null}
+        tableNumber={tableNumber}
+        subtitle={t("progress")
+          .replace("{current}", String(active + 1))
+          .replace(/\{total\}/g, String(PLAYER_COUNT))
+          .replace("{signed}", String(signedCount))}
+        onMenuPress={openMenu}
+      />
 
-      <Text style={styles.title}>{t("title")}</Text>
-      <Text style={styles.subtitle}>
-        {t("subtitle").replace("{n}", String(placeIdx + 1))}
-      </Text>
-
-      <View
-        style={styles.canvasWrapper}
-        onLayout={(e) => {
-          const { width, height } = e.nativeEvent.layout;
-          setCanvasDims({ width, height });
-        }}
-        {...(!hasExisting ? panResponder.panHandlers : {})}
-      >
-        {hasExisting ? (
-          loadingExisting ? (
-            <ActivityIndicator size="large" color={colors.primary} />
-          ) : (
-            <SvgXml
-              xml={existingSvg}
-              width={canvasDims.width}
-              height={canvasDims.height}
-              style={StyleSheet.absoluteFill}
-            />
-          )
-        ) : (
-          <>
-            <Svg
-              width={canvasDims.width}
-              height={canvasDims.height}
-              style={StyleSheet.absoluteFill}
-            >
-              {allStrokes.map((stroke, idx) => (
-                <Path
-                  key={idx}
-                  d={strokeToD(stroke)}
-                  stroke="#000000"
-                  strokeWidth={2.5}
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+      <View style={styles.body}>
+        <BackButton onPress={handleBack} />
+        <View style={styles.tabsRow}>
+          {Array.from({ length: PLAYER_COUNT }, (_, i) => {
+            const isActive = i === active;
+            const signed = !!sigIds[i];
+            const label = (playerData[i]?.name ?? `P${i + 1}`).split(" ")[0];
+            return (
+              <TouchableOpacity
+                key={i}
+                onPress={() => handleSelectSeat(i)}
+                style={[styles.tab, isActive && styles.tabActive]}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[styles.tabLabel, isActive && styles.tabLabelActive]}
+                  numberOfLines={1}
+                >
+                  {label}
+                </Text>
+                <Ionicons
+                  name={signed ? "checkmark-circle" : "pencil-outline"}
+                  size={14}
+                  color={signed ? colors.success : isActive ? foreground : colors.textMuted}
                 />
-              ))}
-            </Svg>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
-            {isEmpty && (
-              <Text style={styles.placeholder} pointerEvents="none">
-                {t("placeholder")}
-              </Text>
-            )}
-          </>
-        )}
-      </View>
-
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={[
-            styles.clearBtn,
-            (isEmpty || hasExisting) && styles.btnDisabled,
-          ]}
-          onPress={handleClear}
-          disabled={isEmpty || hasExisting}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="trash-outline" size={18} color={colors.error} />
-          <Text
-            style={[
-              styles.clearBtnText,
-              (isEmpty || hasExisting) && { color: colors.textMuted },
-            ]}
-          >
-            {t("clear")}
+        <View style={styles.activeInfo}>
+          <Text style={styles.activeName} numberOfLines={1}>
+            {activeName}
           </Text>
-        </TouchableOpacity>
+          {(!!activeTeam?.country || !!activeTeam?.name) && (
+            <View style={styles.activeTeamRow}>
+              {!!activeTeam?.country && (
+                <Text style={styles.activeCountry}>{activeTeam.country}</Text>
+              )}
+              {!!activeTeam?.name && (
+                <Text style={styles.activeTeam} numberOfLines={1}>
+                  {activeTeam.name}
+                </Text>
+              )}
+            </View>
+          )}
+          <Text style={styles.activeSummary} numberOfLines={1}>
+            {activeSummary}
+          </Text>
+        </View>
 
-        <TouchableOpacity
-          style={[
-            styles.saveBtn,
-            (isEmpty || saving || hasExisting) && styles.btnDisabled,
-          ]}
-          onPress={handleSave}
-          disabled={isEmpty || saving || hasExisting}
-          activeOpacity={0.7}
+        <View
+          style={[styles.canvasWrapper, !isEmpty && styles.canvasWrapperActive]}
+          onLayout={(e) => {
+            const { width, height } = e.nativeEvent.layout;
+            setCanvasDims({ width, height });
+          }}
+          {...(!hasExisting ? panResponder.panHandlers : {})}
         >
-          {saving ? (
-            <ActivityIndicator size="small" color={colors.onAccent} />
+          {hasExisting ? (
+            loadingExisting ? (
+              <ActivityIndicator size="large" color={colors.primary} />
+            ) : (
+              <SvgXml
+                xml={existingSvg}
+                width={canvasDims.width}
+                height={canvasDims.height}
+                style={StyleSheet.absoluteFill}
+              />
+            )
           ) : (
             <>
-              <Ionicons name="checkmark-outline" size={18} color={colors.onAccent} />
-              <Text style={styles.saveBtnText}>{t("save")}</Text>
+              <Svg
+                width={canvasDims.width}
+                height={canvasDims.height}
+                style={StyleSheet.absoluteFill}
+              >
+                {allStrokes.map((stroke, idx) => (
+                  <Path
+                    key={idx}
+                    d={strokeToD(stroke)}
+                    stroke="#000000"
+                    strokeWidth={2.5}
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                ))}
+              </Svg>
+
+              {isEmpty && (
+                <Text style={styles.placeholder} pointerEvents="none">
+                  {t("placeholder")}
+                </Text>
+              )}
             </>
           )}
-        </TouchableOpacity>
+        </View>
+
+        {!hasExisting && (
+          <Text style={styles.confirmHint}>
+            {t("confirmHint").replace("{name}", activeName)}
+          </Text>
+        )}
+
+        <View style={styles.actions}>
+          <Button
+            label={t("clear")}
+            variant="secondary"
+            icon="trash-outline"
+            onPress={handleClear}
+            disabled={isEmpty || hasExisting}
+            style={styles.clearBtn}
+          />
+          <Button
+            label={t("confirm")}
+            icon="checkmark-outline"
+            onPress={handleConfirm}
+            disabled={isEmpty || saving || hasExisting}
+            loading={saving}
+            style={styles.saveBtn}
+          />
+        </View>
+
+        {hasExisting && !loadingExisting && (
+          <Text style={styles.footerHint}>{t("alreadySigned")}</Text>
+        )}
       </View>
     </View>
   );
@@ -337,34 +456,102 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     container: {
       flex: 1,
       backgroundColor: colors.background,
-      padding: inset.screen,
-      paddingTop: inset.group,
+    },
+    body: {
+      flex: 1,
+      padding: inset.card,
       gap: inset.tight,
     },
-    title: {
-      ...type.h1,
-      color: colors.text,
+    tabsRow: {
+      flexDirection: "row",
+      gap: 6,
+    },
+    tab: {
+      flex: 1,
+      minWidth: 0,
+      paddingVertical: 8,
+      paddingHorizontal: 4,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      alignItems: "center",
+      gap: 3,
+    },
+    tabActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    tabLabel: {
+      ...type.caption,
+      fontWeight: "700",
+      color: colors.textSecondary,
+    },
+    tabLabelActive: {
+      color: colors.onAccent,
+    },
+    activeInfo: {
+      gap: 2,
       marginTop: inset.tight,
     },
-    subtitle: {
+    activeName: {
+      fontFamily: fonts.displayBold,
+      fontSize: 24,
+      lineHeight: 26,
+      color: colors.text,
+    },
+    activeTeamRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: space[2],
+      minWidth: 0,
+    },
+    activeCountry: {
+      ...type.eyebrow,
+      letterSpacing: 1,
+      color: colors.primary,
+      backgroundColor: colors.surfaceHigh,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 4,
+      paddingHorizontal: 5,
+      paddingVertical: 2,
+      overflow: "hidden",
+    },
+    activeTeam: {
       ...type.body,
-      color: colors.textMuted,
+      color: colors.textSecondary,
+      flexShrink: 1,
+      minWidth: 0,
+    },
+    activeSummary: {
+      ...type.body,
+      color: colors.textSecondary,
     },
     canvasWrapper: {
       flex: 1,
-      marginTop: inset.card,
+      marginTop: inset.tight,
       backgroundColor: "#ffffff",
       borderWidth: 2,
       borderColor: colors.border,
-      borderRadius: 12,
+      borderStyle: "dashed",
+      borderRadius: 14,
       overflow: "hidden",
       justifyContent: "center",
       alignItems: "center",
+    },
+    canvasWrapperActive: {
+      borderColor: colors.primary,
+      borderStyle: "solid",
     },
     placeholder: {
       ...type.body,
       color: colors.textPlaceholder,
       position: "absolute",
+    },
+    confirmHint: {
+      ...type.caption,
+      color: colors.textMuted,
     },
     actions: {
       flexDirection: "row",
@@ -373,36 +560,15 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     clearBtn: {
       flex: 1,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 6,
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 10,
-      paddingVertical: 14,
-    },
-    clearBtnText: {
-      ...type.button,
-      color: colors.error,
     },
     saveBtn: {
       flex: 2,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 6,
-      backgroundColor: colors.accent,
-      borderRadius: ui.buttonRadius,
-      paddingVertical: 14,
     },
-    saveBtnText: {
-      ...type.button,
-      color: colors.onAccent,
-    },
-    btnDisabled: {
-      opacity: 0.4,
+    footerHint: {
+      ...type.caption,
+      color: colors.textMuted,
+      textAlign: "center",
+      paddingBottom: inset.tight,
     },
   });
 }

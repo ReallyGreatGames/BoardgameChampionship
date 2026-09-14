@@ -70,7 +70,8 @@ Builds the header/shared-section/grid/card styles from theme colors and the curr
 - Instances split into two groups, rendered as two separate sections:
   - **`sharedInstances`** (`sameForAllTables === true`) render at the top,
     one block per instance (labeled with the instance's `name` since more
-    than one can exist), each showing only `results[0]` — every table's
+    than one can exist — at `type.h1` in the primary color, so the label
+    stays readable from across the room next to the result), each showing only `results[0]` — every table's
     result is identical by construction for a shared-mode instance, see
     [`computeDraw`](../../../lib/utils/lottery-draw.md) — at a large,
     centered, `type.display`-sized title with a `type.h2` description

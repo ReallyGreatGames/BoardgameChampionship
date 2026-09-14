@@ -30,4 +30,4 @@ handling in [`real-time-store.ts`](../real-time-store.md).
 - [`lib/components/schedule/Schedule.tsx`](../../components/schedule/Schedule.md)
 - [`lib/hooks/usePlayerTable.ts`](../../hooks/usePlayerTable.md), [`useParticipantOverview.ts`](../../hooks/useParticipantOverview.md)
 - [`lib/bootstrap/RealTimeStoreProvider.tsx`](../../bootstrap/RealTimeStoreProvider.md)
-- Screens: [`game.tsx`](../../../app/(pages)/(user)/game.md), [`results.tsx`](../../../app/(pages)/(user)/results.md)
+- Screens: [`game.tsx`](../../../app/(pages)/(user)/game.md), [`results.tsx`](../../../app/(pages)/(user)/results.md), [`signature.tsx`](../../../app/(pages)/(user)/signature.md) — player names for the seat tabs

@@ -9,9 +9,11 @@
 ## Purpose
 
 Admin-only type picker reached from the "+" button on
-[`lottery.tsx`](lottery.md), or directly from the schedule item modal's
-"lotteries" action (see [`Schedule.tsx`](../../../lib/components/schedule/Schedule.md)):
-choose "Photos" or "Options" for what kind of lottery to add.
+[`lottery.tsx`](lottery.md): choose "Photos" or "Options" for what kind of
+lottery to add. (The schedule item modal's "lotteries" action used to open
+this screen directly; it now opens the lottery list instead, so admins see
+what already exists before adding — see
+[`Schedule.tsx`](../../../lib/components/schedule/Schedule.md).)
 
 ## Exports
 
@@ -65,19 +67,15 @@ Builds the tile-picker and upload-action-button styles (container, title, tiles,
 
 ### Why `from` exists
 
-This screen has two entry points with different "back" expectations: the
-"+" button on [`lottery.tsx`](lottery.md) (no `from` — back should return
-to that game's lottery list, the historical default) and the schedule item
-modal's "lotteries" action (`from=/(pages)/(user)/schedule` — back should
-return to the schedule, not detour through a lottery list the admin never
-visited). Without `from`, `backToLottery()` always went to
-`/(pages)/(user)/lottery?gameId=...`, which for the schedule entry point
-made "back" land on that game's hub screen after one more back-press
-instead of the schedule the admin actually came from — the same `?from=...`
-pattern [`game.tsx`](game.md) already uses for the same reason. `from` is
-also carried through to `lottery-options-edit.tsx` (both on navigating to
+`from` dates from when this screen had a second entry point, the schedule
+item modal's "lotteries" action, whose back press had to return to the
+schedule rather than a lottery list the admin never visited. That action
+now opens [`lottery.tsx`](lottery.md) instead, and the recorded back
+history ([`goTo`/`goBackTo`](../../../lib/utils/navigation.md)) handles the
+return trip, so today `from` is only the empty-history fallback. It is
+still carried through to `lottery-options-edit.tsx` (both on navigating to
 it and through its own create→edit-mode redirect) so the whole chain
-reachable from this screen returns to the correct origin.
+reachable from this screen returns to the correct origin after a reload.
 
 ## Related
 

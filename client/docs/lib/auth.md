@@ -84,6 +84,7 @@ Very widely used — among others [`lib/bootstrap/BootstrapProvider.tsx`](bootst
 and the screens [`active-bells.tsx`](../app/(pages)/(admin)/active-bells.md),
 [`admin/_layout.tsx`](../app/(pages)/(admin)/admin/_layout.md),
 [`lottery.tsx`](../app/(pages)/(user)/lottery.md),
+[`schedule.tsx`](../app/(pages)/(user)/schedule.md),
 [`login.tsx`](../app/(pages)/login.md),
 [`settings.tsx`](../app/(pages)/settings.md),
 [`app/index.tsx`](../app/index.md).

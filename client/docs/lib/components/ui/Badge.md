@@ -33,6 +33,8 @@ stretching to the width of whatever row it sits in.
 
 ## Used by
 
+- [`app/(pages)/(user)/game.tsx`](../../../app/(pages)/(user)/game.md) — the game-state badge in the header row
+- [`app/(pages)/(user)/results.tsx`](../../../app/(pages)/(user)/results.md) — the entry-status badge (`entryOpen`/`submitted`)
 - [`lib/components/home/NowPlayingCard.tsx`](../home/NowPlayingCard.md)
 
 ## Related

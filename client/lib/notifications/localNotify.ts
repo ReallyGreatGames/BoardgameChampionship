@@ -1,18 +1,27 @@
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import * as Haptics from "expo-haptics";
-import * as Notifications from "expo-notifications";
+import type * as NotificationsModule from "expo-notifications";
 import { Platform } from "react-native";
 
-if (Platform.OS !== "web") {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
-  });
-}
+const isExpoGoAndroid =
+  Platform.OS === "android" &&
+  Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
+const Notifications: typeof NotificationsModule | null =
+  Platform.OS === "web" || isExpoGoAndroid
+    ? null
+    : // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require("expo-notifications");
+
+Notifications?.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
 export async function requestNotificationPermissions() {
   if (Platform.OS === "web") {
@@ -21,7 +30,7 @@ export async function requestNotificationPermissions() {
     }
     return;
   }
-  await Notifications.requestPermissionsAsync();
+  await Notifications?.requestPermissionsAsync();
 }
 
 function playWebNotificationSound() {
@@ -67,7 +76,7 @@ export async function triggerLocalNotification(title: string, body: string) {
 
   await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 
-  await Notifications.scheduleNotificationAsync({
+  await Notifications?.scheduleNotificationAsync({
     content: { title, body, sound: true },
     trigger: null,
   });

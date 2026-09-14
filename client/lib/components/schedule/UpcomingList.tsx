@@ -29,11 +29,11 @@ export function UpcomingList({ items }: Props) {
       ...type.bodySmall,
       color: colors.textSecondary,
     },
-    timeFirst: {
+    durationFirst: {
       ...type.bodySmall,
       color: colors.textMuted,
     },
-    time: {
+    duration: {
       ...type.caption,
       color: colors.textMuted,
     },
@@ -46,8 +46,8 @@ export function UpcomingList({ items }: Props) {
           <Text style={index === 0 ? styles.titleFirst : styles.title}>
             {item.title}
           </Text>
-          <Text style={index === 0 ? styles.timeFirst : styles.time}>
-            {t("startsAt", { time: item.startTimePlanned })}
+          <Text style={index === 0 ? styles.durationFirst : styles.duration}>
+            {t("duration", { minutes: item.durationPlanned })}
           </Text>
         </View>
       ))}

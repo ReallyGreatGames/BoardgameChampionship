@@ -2,7 +2,7 @@ import { useAuth } from "@/lib/auth";
 import { usePlayer } from "@/lib/bootstrap/PlayerProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
-import { type } from "@/lib/theme/typography";
+import { fonts, type } from "@/lib/theme/typography";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useMemo } from "react";
@@ -37,7 +37,9 @@ export function PlayerSelectionCard({ from, onPress, forceAllow, gameId }: Props
       return;
     }
     const params = new URLSearchParams({ from: from ?? "settings" });
-    if (gameId) params.set("gameId", gameId);
+    if (gameId) {
+      params.set("gameId", gameId);
+    }
     router.push(
       `/(pages)/(team-player)/choose-your-character?${params.toString()}` as any,
     );
@@ -48,35 +50,37 @@ export function PlayerSelectionCard({ from, onPress, forceAllow, gameId }: Props
       {player ? (
         <>
           <View style={styles.row}>
-            <View style={styles.rowLeft}>
-              <Ionicons name="shield-outline" size={20} color={colors.textMuted} style={styles.icon} />
-              <Text style={styles.label}>{t("currentTeam")}</Text>
-            </View>
-            <Text style={styles.value} numberOfLines={1}>{player.team.name}</Text>
+            <Text style={styles.label}>{t("currentTeam")}</Text>
+            <Text style={styles.value} numberOfLines={1}>
+              {player.team.name}
+            </Text>
           </View>
           <View style={[styles.row, styles.rowBorder]}>
-            <View style={styles.rowLeft}>
-              <Ionicons name="person-outline" size={20} color={colors.textMuted} style={styles.icon} />
-              <Text style={styles.label}>{t("currentPlayer")}</Text>
-            </View>
-            <Text style={styles.value} numberOfLines={1}>{player.name}</Text>
+            <Text style={styles.label}>{t("currentPlayer")}</Text>
+            <Text style={styles.value} numberOfLines={1}>
+              {t("playerValue", { n: player.playerNumber, name: player.name })}
+            </Text>
           </View>
           {canChange && (
-            <Pressable style={[styles.row, styles.rowBorder]} onPress={handlePress}>
-              <View style={styles.rowLeft}>
-                <Ionicons name="people-outline" size={20} color={colors.textMuted} style={styles.icon} />
-                <Text style={styles.label}>{t("changeTeam")}</Text>
-              </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.row,
+                styles.rowBorder,
+                pressed && styles.rowPressed,
+              ]}
+              onPress={handlePress}
+            >
+              <Text style={styles.action}>{t("changeTeam")}</Text>
               <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </Pressable>
           )}
         </>
       ) : (
-        <Pressable style={styles.row} onPress={handlePress}>
-          <View style={styles.rowLeft}>
-            <Ionicons name="people-outline" size={20} color={colors.primary} style={styles.icon} />
-            <Text style={[styles.label, { color: colors.primary }]}>{t("selectPlayer")}</Text>
-          </View>
+        <Pressable
+          style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+          onPress={handlePress}
+        >
+          <Text style={styles.action}>{t("selectPlayer")}</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.primary} />
         </Pressable>
       )}
@@ -97,30 +101,31 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
+      gap: 12,
+      minHeight: 44,
       padding: 14,
     },
-    rowLeft: {
-      flexDirection: "row",
-      alignItems: "center",
-      flex: 1,
+    rowPressed: {
+      backgroundColor: colors.surfaceHigh,
     },
     rowBorder: {
       borderTopWidth: 1,
-      borderTopColor: colors.border,
-    },
-    icon: {
-      marginRight: 12,
+      borderTopColor: colors.divider,
     },
     label: {
       ...type.body,
-      color: colors.text,
+      color: colors.textMuted,
     },
     value: {
-      ...type.bodySmall,
-      color: colors.textSecondary,
+      ...type.body,
+      fontFamily: fonts.bodyBold,
+      color: colors.text,
       flexShrink: 1,
       textAlign: "right",
-      marginLeft: 8,
+    },
+    action: {
+      ...type.body,
+      color: colors.primary,
     },
   });
 }

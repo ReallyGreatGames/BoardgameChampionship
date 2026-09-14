@@ -20,7 +20,7 @@ signature-count requirements) are specific to self-service.
 
 | Export | Signature | Purpose |
 | --- | --- | --- |
-| `ResultsPage` (default) | `(): JSX.Element \| null` | Screen component for `/results?gameId=...`. Renders a `PlayerResultColumnHeaders` row followed by the four `PlayerResultRow`s (placement/score/signature per seat), a note field, and a save/submit button, all backed by local form state synced to the player's table `Result` document. Returns `null` while auth is loading or unauthenticated. |
+| `ResultsPage` (default) | `(): JSX.Element \| null` | Screen component for `/results?gameId=...`. Renders the shared [`GameHeader`](../../../lib/components/game/GameHeader.md), an entry-status `Badge`, a `PlayerResultColumnHeaders` row followed by the four `PlayerResultRow`s (placement/score/signature per seat), a tie hint, a note field, a footer gate hint, and a submit button — all backed by local form state synced to the player's table `Result` document. Returns `null` while auth is loading or unauthenticated. |
 
 ### Module constants
 
@@ -54,15 +54,31 @@ Returns a copy of `arr` padded with `fill` up to `length` (or truncated if longe
 
 ### `handleSetPlacement(i: number, v: string): void`
 
-`useCallback` keyed on `[placements, invalidateSignatures]`. No-ops when the value is unchanged (chips toggle through the same handler, so this also filters out a tap that re-selects what was already there). Otherwise sets `placements[i]` to `v` via an immutable array copy and calls `invalidateSignatures`.
+`useCallback` keyed on `[placements, invalidateSignatures]`. No-ops when the value is unchanged (chips toggle through the same handler, so this also filters out a tap that re-selects what was already there). Otherwise marks the form as edited (`editedRef`), sets `placements[i]` to `v` via an immutable array copy and calls `invalidateSignatures`.
 
 ### `handleSetScore(i: number, v: string): void`
 
-`useCallback` keyed on `[scores, invalidateSignatures]`. Same shape as `handleSetPlacement` — unchanged-value guard, immutable copy, then `invalidateSignatures`. The guard matters more here because the score input fires on every keystroke.
+`useCallback` keyed on `[scores, invalidateSignatures]`. Same shape as `handleSetPlacement` — unchanged-value guard, `editedRef`, immutable copy, then `invalidateSignatures`. The guard matters more here because the score input fires on every keystroke.
+
+### `seedForm(result: Result | undefined): void`
+
+`useCallback` with no deps. Replaces the whole local form with `result`'s placements, scores, note and signature ids (blank when `undefined`), sets `acknowledgedAtRef` to its `$updatedAt` (`null` when there is no result yet), and clears `ownSaveRef`, `editedRef`, the dropped-signature queue and `signaturesReset` — i.e. puts the screen in the state of a fresh load of that result. Used by the focus refresh and by the first-sighting branch of the `existingResult` effect.
+
+### `handleSetNote(v: string): void`
+
+`useCallback` with no deps. Marks the form as edited (`editedRef`) and sets the note. Replaces passing `setNote` straight to the `TextInput` so note typing also blocks the post-fetch re-seed (see "Refresh on every visit").
 
 ### `handleOpenSignature(seat: number): Promise<void>`
 
-`useCallback` keyed on `[canSave, handleSave, gameId, selfHref, signatureIds]`. Saves first if `canSave` (aborting navigation if the save fails), then pushes to `/(pages)/(user)/signature?gameId=...&place=${seat}&sig=...` — guarantees the signature screen never signs against stale/unsaved placement or score edits. The `sig` param carries this screen's own view of that seat's signature id (or `NO_SIGNATURE` when there is none) so the pad doesn't have to consult the store, whose copy may not have caught up with the save that just cleared it — see [`signature.tsx`](signature.md).
+`useCallback` keyed on `[canSave, handleSave, gameId, selfHref, signatureIds]`. Saves first if `canSave` (aborting navigation if the save fails), then pushes to `/(pages)/(user)/signature?gameId=...&place=${seat}&sigs=...` — guarantees the signature screen never signs against stale/unsaved placement or score edits. `place` is only the seat to open on; `sigs` carries this screen's own view of **all four** seats' signature ids (comma-separated, `NO_SIGNATURE` for an empty seat) so the tab bar on the signature screen doesn't have to consult the store, whose copy may not have caught up with the save that just cleared it — see [`signature.tsx`](signature.md).
+
+### `tiedPlaces: number[]`
+
+`useMemo` keyed on `[placements, allPlacementsSet, placementComboValid]`. Empty unless every seat has a placement and the combination is valid (ties are a legitimate outcome of `isValidPlacementCombo`, e.g. `1,2,2,4`); otherwise the sorted list of place numbers held by more than one seat. Rendered as an informational line under the card (`tieDetected`), not an error.
+
+### `gateMessage: string` / `gateReady: boolean`
+
+`gateMessage` is a `useMemo` that explains, in priority order, why the result can't be submitted yet: already submitted (`gateSubmitted`), the game isn't active (`notActiveGame`), everything is in place (`gateReady`), or otherwise a comma-joined list of what's still missing (scores/placements/signatures, via `gateMissingPrefix`). `gateReady` (`isSubmitted || resultReady`, where `resultReady` mirrors `canSave`/`canSubmit`'s conditions without the `isActiveGame`/`isSubmitted` gates) just picks the hint's ink color. This text sits above the submit button. The button is disabled and dimmed whenever `canSubmit` is false (including while any of the four signatures are missing), or while saving or submitting.
 
 ### `handleBack(): void`
 
@@ -74,22 +90,21 @@ Builds all card/row/badge/button/hint styles from theme colors; memoized via `us
 
 ## How it works
 
-### Labelling the three columns
+### Labelling the columns, and the stacked placement row
 
 The card opens with a single
 [`PlayerResultColumnHeaders`](../../../lib/components/results/PlayerResultRow.md)
-row (`colScore` / `colPlace` / `colSignature`), because nothing about a bare
-number box, four numbered chips and an icon button says which is the score,
-which is the finishing place, and that the last one collects a signature —
-players reported exactly that confusion. One shared header row costs a
-single caption line of height instead of repeating labels on all four rows,
-which matters on a screen whose input row is already ~292px wide against a
-~264px card on a 360px phone.
-
-On phones the header sits above the first player's name line rather than
-directly against the inputs (the compact layout puts each player's name on
-its own line above their row); the columns still line up, because the header
-and the row share the same width constants.
+row (`colPlayer` / `colScore` / `colSignature`, with `hidePlacementColumn`
+set), because nothing about a bare number box and an icon button says which
+is the score and which collects a signature — players reported exactly that
+confusion. Each `PlayerResultRow` is rendered with `stackPlacement` and
+`placementRowLabel={t("colPlace")}`: the name/score/signature stay on one
+line, and the four placement chips move to their own full-width row
+labelled "Place" underneath, each chip stretched to share the row's width
+evenly instead of the fixed-size squares `ResultsAdminTab`'s (non-stacked)
+rows use. This is the layout the design's "2a" screen specifies, and it's
+opt-in via `stackPlacement` specifically so `ResultsAdminTab`'s wider,
+multi-column table isn't affected.
 
 ### Editability gates
 
@@ -140,19 +155,22 @@ check against its own just-written data.
 
 ### Signature flow
 
+Missing signatures show Lucide's `Signature` icon. Collected signatures show a
+green `Check` with a green button border and tinted background, retaining their
+full color even when signing is disabled or the result has been submitted.
+
 Opening a signature ([`handleOpenSignature`](signature.md)) saves first if
 `canSave` — so navigating to the signature screen never leaves unsaved
 placement/score edits behind, and a pending signature reset reaches the
-document before the next signature is added to it. `useFocusEffect`
-re-syncs `signatureIds` from the store whenever this screen regains focus
-(i.e. returning from signing), independently of the general "load once"
-effect that seeds the rest of the form only on the very first load of a
-given result.
+document before the next signature is added to it. Coming back from
+signing is just another focus, so the refresh described in "Refresh on
+every visit" picks up the new signature ids along with everything else.
 
-That re-sync is skipped while `signaturesReset` is set. Otherwise an edit
-that wiped the signatures locally, followed by navigating away and back
-without saving, would pull the old signature ids straight back out of the
-document and pair them with the changed numbers.
+Because that refresh replaces the *whole* form from the document, an edit
+that wiped the signatures locally and was then abandoned by navigating away
+comes back as the stored numbers *with* their stored signatures — never the
+changed numbers paired with the old signatures, which is what a
+signatures-only re-sync used to risk.
 
 `signaturesReset` is lowered in the `existingResult` effect's `ownSaveRef`
 branch — the moment this device's own write echoes back through the realtime
@@ -182,17 +200,47 @@ replaces the id with a freshly uploaded file and orphans the previous one,
 and nothing prunes the `signatures` bucket in bulk — the wipe service only
 handles the lottery bucket.
 
-### Form-state reset and load-once seeding
+### Refresh on every visit
 
-Two separate effects manage local form state's relationship to the store, deliberately kept apart:
+The app is a single Drawer navigator, so this screen stays mounted between
+visits and effects keyed on the route (`gameId`/`tableNumber`) don't re-run
+when the player opens the same game's results again. Combined with the
+load-once guard below, the form used to keep showing whatever it loaded the
+first time — an admin's correction from the dashboard only showed up after
+restarting the app. If the realtime socket had dropped, the store itself
+was stale as well.
 
-1. **Reset on identity change** — a `useEffect` keyed on `[gameId, tableNumber]` clears `acknowledgedAtRef`, `ownSaveRef`, and all four form arrays back to blank whenever the game or table changes, so switching tables never leaves one table's half-filled form visible against another table's data.
-2. **Load once per result** — a `useEffect` keyed on `[existingResult]` only seeds the form from `existingResult` the *first* time it sees a result for the current identity (guarded by `acknowledgedAtRef.current === null`); on every subsequent store update it either does nothing (a genuinely different device's write arrived, which the conflict-detection in `handleSave` handles instead) or, if `ownSaveRef.current` is set, just advances `acknowledgedAtRef` to the new `$updatedAt` without touching the form fields (this device's own save echoing back). This split is what lets a player keep typing without their local edits being silently overwritten by every realtime update, while still detecting genuine concurrent edits from another device at save time.
+A `useFocusEffect` keyed on `[gameId, tableNumber, seedForm]` therefore
+treats every focus as a fresh load:
 
-The `useFocusEffect` re-sync for `signatureIds` is intentionally exempt from the "only seed once" rule — signatures are always written by navigating away to `signature.tsx` and back, so the only way to pick up a just-saved signature is to re-read it specifically on refocus, bypassing the load-once guard that protects the placement/score/note fields from being clobbered mid-edit.
+1. `seedForm` with the table's result as the store has it right now
+   (read through `useResultStore.getState()`, so the callback doesn't
+   depend on `existingResult` — that would re-seed, and wipe the player's
+   typing, on every realtime update while the screen is open).
+2. `useResultStore.getState().init()` — a full refetch of the results
+   collection from the server, the same call the realtime provider makes
+   on reconnect.
+3. Once the refetch resolves (and the screen is still focused), `seedForm`
+   again with the fresh copy — **unless** the player has already started
+   editing in the meantime (`editedRef`, set by the placement/score/note
+   handlers). In that case only `signatureIds` is refreshed, and only when
+   no signature reset is pending (`droppedSignatureIdsRef` empty), so the
+   player's input survives and a cleared signature isn't restored.
+
+Unsaved edits don't survive leaving the screen: coming back re-seeds from
+the document, the same as reopening the app. No path loses a save — opening
+the signature screen saves first. `fetchCollection` shows an alert when the
+refetch fails, so a device that is offline sees it on each visit to this
+screen.
+
+### Load once per result
+
+A `useEffect` keyed on `[existingResult, seedForm]` seeds the form (via `seedForm`) the *first* time it sees a result for the current identity (guarded by `acknowledgedAtRef.current === null` — e.g. another device creates the table's result while this screen is open on a blank form). On every subsequent store update it either does nothing (a genuinely different device's write arrived, which the conflict-detection in `handleSave` handles instead) or, if `ownSaveRef.current` is set, just advances `acknowledgedAtRef` to the new `$updatedAt` without touching the form fields (this device's own save echoing back). This is what lets a player keep typing without their local edits being silently overwritten by every realtime update, while still detecting genuine concurrent edits from another device at save time.
 
 ## Related
 
 - [`lib/components/results/PlayerResultRow.tsx`](../../../lib/components/results/PlayerResultRow.md)
+- [`lib/components/ui/Badge.tsx`](../../../lib/components/ui/Badge.md) — entry-status badge (`entryOpen`/`submitted`) next to the back button
+- [`lib/components/game/GameHeader.tsx`](../../../lib/components/game/GameHeader.md) — the screen's hero header
 - [`lib/utils/placements.ts`](../../../lib/utils/placements.md)
 - [`app/(pages)/(user)/signature.tsx`](signature.md)

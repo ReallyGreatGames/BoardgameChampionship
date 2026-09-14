@@ -1,39 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
-import { Rule, RuleType } from "@/lib/models/rule";
+import { RuleCard } from "@/lib/components/rules/RuleCard";
+import { RuleFilterChips } from "@/lib/components/rules/RuleFilterChips";
+import { RuleFormData, RuleModal } from "@/lib/components/rules/RuleModal";
+import { RULE_TYPES, RuleFilter } from "@/lib/components/rules/types";
+import { useDialog } from "@/lib/components/ui/Dialog";
+import { SearchInput } from "@/lib/components/ui/SearchInput";
+import { Rule } from "@/lib/models/rule";
 import { useRuleStore } from "@/lib/stores/appwrite/rule-store";
 import { inset } from "@/lib/theme/spacing";
-import { type } from "@/lib/theme/typography";
-import { useDialog } from "@/lib/components/ui/Dialog";
-import { Markdown } from "@/lib/components/ui/Markdown";
-import { RuleFormData, RuleModal, typeColor } from "@/lib/components/rules/RuleModal";
-import { SearchInput } from "@/lib/components/ui/SearchInput";
-
-const RULE_TYPES: RuleType[] = ["change", "addition", "clarification"];
-
-type TypeConfig = {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
-  labelKey: string;
-};
-
-const TYPE_CONFIGS: Record<RuleType, TypeConfig> = {
-  change: { icon: "swap-horizontal-outline", labelKey: "types.change" },
-  addition: { icon: "add-circle-outline", labelKey: "types.addition" },
-  clarification: {
-    icon: "information-circle-outline",
-    labelKey: "types.clarification",
-  },
-};
+import { fonts, type } from "@/lib/theme/typography";
 
 type Props = {
   gameId: string;
@@ -48,11 +27,12 @@ export function RuleList({ gameId, isAdmin }: Props) {
   const { confirm } = useDialog();
 
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<RuleFilter>("all");
   const [modalVisible, setModalVisible] = useState(false);
   const [editingRule, setEditingRule] = useState<Rule | undefined>(undefined);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  const filtered = useMemo(() => {
+  const bySearch = useMemo(() => {
     const q = search.trim().toLowerCase();
     return collection.filter(
       (r) =>
@@ -63,16 +43,24 @@ export function RuleList({ gameId, isAdmin }: Props) {
     );
   }, [collection, gameId, search]);
 
-  const grouped = useMemo(
+  const counts = useMemo(
     () =>
-      RULE_TYPES.reduce<Record<RuleType, Rule[]>>(
-        (acc, t) => ({ ...acc, [t]: filtered.filter((r) => r.type === t) }),
-        { change: [], addition: [], clarification: [] },
+      RULE_TYPES.reduce<Record<RuleFilter, number>>(
+        (acc, ruleType) => ({
+          ...acc,
+          [ruleType]: bySearch.filter((r) => r.type === ruleType).length,
+        }),
+        { all: bySearch.length } as Record<RuleFilter, number>,
       ),
-    [filtered],
+    [bySearch],
   );
 
-  const isEmpty = filtered.length === 0;
+  const filtered = useMemo(
+    () =>
+      filter === "all" ? bySearch : bySearch.filter((r) => r.type === filter),
+    [bySearch, filter],
+  );
+
   const hasAny = collection.some((r) => r.gameId === gameId);
 
   async function handleSave(data: RuleFormData) {
@@ -119,7 +107,7 @@ export function RuleList({ gameId, isAdmin }: Props) {
   }
 
   return (
-    <>
+    <View style={styles.container}>
       <RuleModal
         visible={modalVisible}
         item={editingRule}
@@ -128,12 +116,13 @@ export function RuleList({ gameId, isAdmin }: Props) {
         onSave={handleSave}
       />
 
-      <View style={styles.searchWrapper}>
+      <View style={styles.filterBar}>
         <SearchInput
           value={search}
           onChangeText={setSearch}
           placeholder={t("search")}
         />
+        <RuleFilterChips counts={counts} value={filter} onChange={setFilter} />
       </View>
 
       <ScrollView
@@ -141,179 +130,88 @@ export function RuleList({ gameId, isAdmin }: Props) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {isEmpty ? (
-          <Text style={styles.empty}>
-            {search.trim()
-              ? t("noResults")
-              : hasAny
-                ? t("noResults")
-                : t("empty")}
+        {filtered.length === 0 ? (
+          <Text style={styles.emptyText}>
+            {hasAny ? t("noResults") : t("empty")}
           </Text>
         ) : (
-          RULE_TYPES.map((ruleType) => {
-            const rules = grouped[ruleType];
-            if (rules.length === 0) {
-              return null;
-            }
-            const cfg = TYPE_CONFIGS[ruleType];
-            const color = typeColor(ruleType, colors);
-
-            return (
-              <View key={ruleType} style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Ionicons name={cfg.icon} size={14} color={color} />
-                  <Text style={[styles.sectionTitle, { color }]}>
-                    {t(cfg.labelKey)}
-                  </Text>
-                </View>
-
-                {rules.map((rule) => {
-                  const isLoading = loadingId === rule.$id;
-                  return (
-                    <View
-                      key={rule.$id}
-                      style={[styles.card, { borderLeftColor: color }]}
-                    >
-                      <View style={styles.cardContent}>
-                        <Text style={styles.ruleTitle}>{rule.title}</Text>
-                        <Markdown textStyle={styles.ruleText}>
-                          {rule.text}
-                        </Markdown>
-                      </View>
-
-                      {isAdmin && (
-                        <View style={styles.adminBar}>
-                          <View style={styles.adminBarSpacer} />
-                          {isLoading ? (
-                            <ActivityIndicator
-                              size="small"
-                              color={colors.textMuted}
-                            />
-                          ) : (
-                            <>
-                              <TouchableOpacity
-                                style={styles.adminBtn}
-                                onPress={() => handleEdit(rule)}
-                              >
-                                <Ionicons
-                                  name="create-outline"
-                                  size={16}
-                                  color={colors.text}
-                                />
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                style={styles.adminBtn}
-                                onPress={() => handleDelete(rule)}
-                              >
-                                <Ionicons
-                                  name="trash-outline"
-                                  size={16}
-                                  color={colors.error}
-                                />
-                              </TouchableOpacity>
-                            </>
-                          )}
-                        </View>
-                      )}
-                    </View>
-                  );
-                })}
-              </View>
-            );
-          })
+          filtered.map((rule) => (
+            <RuleCard
+              key={rule.$id}
+              rule={rule}
+              isAdmin={isAdmin}
+              isLoading={loadingId === rule.$id}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          ))
         )}
       </ScrollView>
 
       {isAdmin && (
-        <TouchableOpacity
-          style={styles.fab}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("form.addTitle")}
+          style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
           onPress={handleAdd}
-          activeOpacity={0.85}
         >
-          <Ionicons name="add" size={28} color={colors.onAccent} />
-        </TouchableOpacity>
+          <Ionicons name="add" size={22} color={colors.onAccent} />
+          <Text style={styles.fabLabel}>{t("form.addShort")}</Text>
+        </Pressable>
       )}
-    </>
+    </View>
   );
 }
 
 function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
   return StyleSheet.create({
-    searchWrapper: {
-      marginBottom: inset.list,
+    container: {
+      flex: 1,
+    },
+    filterBar: {
+      gap: inset.list,
+      paddingBottom: inset.list,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
     },
     list: {
-      paddingBottom: 88,
-      gap: inset.group,
-    },
-    empty: {
-      ...type.body,
-      color: colors.textMuted,
-      textAlign: "center",
-      marginTop: inset.section,
-    },
-    section: {
+      paddingTop: inset.list,
+      paddingBottom: 96,
       gap: inset.list,
     },
-    sectionHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-    },
-    sectionTitle: {
-      ...type.eyebrow,
-    },
-    card: {
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderLeftWidth: 3,
-      borderRadius: 10,
-      overflow: "hidden",
-    },
-    cardContent: {
-      padding: inset.card,
-      paddingBottom: 10,
-      gap: 4,
-    },
-    ruleTitle: {
+    emptyText: {
       ...type.bodySmall,
-      color: colors.text,
-      fontWeight: "700",
-    },
-    ruleText: {
-      ...type.body,
-      color: colors.textSecondary,
-    },
-    adminBar: {
-      flexDirection: "row",
-      alignItems: "center",
-      borderTopWidth: 1,
-      borderTopColor: colors.divider,
-      paddingHorizontal: inset.card,
-      paddingVertical: 6,
-      gap: 4,
-    },
-    adminBarSpacer: { flex: 1 },
-    adminBtn: {
-      padding: 6,
-      borderRadius: 6,
+      color: colors.textMuted,
+      textAlign: "center",
+      paddingVertical: inset.section,
     },
     fab: {
       position: "absolute",
       bottom: inset.group,
-      right: inset.group,
-      width: 56,
+      right: 0,
       height: 56,
+      paddingHorizontal: 22,
       borderRadius: 28,
-      backgroundColor: colors.accent,
-      justifyContent: "center",
+      flexDirection: "row",
       alignItems: "center",
-      shadowColor: "#000",
+      gap: 8,
+      backgroundColor: colors.accent,
+      shadowColor: colors.text,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.3,
       shadowRadius: 6,
       elevation: 8,
+    },
+    fabPressed: {
+      opacity: 0.8,
+      transform: [{ scale: 0.96 }],
+    },
+    fabLabel: {
+      ...type.body,
+      fontFamily: fonts.bodyBold,
+      fontSize: 15,
+      lineHeight: 20,
+      color: colors.onAccent,
     },
   });
 }

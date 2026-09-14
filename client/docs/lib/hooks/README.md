@@ -11,6 +11,7 @@ biggest single piece of client-side state: the timer.
 | File | Purpose |
 |---|---|
 | [useDurationRoundFields.md](useDurationRoundFields.md) | Shared form state/validation for duration + round-time + direction fields |
+| [useGameScheduleInfo.md](useGameScheduleInfo.md) | Title, round number and active/finished state of one game, from the schedule |
 | [useLotteryActions.md](useLotteryActions.md) | Take/pick/upload/delete lottery photos |
 | [useOptionsLotteryActions.md](useOptionsLotteryActions.md) | Create/edit/pull/delete actions for options lotteries |
 | [useParticipantOverview.md](useParticipantOverview.md) | The current player's match, results, and points across the whole tournament |

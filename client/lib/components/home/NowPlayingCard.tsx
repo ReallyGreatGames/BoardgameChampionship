@@ -11,6 +11,7 @@ import { useRoundCountdown } from "@/lib/hooks/useRoundCountdown";
 import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
+import { goTo } from "@/lib/utils/navigation";
 
 interface Props {
   match: ParticipantMatch;
@@ -26,7 +27,7 @@ export function NowPlayingCard({ match }: Props) {
 
   const openMatch = () => {
     if (player?.team && player?.$id) {
-      router.push(`/game?gameId=${match.gameId}&from=/`);
+      goTo("/", `/game?gameId=${match.gameId}&from=/`);
       return;
     }
     router.push({
@@ -40,8 +41,14 @@ export function NowPlayingCard({ match }: Props) {
       <View style={styles.titleRow}>
         <Text style={styles.title}>{match.item.title}</Text>
         <Badge
-          label={countdown.isOvertime ? t("overtime") : t("live")}
-          tone={countdown.isOvertime ? "danger" : "info"}
+          label={
+            countdown.isPaused
+              ? t("paused")
+              : countdown.isOvertime
+                ? t("overtime")
+                : t("live")
+          }
+          tone={countdown.isPaused ? "warning" : countdown.isOvertime ? "danger" : "info"}
         />
       </View>
 
@@ -70,7 +77,11 @@ export function NowPlayingCard({ match }: Props) {
       <View style={styles.countdownRow}>
         <Text style={styles.countdown}>{countdown.label}</Text>
         <Text style={styles.countdownCaption}>
-          {countdown.isOvertime ? t("overRoundTime") : t("leftInRound")}
+          {countdown.isPaused
+            ? t("paused")
+            : countdown.isOvertime
+              ? t("overRoundTime")
+              : t("leftInRound")}
         </Text>
       </View>
 

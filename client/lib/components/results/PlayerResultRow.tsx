@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { space } from "@/lib/theme/spacing";
-import { type } from "@/lib/theme/typography";
+import { fonts, type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
 
 const PLACEMENTS = ["1", "2", "3", "4"] as const;
@@ -20,18 +20,22 @@ const CHIP_SIZE = 40;
 const CHIP_GAP = 4;
 const PLACEMENT_WIDTH = PLACEMENTS.length * CHIP_SIZE + (PLACEMENTS.length - 1) * CHIP_GAP;
 
-export const SIGNATURE_COLUMN_WIDTH = 40;
+export const SIGNATURE_COLUMN_WIDTH = 44;
 
 type ColumnHeaderProps = {
+  playerLabel?: string;
   scoreLabel: string;
   placementLabel: string;
   signatureLabel: string;
+  hidePlacementColumn?: boolean;
 };
 
 export function PlayerResultColumnHeaders({
+  playerLabel,
   scoreLabel,
   placementLabel,
   signatureLabel,
+  hidePlacementColumn = false,
 }: ColumnHeaderProps) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -40,13 +44,21 @@ export function PlayerResultColumnHeaders({
 
   return (
     <View style={styles.headerRow}>
-      {!isCompact && <View style={styles.playerInfo} />}
+      {playerLabel ? (
+        <Text style={[styles.columnHeader, styles.playerColumn]} numberOfLines={1}>
+          {playerLabel}
+        </Text>
+      ) : (
+        !isCompact && <View style={styles.playerInfo} />
+      )}
       <Text style={[styles.columnHeader, styles.scoreColumn]} numberOfLines={1}>
         {scoreLabel}
       </Text>
-      <Text style={[styles.columnHeader, styles.placementColumn]} numberOfLines={1}>
-        {placementLabel}
-      </Text>
+      {!hidePlacementColumn && (
+        <Text style={[styles.columnHeader, styles.placementColumn]} numberOfLines={1}>
+          {placementLabel}
+        </Text>
+      )}
       <Text style={[styles.columnHeader, styles.signatureColumn]} numberOfLines={1}>
         {signatureLabel}
       </Text>
@@ -74,6 +86,8 @@ type Props = {
   signatureSlot: ReactNode;
   disabled?: boolean;
   placementError?: boolean;
+  stackPlacement?: boolean;
+  placementRowLabel?: string;
 };
 
 export const PlayerResultRow = forwardRef<PlayerResultRowHandle, Props>(
@@ -93,6 +107,8 @@ export const PlayerResultRow = forwardRef<PlayerResultRowHandle, Props>(
       signatureSlot,
       disabled = false,
       placementError = false,
+      stackPlacement = false,
+      placementRowLabel,
     },
     ref,
   ) {
@@ -163,10 +179,44 @@ export const PlayerResultRow = forwardRef<PlayerResultRowHandle, Props>(
         } as any)
       : {};
 
+    const renderChips = (chipStyle: any, chipLabelStyle: any) =>
+      PLACEMENTS.map((p) => {
+        const active = placement === p;
+        return (
+          <TouchableOpacity
+            key={p}
+            style={[
+              chipStyle,
+              active && styles.chipActive,
+              placementError && active && styles.chipError,
+              disabled && styles.chipDisabled,
+            ]}
+            onPress={() => !disabled && onSetPlacement(active ? "" : p)}
+            activeOpacity={disabled ? 1 : 0.7}
+            hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+            // @ts-expect-error — tabIndex is web-only; -1 removes chips from natural tab order
+            tabIndex={Platform.OS === "web" ? -1 : undefined}
+          >
+            <Text
+              style={[
+                chipLabelStyle,
+                active && styles.chipLabelActive,
+                placementError && active && styles.chipLabelError,
+              ]}
+            >
+              {p}
+            </Text>
+          </TouchableOpacity>
+        );
+      });
+
+    const showInlineName = stackPlacement || !isCompact;
+    const showSeparateNameRow = !stackPlacement && isCompact;
+
     return (
       <View style={[styles.container, disabled && styles.rowDisabled]}>
         {}
-        {isCompact && (
+        {showSeparateNameRow && (
           <View style={styles.nameRow}>
             <Text style={styles.playerName} numberOfLines={1}>
               {playerName}
@@ -181,7 +231,7 @@ export const PlayerResultRow = forwardRef<PlayerResultRowHandle, Props>(
 
         <View style={styles.row}>
           {}
-          {!isCompact && (
+          {showInlineName && (
             <View style={styles.playerInfo}>
               <Text style={styles.playerName} numberOfLines={1}>
                 {playerName}
@@ -214,41 +264,32 @@ export const PlayerResultRow = forwardRef<PlayerResultRowHandle, Props>(
           />
 
           {}
-          <View ref={chipRowRef} style={styles.chipsRow} {...chipRowWebProps}>
-            {PLACEMENTS.map((p) => {
-              const active = placement === p;
-              return (
-                <TouchableOpacity
-                  key={p}
-                  style={[
-                    styles.chip,
-                    active && styles.chipActive,
-                    placementError && active && styles.chipError,
-                    disabled && styles.chipDisabled,
-                  ]}
-                  onPress={() => !disabled && onSetPlacement(active ? "" : p)}
-                  activeOpacity={disabled ? 1 : 0.7}
-                  hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
-                  // @ts-expect-error — tabIndex is web-only; -1 removes chips from natural tab order
-                  tabIndex={Platform.OS === "web" ? -1 : undefined}
-                >
-                  <Text
-                    style={[
-                      styles.chipLabel,
-                      active && styles.chipLabelActive,
-                      placementError && active && styles.chipLabelError,
-                    ]}
-                  >
-                    {p}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          {!stackPlacement && (
+            <View ref={chipRowRef} style={styles.chipsRow} {...chipRowWebProps}>
+              {renderChips(styles.chip, styles.chipLabel)}
+            </View>
+          )}
 
           {}
           {signatureSlot}
         </View>
+
+        {stackPlacement && (
+          <View style={styles.placementRow}>
+            {placementRowLabel ? (
+              <Text style={styles.placementRowLabel} numberOfLines={1}>
+                {placementRowLabel}
+              </Text>
+            ) : null}
+            <View
+              ref={chipRowRef}
+              style={styles.placementRowChips}
+              {...chipRowWebProps}
+            >
+              {renderChips(styles.wideChip, styles.wideChipLabel)}
+            </View>
+          </View>
+        )}
       </View>
     );
   },
@@ -277,6 +318,11 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       color: colors.textMuted,
       fontWeight: "600",
       textAlign: "center",
+    },
+    playerColumn: {
+      flex: 1,
+      minWidth: 0,
+      textAlign: "left",
     },
     scoreColumn: {
       width: SCORE_WIDTH,
@@ -314,12 +360,13 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     scoreInput: {
       width: SCORE_WIDTH,
-      height: 40,
+      height: 44,
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: 8,
+      borderRadius: ui.inputRadius,
       paddingHorizontal: space[2],
-      ...type.body,
+      fontFamily: fonts.displayExtraBold,
+      fontSize: 20,
       color: colors.text,
       backgroundColor: colors.surface,
       textAlign: "center",
@@ -362,6 +409,43 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     chipLabelError: {
       color: colors.onAccent,
+    },
+    placementRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: space[2],
+      marginTop: 2,
+    },
+    placementRowLabel: {
+      ...type.caption,
+      width: 34,
+      flexShrink: 0,
+      color: colors.textMuted,
+      fontWeight: "700",
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    },
+    placementRowChips: {
+      flex: 1,
+      flexDirection: "row",
+      gap: CHIP_GAP,
+    },
+    wideChip: {
+      flex: 1,
+      minWidth: 0,
+      height: 38,
+      borderRadius: 9,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    wideChipLabel: {
+      fontFamily: fonts.displayBold,
+      fontSize: 20,
+      lineHeight: 20,
+      color: colors.textSecondary,
     },
   });
 }

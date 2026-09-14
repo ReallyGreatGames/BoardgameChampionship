@@ -52,24 +52,28 @@ function AppNavigator() {
         name="(pages)/login"
         options={{
           title: t(type),
+          headerShown: false,
         }}
       />
       <Drawer.Screen
         name="index"
         options={{
           title: "",
+          headerShown: false,
         }}
       />
       <Drawer.Screen
         name="(pages)/settings"
         options={{
           title: t("entries.settings"),
+          headerShown: false,
         }}
       />
       <Drawer.Screen
         name="(pages)/info"
         options={{
           title: t("entries.info"),
+          headerShown: false,
         }}
       />
       <Drawer.Screen
@@ -78,13 +82,18 @@ function AppNavigator() {
       />
       <Drawer.Screen
         name="(pages)/(user)/game"
-        options={{ drawerLabel: t("entries.game"), title: t("entries.game") }}
+        options={{
+          drawerLabel: t("entries.game"),
+          title: t("entries.game"),
+          headerShown: false,
+        }}
       />
       <Drawer.Screen
         name="(pages)/(user)/schedule"
         options={{
           drawerLabel: t("entries.schedule"),
           title: t("entries.schedule"),
+          headerShown: false,
         }}
       />
       <Drawer.Screen
@@ -99,6 +108,7 @@ function AppNavigator() {
         name="(pages)/(team-player)/choose-your-character"
         options={{
           title: t("entries.chooseYourCharacter"),
+          headerShown: false,
         }}
       />
       <Drawer.Screen
@@ -110,7 +120,11 @@ function AppNavigator() {
       />
       <Drawer.Screen
         name="(pages)/(user)/rules"
-        options={{ drawerLabel: t("entries.rules"), title: t("entries.rules") }}
+        options={{
+          drawerLabel: t("entries.rules"),
+          title: t("entries.rules"),
+          headerShown: false,
+        }}
       />
       <Drawer.Screen
         name="(pages)/(user)/timer"
@@ -126,7 +140,7 @@ function AppNavigator() {
         options={{
           title: t("entries.results"),
           drawerItemStyle: { display: "none" },
-          headerShown: true,
+          headerShown: false,
           swipeEnabled: false,
         }}
       />
@@ -135,7 +149,7 @@ function AppNavigator() {
         options={{
           title: t("entries.signature"),
           drawerItemStyle: { display: "none" },
-          headerShown: true,
+          headerShown: false,
           swipeEnabled: false,
         }}
       />
@@ -144,7 +158,7 @@ function AppNavigator() {
         options={{
           title: t("entries.lottery"),
           drawerItemStyle: { display: "none" },
-          headerShown: true,
+          headerShown: false,
           swipeEnabled: false,
         }}
       />
@@ -180,6 +194,7 @@ function AppNavigator() {
         options={{
           title: t("entries.legal"),
           drawerItemStyle: { display: "none" },
+          headerShown: false,
         }}
       />
     </Drawer>

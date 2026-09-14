@@ -1,8 +1,10 @@
 import { LOTTERY_BUCKET_ID, storage } from "@/lib/appwrite";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
+import { GameHeader } from "@/lib/components/game/GameHeader";
 import { BackButton } from "@/lib/components/ui/BackButton";
 import { EmptyState } from "@/lib/components/ui/EmptyState";
+import { useGameScheduleInfo } from "@/lib/hooks/useGameScheduleInfo";
 import { useLotteryActions } from "@/lib/hooks/useLotteryActions";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
@@ -17,8 +19,9 @@ import { getOptionsLotteriesForGame, getResultForTable } from "@/lib/utils/optio
 import { goBackTo, goTo } from "@/lib/utils/navigation";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { useLocalSearchParams } from "expo-router";
-import { useMemo, useState } from "react";
+import { useLocalSearchParams, useNavigation } from "expo-router";
+import { DrawerActions } from "expo-router/react-navigation";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
@@ -109,8 +112,10 @@ export default function LotteryScreen() {
   const isCompact = screenWidth < ui.breakpointTablet;
   const numColumns = isCompact ? 2 : 3;
   const styles = useMemo(() => makeStyles(colors, numColumns), [colors, numColumns]);
-  const { t } = useTranslation(["lottery"]);
+  const { t } = useTranslation(["lottery", "menu"]);
   const { t: tOptions } = useTranslation(["lotteryOptions"]);
+  const navigation = useNavigation();
+  const game = useGameScheduleInfo(gameId);
 
   const collection = useLotteryStore((s) => s.collection);
   const optionsLotteryRows = useOptionsLotteryStore((s) => s.collection);
@@ -132,6 +137,11 @@ export default function LotteryScreen() {
   }, [optionsLotteryRows, gameId, isAdmin]);
 
   const selfHref = `/(pages)/(user)/lottery?gameId=${gameId}`;
+
+  const openMenu = useCallback(
+    () => navigation.dispatch(DrawerActions.openDrawer()),
+    [navigation],
+  );
 
   const handleBack = () => {
     goBackTo(from ?? (gameId ? `/game?gameId=${gameId}` : "/"));
@@ -171,62 +181,77 @@ export default function LotteryScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <BackButton onPress={handleBack} />
-        {isAdmin && (
-          <Pressable
-            style={styles.addBtn}
-            onPress={() =>
-              goTo(selfHref, `/(pages)/(user)/lottery-add?gameId=${gameId}`)
-            }
-            hitSlop={8}
-          >
-            <Ionicons name="add" size={22} color={colors.primary} />
-          </Pressable>
-        )}
-      </View>
-      <Text style={styles.title}>{t("title")}</Text>
+      <GameHeader
+        title={game.title || t("title")}
+        round={null}
+        tableNumber={null}
+        subtitle={t("title")}
+        onMenuPress={openMenu}
+      />
 
-      {!hasAnyContent ? (
-        <EmptyState message={t("empty")} />
-      ) : photos.length === 0 ? (
-        <View style={styles.gridContent}>{optionsSections}</View>
-      ) : (
-        <FlatList
-          key={numColumns}
-          data={photos}
-          numColumns={numColumns}
-          keyExtractor={(item) => item.fileId}
-          contentContainerStyle={styles.gridContent}
-          columnWrapperStyle={numColumns > 1 ? styles.gridRow : undefined}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            showSectionHeaders ? (
-              <Text style={styles.sectionTitle}>{tOptions("typePhoto")}</Text>
-            ) : null
-          }
-          ListFooterComponent={optionsSections || null}
-          renderItem={({ item, index }) => (
-            <Pressable style={styles.tile} onPress={() => setViewerIndex(index)}>
-              <Image source={{ uri: fileUrl(item.fileId) }} style={styles.thumbnail} contentFit="cover" />
-              {isAdmin && (
-                <Pressable
-                  style={styles.deleteBadge}
-                  onPress={() => handleDelete(item.fileId)}
-                  disabled={actions.isDeleting(item.fileId)}
-                  hitSlop={8}
-                >
-                  {actions.isDeleting(item.fileId) ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Ionicons name="trash" size={14} color="#fff" />
-                  )}
-                </Pressable>
-              )}
+      <View style={styles.body}>
+        <View style={styles.topRow}>
+          <BackButton onPress={handleBack} />
+          {isAdmin && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("menu:entries.lotteryAdd")}
+              style={styles.addBtn}
+              onPress={() =>
+                goTo(selfHref, `/(pages)/(user)/lottery-add?gameId=${gameId}`)
+              }
+              hitSlop={8}
+            >
+              <Ionicons name="add" size={22} color={colors.primary} />
             </Pressable>
           )}
-        />
-      )}
+        </View>
+
+        {!hasAnyContent ? (
+          <EmptyState message={t("empty")} />
+        ) : photos.length === 0 ? (
+          <View style={styles.gridContent}>{optionsSections}</View>
+        ) : (
+          <FlatList
+            key={numColumns}
+            data={photos}
+            numColumns={numColumns}
+            keyExtractor={(item) => item.fileId}
+            contentContainerStyle={styles.gridContent}
+            columnWrapperStyle={numColumns > 1 ? styles.gridRow : undefined}
+            showsVerticalScrollIndicator={false}
+            ListHeaderComponent={
+              showSectionHeaders ? (
+                <Text style={styles.sectionTitle}>{tOptions("typePhoto")}</Text>
+              ) : null
+            }
+            ListFooterComponent={optionsSections || null}
+            renderItem={({ item, index }) => (
+              <Pressable style={styles.tile} onPress={() => setViewerIndex(index)}>
+                <Image
+                  source={{ uri: fileUrl(item.fileId) }}
+                  style={styles.thumbnail}
+                  contentFit="cover"
+                />
+                {isAdmin && (
+                  <Pressable
+                    style={styles.deleteBadge}
+                    onPress={() => handleDelete(item.fileId)}
+                    disabled={actions.isDeleting(item.fileId)}
+                    hitSlop={8}
+                  >
+                    {actions.isDeleting(item.fileId) ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Ionicons name="trash" size={14} color="#fff" />
+                    )}
+                  </Pressable>
+                )}
+              </Pressable>
+            )}
+          />
+        )}
+      </View>
 
       <Modal
         visible={viewerIndex !== null}
@@ -271,22 +296,24 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"], numColumns: n
     container: {
       flex: 1,
       backgroundColor: colors.background,
-      padding: inset.screen,
-      paddingTop: inset.group,
     },
-    header: {
+    body: {
+      flex: 1,
+      paddingHorizontal: inset.card,
+      paddingTop: inset.card,
+    },
+    topRow: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
+      marginBottom: inset.card,
     },
     addBtn: {
-      padding: 4,
-    },
-    title: {
-      ...type.h1,
-      color: colors.text,
-      marginTop: inset.tight,
-      marginBottom: inset.card,
+      width: 40,
+      height: 40,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 8,
     },
     sectionTitle: {
       ...type.h3,

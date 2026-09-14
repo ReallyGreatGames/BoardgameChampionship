@@ -20,7 +20,6 @@ specialized utility modules).
 | — `options.maxRetries` | `number` (default `4`) | Max number of retries after the first attempt |
 | — `options.initialDelay` | `number` (default `1000`) | Delay in ms before the first retry; doubles after every subsequent failure |
 | — `options.shouldRetry` | `(error: unknown) => boolean` (default always `true`) | Predicate deciding whether a given error is retryable; when it returns `false` the error is rethrown immediately |
-| `addMinutesToTime(time, minutes)` | `(string, number) => string` | Adds minutes to an `"HH:MM"` time, with 24h wraparound |
 | `deepClone(obj)` | `<T>(T) => T` | Deep copy via JSON round-trip |
 | `formatTime(s)` | `(number) => string` | Seconds → `"MM:SS"`, negative values are clamped to 0 |
 | `formatElapsed(startTime, now)` | `(string, number) => string` | Time elapsed since `startTime` (ISO) → `"MM:SS"` |
@@ -137,12 +136,11 @@ dashboard so the two can't drift apart.
 [`ScoreSignatureModal.tsx`](components/results/ScoreSignatureModal.md),
 [`SignatureSlot.tsx`](components/results/SignatureSlot.md),
 [`TableCard.tsx`](components/results/TableCard.md),
-[`ActiveScheduleCard.tsx`](components/schedule/ActiveScheduleCard.md),
-[`Schedule.tsx`](components/schedule/Schedule.md),
+[`Schedule.tsx`](components/schedule/Schedule.md) (`deepClone`, `computeTableElapsedSeconds`),
 [`lib/components/home/*`](components/home/README.md) (`formatPoints`) and
 [`ParticipantHero.tsx`](components/home/ParticipantHero.md) (`teamName`),
 [`useParticipantOverview.ts`](hooks/useParticipantOverview.md) (`resolveGameId`),
-[`useRoundCountdown.ts`](hooks/useRoundCountdown.md) (`formatElapsedSeconds`),
+[`useRoundCountdown.ts`](hooks/useRoundCountdown.md) (`formatElapsedSeconds`, `computeTableElapsedSeconds`),
 [`TimerCell.tsx`](components/timer/TimerCell.md),
 [`RankingsTab.tsx`](components/admin/RankingsTab.md),
 [`lib/import/*`](import/README.md) (player-, table-import-service, wipe-service),
