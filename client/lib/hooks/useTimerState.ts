@@ -834,7 +834,7 @@ export function useTimerState({
     const nextCorrectedLastPaused = [...correctedLastPausedAtRef.current];
     const touchedSeats = new Set<number>([idx]);
 
-    if (pauseMode === "auto" && wasPaused) {
+    if (pauseMode === "quickplay" && wasPaused) {
       for (let i = 0; i < PLAYER_COUNT; i++) {
         if (i !== idx && !nextPaused[i]) {
           nextPaused[i] = true;
@@ -959,7 +959,7 @@ export function useTimerState({
   useEffect(() => {
     const prev = prevPauseModeRef.current;
     prevPauseModeRef.current = pauseMode;
-    if (prev === pauseMode || pauseMode !== "auto") {
+    if (prev === pauseMode || pauseMode !== "quickplay") {
       return;
     }
     if (playersPausedRef.current.filter((p) => !p).length <= 1) {

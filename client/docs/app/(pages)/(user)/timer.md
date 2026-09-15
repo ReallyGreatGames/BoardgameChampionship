@@ -24,13 +24,27 @@ essentially all of the actual logic.
 
 ### Internal: `TimerScreenContent({ gameId, tableNumber }: { gameId: string \| undefined; tableNumber: number \| null }): JSX.Element`
 
-The actual timer UI: four `TimerCell`s in a 2x2 grid, a center `TimerControlPanel` overlay, and a `TimerMenu` for reset/custom-timer/close actions. Owns local UI state (`menuOpen`, `customTimerOpen`, `elapsedSeconds`) and delegates all timer logic to [`useTimerState`](../../../lib/hooks/useTimerState.md).
+The actual timer UI: four `TimerCell`s in a 2x2 grid, a center `TimerControlPanel` overlay (pause/resume-all disc + gear), and a `TimerMenu` two-stage dialog (table options, then timer settings) opened from the gear. Owns local UI state (`menuStage`, `customTimerOpen`, `elapsedSeconds`) and delegates all timer logic to [`useTimerState`](../../../lib/hooks/useTimerState.md).
 
 ### `handleToggleBell(): Promise<void>`
 
-If a bell is currently ringing for this table, calls `bellActions.dismiss(bell, ...)` with a translated confirm dialog; otherwise, if `tableNumber` is known, calls `bellActions.ring(tableNumber, undefined, ...)` with its own confirm dialog. Closes the menu (`setMenuOpen(false)`) only if the action actually completed (`done` is truthy), so a cancelled confirm dialog leaves the menu open.
+If a bell is currently ringing for this table, calls `bellActions.dismiss(bell, ...)` with a translated confirm dialog; otherwise, if `tableNumber` is known, calls `bellActions.ring(tableNumber, undefined, ...)` with its own confirm dialog. Closes the whole menu (`setMenuStage(null)`) only if the action actually completed (`done` is truthy), so a cancelled confirm dialog leaves the options dialog open.
 
 ## How it works
+
+### Round-countdown pill
+
+`TimerControlPanel`'s time-left pill shows the *scheduled round's* time
+remaining, not anything derived from the per-seat chess clock. `timer.tsx`
+finds the [`Schedule`](../../../lib/models/schedule.md) item whose
+`gameId` matches this screen's `gameId` (`scheduleCollection.find((item)
+=> item.gameId === gameId)`, from
+[`useScheduleStore`](../../../lib/stores/appwrite/schedule-store.md)) and
+feeds it to [`useRoundCountdown`](../../../lib/hooks/useRoundCountdown.md)
+— the same hook and lookup shape the home screen's
+[`NowPlayingCard`](../../../lib/components/home/NowPlayingCard.md) uses,
+so the number on the timer screen always matches what players saw on the
+home screen for this game.
 
 ### `TimerScreenContent`, keyed by `(gameId, tableNumber)`
 
@@ -97,4 +111,6 @@ with no `gameId`). `from` is a route param on `TimerPage`, passed down to
 - [`lib/hooks/useTimerState.ts`](../../../lib/hooks/useTimerState.md) — essentially all the logic
 - [`lib/hooks/useTimerLocalSettings.ts`](../../../lib/hooks/useTimerLocalSettings.md) — orientation/pause-mode preference
 - [`lib/hooks/useTableBellActions.ts`](../../../lib/hooks/useTableBellActions.md)
+- [`lib/hooks/useRoundCountdown.ts`](../../../lib/hooks/useRoundCountdown.md) — the schedule round countdown shown in `TimerControlPanel`'s pill
+- [`lib/stores/appwrite/schedule-store.ts`](../../../lib/stores/appwrite/schedule-store.md) — source of the `Schedule` item looked up by `gameId`
 - [`lib/bootstrap/ScreenOrientationProvider.tsx`](../../../lib/bootstrap/ScreenOrientationProvider.md)

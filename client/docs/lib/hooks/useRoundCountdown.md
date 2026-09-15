@@ -70,6 +70,7 @@ the label and the overtime flag disagreeing.
 
 - [`lib/components/home/NowPlayingCard.tsx`](../components/home/NowPlayingCard.md)
 - [`lib/components/schedule/RunningNowCard.tsx`](../components/schedule/RunningNowCard.md)
+- [`app/(pages)/(user)/timer.tsx`](../../app/(pages)/(user)/timer.md) — looks up the `Schedule` item by `gameId` and feeds the result to [`TimerControlPanel`](../components/timer/TimerControlPanel.md)'s time-left pill
 
 ## Related
 

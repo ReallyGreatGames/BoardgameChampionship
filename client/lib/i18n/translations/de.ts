@@ -87,7 +87,8 @@ const translations = {
       importButton: "{{count}} Regel(n) importieren",
       nothingToImport: "Nichts zu importieren",
       confirmTitle: "{{count}} Regel(n) importieren?",
-      confirmMessage: 'Dies erstellt/aktualisiert Regelklärungen für "{{game}}".',
+      confirmMessage:
+        'Dies erstellt/aktualisiert Regelklärungen für "{{game}}".',
       confirmWipeTitle: "Alle Regeln für dieses Spiel ersetzen?",
       confirmWipeMessage:
         'Dies löscht dauerhaft {{count}} bestehende Regel(n) für "{{game}}" und importiert dann {{importCount}} neue Regel(n). Dies kann nicht rückgängig gemacht werden.',
@@ -101,7 +102,8 @@ const translations = {
       previousLabel: "Vorher: {{text}}",
       wipeToggleLabel:
         "Alle {{count}} bestehenden Regel(n) für dieses Spiel vor dem Import löschen",
-      wipeToggleLabelEmpty: "Keine bestehenden Regeln für dieses Spiel zum Löschen",
+      wipeToggleLabelEmpty:
+        "Keine bestehenden Regeln für dieses Spiel zum Löschen",
     },
   },
   home: {
@@ -150,7 +152,8 @@ const translations = {
     pinHint: "Deine PIN steht auf der Leinwand.",
     welcome: "Willkommen",
     password: "Passwort",
-    eventInactiveHint: "Der Login ist deaktiviert, da derzeit keine Veranstaltung aktiv ist.",
+    eventInactiveHint:
+      "Der Login ist deaktiviert, da derzeit keine Veranstaltung aktiv ist.",
     eventInactiveFaqLink: "Fragen? FAQ ansehen",
   },
   menu: {
@@ -327,12 +330,22 @@ const translations = {
     openMenu: "Menü öffnen",
     orientationCenter: "Ausrichtung: Zentriert",
     orientationSide: "Ausrichtung: Gleiche Richtung",
-    pauseModeAuto: "Pausenmodus: Automatisch",
-    pauseModeManual: "Pausenmodus: Manuell",
+    pauseModeQuickplay: "Pausenmodus: Quickplay",
+    pauseModeSimultaneous: "Pausenmodus: Simultan",
     pauseAll: "Alle pausieren",
     resumeAll: "Alle fortsetzen",
     spamProtectionActive: "Zu viele Eingaben",
-    tableTimeElapsed: "Tischzeit",
+    timeRemaining: "Restzeit",
+    tableOptions: "Tischoptionen",
+    timerSettingsTitle: "Einstellungen",
+    backToOptions: "Zurück zu den Tischoptionen",
+    close: "Schließen",
+    layout: "Ausrichtung",
+    mode: "Modus",
+    layoutCentre: "Zentriert",
+    layoutSide: "Seitlich",
+    modeQuickplay: "Quickplay",
+    modeSimultaneous: "Simultan",
     confirmRing: {
       title: "Tischklingel läuten",
       message: "Die Schiedsrichter:innen auf euren Tisch aufmerksam machen?",
@@ -356,7 +369,8 @@ const translations = {
     useDefaultTimer: "Standardtimer",
     confirmUseDefaultTimer: {
       title: "Standardtimer verwenden",
-      message: "Benutzerdefinierten Timer verwerfen und den Standardtimer dieses Spiels verwenden?",
+      message:
+        "Benutzerdefinierten Timer verwerfen und den Standardtimer dieses Spiels verwenden?",
       confirm: "Verwenden",
       cancel: "Abbrechen",
     },
@@ -388,7 +402,8 @@ const translations = {
     submitted: "Eingereicht",
     entryOpen: "Eingabe offen",
     tieDetected: "Gleichstand erkannt: Platz {places} geteilt.",
-    gateReady: "Alle vier Unterschriften liegen vor, das Ergebnis kann abgeschickt werden.",
+    gateReady:
+      "Alle vier Unterschriften liegen vor, das Ergebnis kann abgeschickt werden.",
     gateSubmitted: "Ergebnis an die Turnierleitung übermittelt.",
     gateMissingScores: "die Punkte",
     gateMissingPlacements: "die Platzierungen",
@@ -442,7 +457,8 @@ const translations = {
     resetSignatures: "Unterschriften zurücksetzen",
     confirmReset: {
       title: "Unterschriften zurücksetzen?",
-      message: "Alle Unterschriften für diesen Tisch werden gelöscht. Punkte und Einreichungsstatus bleiben erhalten.",
+      message:
+        "Alle Unterschriften für diesen Tisch werden gelöscht. Punkte und Einreichungsstatus bleiben erhalten.",
       confirm: "Zurücksetzen",
       cancel: "Abbrechen",
     },
@@ -454,7 +470,8 @@ const translations = {
     },
     confirmResetOne: {
       title: "Unterschrift zurücksetzen?",
-      message: "Nur diese Unterschrift wird gelöscht. Punkte und Einreichungsstatus bleiben erhalten.",
+      message:
+        "Nur diese Unterschrift wird gelöscht. Punkte und Einreichungsstatus bleiben erhalten.",
       reset: "Zurücksetzen",
       cancel: "Schließen",
     },
@@ -566,7 +583,8 @@ const translations = {
     summaryTie: "{score} Punkte · Platz {place} (Gleichstand)",
     summaryEmpty: "Noch nicht eingetragen",
     alreadySigned: "Dieser Spieler hat bereits unterschrieben.",
-    confirmHint: "Mit der Unterschrift bestätigt {name} Punkte und Platzierung dieses Spiels.",
+    confirmHint:
+      "Mit der Unterschrift bestätigt {name} Punkte und Platzierung dieses Spiels.",
   },
   lottery: {
     title: "Auslosung",
@@ -577,7 +595,8 @@ const translations = {
     uploading: "Wird hochgeladen…",
     confirmDelete: {
       title: "Auslosungsfoto löschen",
-      message: "Dieses Auslosungsfoto entfernen? Das kann nicht rückgängig gemacht werden.",
+      message:
+        "Dieses Auslosungsfoto entfernen? Das kann nicht rückgängig gemacht werden.",
       confirm: "Löschen",
       cancel: "Abbrechen",
     },
@@ -587,7 +606,8 @@ const translations = {
     typePhoto: "Fotos",
     typePhotoDescription: "Fotos für dieses Spiel hochladen oder aufnehmen",
     typeOptions: "Optionen",
-    typeOptionsDescription: "Einen gewichteten Pool konfigurieren und pro Tisch ein Ergebnis ziehen",
+    typeOptionsDescription:
+      "Einen gewichteten Pool konfigurieren und pro Tisch ein Ergebnis ziehen",
     editTitleNew: "Neue Optionen-Auslosung",
     editTitleExisting: "Optionen-Auslosung bearbeiten",
     nameLabel: "Name",
@@ -623,7 +643,8 @@ const translations = {
     },
     deleteConfirm: {
       title: "Auslosung löschen",
-      message: "Dies löscht das Ergebnis jedes Tisches. Das kann nicht rückgängig gemacht werden.",
+      message:
+        "Dies löscht das Ergebnis jedes Tisches. Das kann nicht rückgängig gemacht werden.",
       confirm: "Löschen",
       cancel: "Abbrechen",
     },
@@ -634,10 +655,12 @@ const translations = {
     notAssignedToTable: "Du bist noch keinem Tisch zugeordnet.",
     errors: {
       "no-options": "Mindestens eine Option hinzufügen.",
-      "invalid-pulls-per-table": "Ziehungen pro Tisch muss eine ganze Zahl ≥ 1 sein.",
+      "invalid-pulls-per-table":
+        "Ziehungen pro Tisch muss eine ganze Zahl ≥ 1 sein.",
       "missing-title": "Jede Option braucht einen Titel.",
       "invalid-weight": "„{{title}}“ braucht eine Gewichtung von mindestens 1.",
-      "invalid-max-per-table": "„{{title}}“ braucht ein Max. pro Tisch von mindestens 1.",
+      "invalid-max-per-table":
+        "„{{title}}“ braucht ein Max. pro Tisch von mindestens 1.",
       "insufficient-capacity":
         "Ziehungen pro Tisch ({{pullsPerTable}}) übersteigt, was die Max.-pro-Tisch-Werte abdecken können ({{capacity}}).",
     },

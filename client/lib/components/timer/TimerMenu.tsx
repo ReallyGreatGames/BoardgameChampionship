@@ -1,24 +1,33 @@
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
+import { Button } from "@/lib/components/ui/Button";
 import { CustomTimerModal } from "@/lib/components/timer/CustomTimerModal";
+import { TimerOrientationMode, TimerPauseMode } from "@/lib/hooks/useTimerLocalSettings";
+import { TableBell } from "@/lib/models/table-bell";
 import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ComponentProps } from "react";
+import { GestureResponderEvent, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 
 type Props = {
-  open: boolean;
+  stage: "options" | "settings" | null;
   onClose: () => void;
+  onOpenSettings: () => void;
+  onBackToOptions: () => void;
   onReset: () => Promise<void>;
   onOpenCustomTimer: () => void;
   onUseDefaultTimer: () => Promise<void>;
   onCloseTimer: () => void;
+  orientationMode: TimerOrientationMode;
+  onToggleOrientation: () => void;
+  pauseMode: TimerPauseMode;
+  onTogglePauseMode: () => void;
+  bell: TableBell | undefined;
+  bellElapsedLabel: string | undefined;
+  onToggleBell: () => void;
+  bellLoading?: boolean;
+  bellDisabled?: boolean;
   customTimerOpen: boolean;
   onCloseCustomTimer: () => void;
   initialDuration: number | undefined;
@@ -31,13 +40,28 @@ type Props = {
   ) => Promise<void>;
 };
 
+function stopPropagation(e: GestureResponderEvent) {
+  e.stopPropagation();
+}
+
 export function TimerMenu({
-  open,
+  stage,
   onClose,
+  onOpenSettings,
+  onBackToOptions,
   onReset,
   onOpenCustomTimer,
   onUseDefaultTimer,
   onCloseTimer,
+  orientationMode,
+  onToggleOrientation,
+  pauseMode,
+  onTogglePauseMode,
+  bell,
+  bellElapsedLabel,
+  onToggleBell,
+  bellLoading,
+  bellDisabled,
   customTimerOpen,
   onCloseCustomTimer,
   initialDuration,
@@ -48,50 +72,133 @@ export function TimerMenu({
   const { colors } = useTheme();
   const { t } = useTranslation(["timer"]);
 
+  const bellRinging = !!bell && !bell.acknowledgeTime;
+  const bellBaseLabel = bell?.acknowledgeTime
+    ? t("bellAcknowledged")
+    : bell
+      ? t("bellRinging")
+      : t("ringBell");
+  const bellLabel = bell && bellElapsedLabel ? `${bellBaseLabel} · ${bellElapsedLabel}` : bellBaseLabel;
+
   return (
     <>
-      {open && (
-        <Pressable style={styles.menuBackdrop} onPress={onClose}>
-          <View
-            style={[
-              styles.menuCard,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
+      {stage === "options" && (
+        <Pressable style={styles.backdrop} onPress={onClose}>
+          <Pressable
+            style={[styles.card, { backgroundColor: colors.surfaceHigh, borderColor: colors.border }]}
+            onPress={stopPropagation}
           >
-            <MenuButton
-              icon="refresh-outline"
-              label={t("resetTimers")}
-              color={colors.text}
-              onPress={onReset}
-            />
+            <View style={styles.header}>
+              <Text style={[type.eyebrow, { color: colors.textSecondary }]}>
+                {t("tableOptions")}
+              </Text>
+              <Pressable onPress={onClose} accessibilityLabel={t("close")}>
+                <Ionicons name="close" size={20} color={colors.text} />
+              </Pressable>
+            </View>
 
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={styles.grid}>
+              <ToggleCard
+                label={t("layout")}
+                icon={orientationMode === "center" ? "grid-outline" : "reorder-two-outline"}
+                value={orientationMode === "center" ? t("layoutCentre") : t("layoutSide")}
+                accessibilityLabel={
+                  orientationMode === "center" ? t("orientationCenter") : t("orientationSide")
+                }
+                onPress={onToggleOrientation}
+              />
+              <ToggleCard
+                label={t("mode")}
+                icon={pauseMode === "quickplay" ? "flash-outline" : "hand-left-outline"}
+                value={pauseMode === "quickplay" ? t("modeQuickplay") : t("modeSimultaneous")}
+                accessibilityLabel={
+                  pauseMode === "quickplay" ? t("pauseModeQuickplay") : t("pauseModeSimultaneous")
+                }
+                onPress={onTogglePauseMode}
+              />
+            </View>
 
-            <MenuButton
-              icon="time-outline"
-              label={t("customTimer")}
-              color={colors.text}
-              onPress={onOpenCustomTimer}
-            />
+            <View style={styles.grid}>
+              <Button
+                label={bellLabel}
+                icon={bell ? "notifications-off-outline" : "notifications-outline"}
+                variant={bellRinging ? "primary" : "secondary"}
+                onPress={onToggleBell}
+                loading={bellLoading}
+                disabled={bellDisabled}
+                style={styles.gridButton}
+              />
+              <Button
+                label={t("timerSettingsTitle")}
+                icon="timer-outline"
+                variant="secondary"
+                onPress={onOpenSettings}
+                style={styles.gridButton}
+              />
+            </View>
 
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={styles.grid}>
+              <Button
+                label={t("closeTimer")}
+                icon="exit-outline"
+                variant="danger"
+                onPress={onCloseTimer}
+                style={styles.gridButton}
+              />
+            </View>
+          </Pressable>
+        </Pressable>
+      )}
 
-            <MenuButton
-              icon="arrow-undo-outline"
-              label={t("useDefaultTimer")}
-              color={colors.text}
-              onPress={onUseDefaultTimer}
-            />
+      {stage === "settings" && (
+        <Pressable style={styles.backdrop} onPress={onClose}>
+          <Pressable
+            style={[styles.card, { backgroundColor: colors.surfaceHigh, borderColor: colors.border }]}
+            onPress={stopPropagation}
+          >
+            <View style={styles.header}>
+              <Pressable
+                style={styles.headerBack}
+                onPress={onBackToOptions}
+                accessibilityLabel={t("backToOptions")}
+              >
+                <Ionicons name="chevron-back-outline" size={16} color={colors.textSecondary} />
+                <Text style={[type.eyebrow, { color: colors.textSecondary }]}>
+                  {t("timerSettingsTitle")}
+                </Text>
+              </Pressable>
+              <Pressable onPress={onClose} accessibilityLabel={t("close")}>
+                <Ionicons name="close" size={20} color={colors.text} />
+              </Pressable>
+            </View>
 
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View style={styles.grid}>
+              <Button
+                label={t("resetTimers")}
+                icon="refresh-outline"
+                variant="secondary"
+                onPress={onReset}
+                style={styles.gridButton}
+              />
+              <Button
+                label={t("customTimer")}
+                icon="options-outline"
+                variant="secondary"
+                onPress={onOpenCustomTimer}
+                style={styles.gridButton}
+              />
+            </View>
 
-            <MenuButton
-              icon="exit-outline"
-              label={t("closeTimer")}
-              color={colors.error}
-              onPress={onCloseTimer}
-            />
-          </View>
+            <View style={styles.grid}>
+              <Button
+                label={t("useDefaultTimer")}
+                icon="timer-outline"
+                variant="secondary"
+                onPress={onUseDefaultTimer}
+                style={styles.gridButton}
+              />
+            </View>
+          </Pressable>
         </Pressable>
       )}
 
@@ -107,39 +214,40 @@ export function TimerMenu({
   );
 }
 
-type MenuButtonProps = {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
+type ToggleCardProps = {
   label: string;
-  color: string;
+  icon: ComponentProps<typeof Ionicons>["name"];
+  value: string;
+  accessibilityLabel: string;
   onPress: () => void;
-  disabled?: boolean;
-  loading?: boolean;
 };
 
-function MenuButton({ icon, label, color, onPress, disabled, loading }: MenuButtonProps) {
+function ToggleCard({ label, icon, value, accessibilityLabel, onPress }: ToggleCardProps) {
   const { colors } = useTheme();
   return (
     <Pressable
       style={({ pressed }) => [
-        styles.menuBtn,
+        styles.toggleCard,
+        { backgroundColor: colors.surface, borderColor: colors.border },
         pressed && { backgroundColor: colors.surfaceHigh },
-        disabled && { opacity: 0.4 },
       ]}
       onPress={onPress}
-      disabled={disabled}
+      accessibilityLabel={accessibilityLabel}
     >
-      {loading ? (
-        <ActivityIndicator size="small" color={color} />
-      ) : (
-        <Ionicons name={icon} size={22} color={color} />
-      )}
-      <Text style={[type.body, { color }]}>{label}</Text>
+      <View style={styles.toggleCardTop}>
+        <Text style={[type.eyebrow, { color: colors.textMuted, fontSize: 10 }]}>{label}</Text>
+        <Ionicons name="swap-horizontal-outline" size={14} color={colors.textMuted} />
+      </View>
+      <View style={styles.toggleCardBottom}>
+        <Ionicons name={icon} size={18} color={colors.text} />
+        <Text style={[type.bodySmall, { color: colors.text }]}>{value}</Text>
+      </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  menuBackdrop: {
+  backdrop: {
     position: "absolute",
     top: 0,
     left: 0,
@@ -149,24 +257,48 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  menuCard: {
-    width: 240,
-    borderRadius: 14,
+  card: {
+    width: "90%",
+    maxWidth: 420,
+    borderRadius: ui.sheetRadius,
     borderWidth: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 0,
-    alignItems: "stretch",
+    padding: 12,
+    gap: 8,
   },
-  menuBtn: {
+  header: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+    justifyContent: "space-between",
+    paddingHorizontal: 2,
+    paddingBottom: 2,
   },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    marginHorizontal: 20,
+  headerBack: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  grid: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  gridButton: {
+    flex: 1,
+  },
+  toggleCard: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 10,
+    gap: 4,
+  },
+  toggleCardTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  toggleCardBottom: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
 });
