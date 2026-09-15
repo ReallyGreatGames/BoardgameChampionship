@@ -235,8 +235,8 @@ const translations = {
       },
       confirmDismiss: {
         title: "Klingel entfernen",
-        message: "Tischklingel-Benachrichtigung entfernen?",
-        confirm: "Entfernen",
+        message: "Schiedsrichter abbstellen?",
+        confirm: "Ja, hat sich geklärt",
         cancel: "Abbrechen",
       },
     },
@@ -341,8 +341,8 @@ const translations = {
     },
     confirmDismiss: {
       title: "Klingel entfernen",
-      message: "Tischklingel-Benachrichtigung entfernen?",
-      confirm: "Entfernen",
+      message: "Schiedsrichter abbstellen?",
+      confirm: "Ja, hat sich geklärt",
       cancel: "Abbrechen",
     },
     timerElapsed: "Zeit Abgelaufen",

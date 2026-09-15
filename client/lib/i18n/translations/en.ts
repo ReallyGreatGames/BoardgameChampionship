@@ -235,7 +235,8 @@ const translations = {
       },
       confirmDismiss: {
         title: "Dismiss Bell",
-        message: "Clear the table bell notification?",
+        message:
+          "Dismiss table bell? A judge will no longer come to your table.",
         confirm: "Dismiss",
         cancel: "Cancel",
       },
@@ -341,7 +342,7 @@ const translations = {
     },
     confirmDismiss: {
       title: "Dismiss Bell",
-      message: "Clear the table bell notification?",
+      message: "Dismiss table bell? A judge will no longer come to your table.",
       confirm: "Dismiss",
       cancel: "Cancel",
     },
