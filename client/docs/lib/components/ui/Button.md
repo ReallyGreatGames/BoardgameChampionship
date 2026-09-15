@@ -20,7 +20,8 @@ icon, and a loading state that swaps the content for a spinner.
 | `label` | `string` | Button text. |
 | `onPress` | `() => void` | Press handler; not called while `disabled` or `loading`. |
 | `variant` | `"primary" \| "secondary" \| "ghost" \| "danger"?` | Visual weight — filled accent, outlined surface, transparent, or filled error. Defaults to `primary`. |
-| `icon` | `Ionicons` glyph name (optional) | Icon rendered before the label, in the label's color. |
+| `icon` | `Ionicons` glyph name (optional) | Icon rendered next to the label, in the label's color. |
+| `iconPosition` | `"left" \| "right"?` | Which side of the label the icon sits on. Defaults to `"left"`; the welcome screen's "Zum Login" button uses `"right"`. |
 | `disabled` | `boolean?` | Blocks presses and dims the button. Defaults to `false`. |
 | `loading` | `boolean?` | Blocks presses and replaces icon+label with an `ActivityIndicator`. Defaults to `false`. |
 | `style` | `StyleProp<ViewStyle>?` | Extra style merged last onto the container (e.g. `flex: 1` in a button row). |
@@ -46,3 +47,5 @@ than as an ordinary button that does nothing.
 
 - [`lib/components/home/NowPlayingCard.tsx`](../home/NowPlayingCard.md)
 - [`app/(pages)/(user)/signature.tsx`](../../../app/(pages)/(user)/signature.md) — Clear/Confirm actions
+- [`lib/components/onboarding/WelcomeScreen.tsx`](../onboarding/WelcomeScreen.md) — "Zum Login" with trailing arrow
+- [`app/(pages)/login.tsx`](../../../app/(pages)/login.md) — full-width submit with `loading`

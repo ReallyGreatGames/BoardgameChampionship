@@ -358,7 +358,7 @@ export function ScheduleList() {
         onLotteries={(gameId) => {
           goTo(
             "/(pages)/(user)/schedule",
-            `/(pages)/(user)/lottery-add?gameId=${gameId}&from=/(pages)/(user)/schedule`,
+            `/(pages)/(user)/lottery?gameId=${gameId}&from=/(pages)/(user)/schedule`,
           );
           setModalVisible(false);
         }}

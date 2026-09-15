@@ -52,24 +52,28 @@ function AppNavigator() {
         name="(pages)/login"
         options={{
           title: t(type),
+          headerShown: false,
         }}
       />
       <Drawer.Screen
         name="index"
         options={{
           title: "",
+          headerShown: false,
         }}
       />
       <Drawer.Screen
         name="(pages)/settings"
         options={{
           title: t("entries.settings"),
+          headerShown: false,
         }}
       />
       <Drawer.Screen
         name="(pages)/info"
         options={{
           title: t("entries.info"),
+          headerShown: false,
         }}
       />
       <Drawer.Screen
@@ -104,6 +108,7 @@ function AppNavigator() {
         name="(pages)/(team-player)/choose-your-character"
         options={{
           title: t("entries.chooseYourCharacter"),
+          headerShown: false,
         }}
       />
       <Drawer.Screen
@@ -189,6 +194,7 @@ function AppNavigator() {
         options={{
           title: t("entries.legal"),
           drawerItemStyle: { display: "none" },
+          headerShown: false,
         }}
       />
     </Drawer>

@@ -210,8 +210,9 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"], cardWidth: nu
       gap: inset.tight,
     },
     sharedLabel: {
-      ...type.eyebrow,
-      color: colors.textMuted,
+      ...type.h1,
+      color: colors.primary,
+      textAlign: "center",
     },
     sharedTitle: {
       ...type.display,

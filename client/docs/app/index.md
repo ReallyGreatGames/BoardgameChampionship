@@ -25,11 +25,11 @@ the match card.
 
 | Export | Signature | Purpose |
 | --- | --- | --- |
-| `Index` (default) | `(): JSX.Element` | Screen component for `/`. Logged-out: renders `WelcomeScreen`. Logged-in: renders the hero plus the now-playing, up-next, and results sections described above. Also fires the deterministic post-auth redirect and hides the navigator header (see below). |
+| `Index` (default) | `(): JSX.Element` | Screen component for `/`. Logged-out: renders `WelcomeScreen`. Logged-in: renders the hero plus the now-playing, up-next, and results sections described above. Also fires the deterministic post-auth redirect. |
 
 ### Internal: `openMenu(): void`
 
-`useCallback` keyed on `[navigation]`. Dispatches `DrawerActions.openDrawer()`; passed to `ParticipantHero` as `onMenuPress`, since the hero draws the hamburger the hidden navigator header would otherwise provide.
+`useCallback` keyed on `[navigation]`. Dispatches `DrawerActions.openDrawer()`; passed to `ParticipantHero` / `WelcomeScreen` as `onMenuPress`, since both hero bands draw the hamburger the hidden navigator header would otherwise provide.
 
 ## How it works
 
@@ -41,12 +41,12 @@ renders while no redirect applies (or momentarily before one fires). The effect 
 
 ### Header ownership
 
-A second effect calls `navigation.setOptions({ headerShown: !user })`
-rather than the route declaring a fixed `headerShown` in
-[`app/_layout.tsx`](_layout.md): the logged-in start page draws its own
-hero band (with its own menu button and status-bar padding) all the way to
-the top of the screen, while the logged-out `WelcomeScreen` has no such
-band and still needs the navigator's header to reach the drawer.
+The route is declared `headerShown: false` in
+[`app/_layout.tsx`](_layout.md): both the logged-in start page
+([`ParticipantHero`](../lib/components/home/ParticipantHero.md)) and the
+logged-out `WelcomeScreen` ([`WelcomeHero`](../lib/components/onboarding/WelcomeHero.md))
+draw their own dark hero band — with its own menu button and status-bar
+padding — all the way to the top of the screen.
 
 ### Screen data
 

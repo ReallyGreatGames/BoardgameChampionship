@@ -3,12 +3,13 @@ import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { GameHeader } from "@/lib/components/game/GameHeader";
 import { BackButton } from "@/lib/components/ui/BackButton";
 import { Button } from "@/lib/components/ui/Button";
+import { useDialog } from "@/lib/components/ui/Dialog";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 import { NO_SIGNATURE } from "@/lib/models/result";
 import { useResultStore } from "@/lib/stores/appwrite/result-store";
 import { useTableStore } from "@/lib/stores/appwrite/table-store";
-import { inset } from "@/lib/theme/spacing";
+import { inset, space } from "@/lib/theme/spacing";
 import { fonts, type } from "@/lib/theme/typography";
 import { goBackTo } from "@/lib/utils/navigation";
 import { createSignatureFile } from "@/lib/utils/signature-file";
@@ -38,6 +39,14 @@ function padArray<T>(arr: T[], length: number, fill: T): T[] {
     copy.push(fill);
   }
   return copy.slice(0, length);
+}
+
+function parseSigsParam(sigs: string): string[] {
+  return padArray(
+    sigs.split(",").map((s) => (s === NO_SIGNATURE ? "" : s)),
+    PLAYER_COUNT,
+    "",
+  );
 }
 
 function strokeToD(stroke: Stroke): string {
@@ -78,6 +87,7 @@ export default function SignaturePage() {
   const resultStore = useResultStore();
   const tableNumber = usePlayerTable(gameId);
   const tables = useTableStore((s) => s.collection);
+  const { confirm } = useDialog();
 
   const playerData = useMemo(() => {
     if (!gameId || tableNumber === null) {
@@ -104,12 +114,17 @@ export default function SignaturePage() {
 
   const [sigIds, setSigIds] = useState<string[]>(() =>
     sigs
-      ? padArray(
-          sigs.split(",").map((s) => (s === NO_SIGNATURE ? "" : s)),
-          PLAYER_COUNT,
-          "",
-        )
+      ? parseSigsParam(sigs)
       : padArray(existingResult?.signatureIds ?? [], PLAYER_COUNT, ""),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      setActive(parseInt(place ?? "0", 10));
+      if (sigs) {
+        setSigIds(parseSigsParam(sigs));
+      }
+    }, [place, sigs]),
   );
 
   const [existingSvg, setExistingSvg] = useState<string | null>(null);
@@ -152,6 +167,13 @@ export default function SignaturePage() {
   const hasExisting = loadingExisting || existingSvg !== null;
   const isEmpty = strokes.length === 0 && currentStroke.length === 0;
   const signedCount = sigIds.filter(Boolean).length;
+
+  const activePlayer = playerData[active];
+  const activeName = activePlayer?.name ?? `P${active + 1}`;
+  const activeTeam =
+    activePlayer?.team && typeof activePlayer.team === "object"
+      ? activePlayer.team
+      : null;
 
   const panResponder = useRef(
     PanResponder.create({
@@ -197,13 +219,25 @@ export default function SignaturePage() {
   }, [from, gameId]);
 
   const handleSelectSeat = useCallback(
-    (i: number) => {
+    async (i: number) => {
       if (i === active) {
         return;
       }
+      if (!isEmpty && !hasExisting) {
+        const ok = await confirm({
+          title: t("discardConfirm.title"),
+          message: t("discardConfirm.message").replace("{name}", activeName),
+          confirmLabel: t("discardConfirm.confirm"),
+          cancelLabel: t("discardConfirm.cancel"),
+          destructive: true,
+        });
+        if (!ok) {
+          return;
+        }
+      }
       setActive(i);
     },
-    [active],
+    [active, isEmpty, hasExisting, confirm, t, activeName],
   );
 
   const handleConfirm = useCallback(async () => {
@@ -257,8 +291,6 @@ export default function SignaturePage() {
     ...(currentStroke.length > 0 ? [currentStroke] : []),
   ];
 
-  const activePlayer = playerData[active];
-  const activeName = activePlayer?.name ?? `P${active + 1}`;
   const activeScore = existingResult?.scores?.[active];
   const activePlacement = existingResult?.placements?.[active];
   const activeTied =
@@ -282,7 +314,7 @@ export default function SignaturePage() {
         tableNumber={tableNumber}
         subtitle={t("progress")
           .replace("{current}", String(active + 1))
-          .replace("{total}", String(PLAYER_COUNT))
+          .replace(/\{total\}/g, String(PLAYER_COUNT))
           .replace("{signed}", String(signedCount))}
         onMenuPress={openMenu}
       />
@@ -321,6 +353,18 @@ export default function SignaturePage() {
           <Text style={styles.activeName} numberOfLines={1}>
             {activeName}
           </Text>
+          {(!!activeTeam?.country || !!activeTeam?.name) && (
+            <View style={styles.activeTeamRow}>
+              {!!activeTeam?.country && (
+                <Text style={styles.activeCountry}>{activeTeam.country}</Text>
+              )}
+              {!!activeTeam?.name && (
+                <Text style={styles.activeTeam} numberOfLines={1}>
+                  {activeTeam.name}
+                </Text>
+              )}
+            </View>
+          )}
           <Text style={styles.activeSummary} numberOfLines={1}>
             {activeSummary}
           </Text>
@@ -455,6 +499,30 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       fontSize: 24,
       lineHeight: 26,
       color: colors.text,
+    },
+    activeTeamRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: space[2],
+      minWidth: 0,
+    },
+    activeCountry: {
+      ...type.eyebrow,
+      letterSpacing: 1,
+      color: colors.primary,
+      backgroundColor: colors.surfaceHigh,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 4,
+      paddingHorizontal: 5,
+      paddingVertical: 2,
+      overflow: "hidden",
+    },
+    activeTeam: {
+      ...type.body,
+      color: colors.textSecondary,
+      flexShrink: 1,
+      minWidth: 0,
     },
     activeSummary: {
       ...type.body,

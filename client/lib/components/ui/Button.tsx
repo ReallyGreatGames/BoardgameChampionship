@@ -20,6 +20,7 @@ type Props = {
   onPress: () => void;
   variant?: Variant;
   icon?: ComponentProps<typeof Ionicons>["name"];
+  iconPosition?: "left" | "right";
   disabled?: boolean;
   loading?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -30,6 +31,7 @@ export function Button({
   onPress,
   variant = "primary",
   icon,
+  iconPosition = "left",
   disabled = false,
   loading = false,
   style,
@@ -56,8 +58,13 @@ export function Button({
         <ActivityIndicator size="small" color={foreground} />
       ) : (
         <>
-          {icon && <Ionicons name={icon} size={18} color={foreground} />}
+          {icon && iconPosition === "left" && (
+            <Ionicons name={icon} size={18} color={foreground} />
+          )}
           <Text style={[styles.label, { color: foreground }]}>{label}</Text>
+          {icon && iconPosition === "right" && (
+            <Ionicons name={icon} size={18} color={foreground} />
+          )}
         </>
       )}
     </Pressable>

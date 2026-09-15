@@ -1,5 +1,7 @@
 import { usePlayer } from "@/lib/bootstrap/PlayerProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
+import { useTournament } from "@/lib/bootstrap/TournamentProvider";
+import { GameHeader } from "@/lib/components/game/GameHeader";
 import { PlayerPickerForm } from "@/lib/components/onboarding/PlayerPickerForm";
 import { PlayerSelectionCard } from "@/lib/components/ui/PlayerSelectionCard";
 import { SelectPicker } from "@/lib/components/ui/SelectPicker";
@@ -8,11 +10,12 @@ import { Player } from "@/lib/models/player";
 import * as SecureStorage from "@/lib/secureStorage";
 import { usePlayerStore } from "@/lib/stores/appwrite/player-store";
 import { ColorScheme } from "@/lib/theme/colors";
-import { inset } from "@/lib/theme/spacing";
-import { type } from "@/lib/theme/typography";
-import { router, useLocalSearchParams } from "expo-router";
+import { inset, space } from "@/lib/theme/spacing";
+import { fonts, type } from "@/lib/theme/typography";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import { Drawer } from "expo-router/drawer";
-import { useMemo, useState } from "react";
+import { DrawerActions } from "expo-router/react-navigation";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
@@ -23,7 +26,9 @@ const SCHEMES: ColorScheme[] = ["light", "dark", "oled", "highContrast"];
 export default function ChooseYourCharacter() {
   const { assignPlayer, player } = usePlayer();
   const { colors, scheme, setScheme } = useTheme();
-  const { t, i18n: i18nHook } = useTranslation(["settings"]);
+  const { type: tournamentType } = useTournament();
+  const { t, i18n: i18nHook } = useTranslation(["settings", "menu"]);
+  const navigation = useNavigation();
   const { from, gameId } = useLocalSearchParams<{
     from?: string;
     gameId?: string;
@@ -47,6 +52,15 @@ export default function ChooseYourCharacter() {
     [t],
   );
 
+  const openMenu = useCallback(
+    () => navigation.dispatch(DrawerActions.openDrawer()),
+    [navigation],
+  );
+
+  const subtitle = player
+    ? `${player.name} · ${player.team.name}`
+    : t(`menu:${tournamentType}`);
+
   const canContinue =
     !playerStoreInitialized ||
     playerStoreCollection.length === 0 ||
@@ -66,31 +80,42 @@ export default function ChooseYourCharacter() {
     }
   }
 
+  const header = (
+    <GameHeader
+      title={t("menu:entries.chooseYourCharacter")}
+      round={null}
+      tableNumber={null}
+      subtitle={subtitle}
+      onMenuPress={openMenu}
+    />
+  );
+
   if (pickerVisible) {
     return (
-      <>
-        <Drawer.Screen
-          options={{ swipeEnabled: false, headerLeft: () => null }}
-        />
-        <PlayerPickerForm
-          onConfirm={handleConfirm}
-          onBack={
-            isSetupFlow ? () => setPickerVisible(false) : () => router.back()
-          }
-        />
-      </>
+      <View style={styles.container}>
+        <Drawer.Screen options={{ swipeEnabled: false }} />
+        {header}
+        <View style={styles.pickerWrap}>
+          <PlayerPickerForm
+            onConfirm={handleConfirm}
+            onBack={
+              isSetupFlow ? () => setPickerVisible(false) : () => router.back()
+            }
+          />
+        </View>
+      </View>
     );
   }
 
   return (
-    <>
-      <Drawer.Screen
-        options={{ swipeEnabled: false, headerLeft: () => null }}
-      />
+    <View style={styles.container}>
+      <Drawer.Screen options={{ swipeEnabled: false }} />
+      {header}
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         <Text style={styles.sectionLabel}>{t("settings:appearance")}</Text>
         <View style={styles.card}>
@@ -120,11 +145,14 @@ export default function ChooseYourCharacter() {
         </View>
 
         <Text style={styles.sectionLabel}>{t("settings:account")}</Text>
-        <PlayerSelectionCard onPress={() => setPickerVisible(true)} />
+        <View style={styles.cardSpaced}>
+          <PlayerSelectionCard onPress={() => setPickerVisible(true)} />
+        </View>
 
         <Pressable
-          style={[
+          style={({ pressed }) => [
             styles.continueBtn,
+            pressed && styles.continueBtnPressed,
             !canContinue && styles.continueBtnDisabled,
           ]}
           onPress={() => router.replace("/(pages)/(user)/schedule")}
@@ -135,40 +163,51 @@ export default function ChooseYourCharacter() {
           </Text>
         </Pressable>
       </ScrollView>
-    </>
+    </View>
   );
 }
 
 function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
   return StyleSheet.create({
-    scroll: {
+    container: {
       flex: 1,
       backgroundColor: colors.background,
     },
+    pickerWrap: {
+      flex: 1,
+      paddingTop: inset.card,
+    },
+    scroll: {
+      flex: 1,
+    },
     content: {
-      padding: inset.screen,
-      paddingTop: inset.screenTop,
-      paddingBottom: inset.screenBottom,
-      gap: 8,
+      paddingHorizontal: inset.card,
+      paddingTop: inset.card,
+      paddingBottom: inset.group,
     },
     sectionLabel: {
       ...type.eyebrow,
       color: colors.textSecondary,
       marginBottom: inset.tight,
       marginLeft: 4,
-      marginTop: 8,
     },
     card: {
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
       borderRadius: 10,
+      marginBottom: inset.card,
       overflow: "hidden",
+    },
+    cardSpaced: {
+      marginBottom: inset.card,
     },
     row: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
+      gap: space[3],
+      minHeight: 44,
       padding: 14,
     },
     rowLabel: {
@@ -176,18 +215,23 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       color: colors.text,
     },
     continueBtn: {
-      marginTop: 16,
+      marginTop: space[2],
+      minHeight: 44,
       backgroundColor: colors.primary,
       borderRadius: 10,
-      padding: 16,
+      padding: 14,
       alignItems: "center",
+      justifyContent: "center",
+    },
+    continueBtnPressed: {
+      opacity: 0.85,
     },
     continueBtnDisabled: {
       opacity: 0.4,
     },
     continueBtnLabel: {
       ...type.body,
-      fontFamily: "DMSans_700Bold",
+      fontFamily: fonts.bodyBold,
       color: colors.onAccent,
     },
   });

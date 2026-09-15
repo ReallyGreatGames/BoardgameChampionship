@@ -23,7 +23,7 @@ query param:
 
 | Export | Signature | Purpose |
 | --- | --- | --- |
-| `ChooseYourCharacter` (default) | `(): JSX.Element` | Screen component for `/choose-your-character`. Renders either `PlayerPickerForm` (picker step) or a settings step (color scheme, language, account, continue), depending on `pickerVisible` and the `from` query param. Also sets `Drawer.Screen` options to suppress swipe/back navigation while active. |
+| `ChooseYourCharacter` (default) | `(): JSX.Element` | Screen component for `/choose-your-character`. Renders either `PlayerPickerForm` (picker step) or a settings step (color scheme, language, account, continue), depending on `pickerVisible` and the `from` query param. Both branches sit under a [`GameHeader`](../../../lib/components/game/GameHeader.md) hero (the route sets `headerShown: false` in [`_layout.tsx`](../../_layout.md)). Also sets `Drawer.Screen` options to disable the drawer swipe gesture while active. |
 
 ### Types
 
@@ -49,14 +49,29 @@ store not yet being initialized, having zero players at all (nothing to
 pick, so don't block), or a player already being assigned — it does *not*
 require re-confirming an already-set player.
 
-`Drawer.Screen` options (`swipeEnabled: false, headerLeft: () => null`) are
-set from *within* the screen component itself (both the picker and the
-settings-step branches) to disable the drawer swipe gesture and hide the
-default back arrow while on this screen — this is expo-router's pattern
-for a screen overriding its own navigation options dynamically.
+`Drawer.Screen` options (`swipeEnabled: false`) are set from *within* the
+screen component itself (both the picker and the settings-step branches)
+to disable the drawer swipe gesture while on this screen — this is
+expo-router's pattern for a screen overriding its own navigation options
+dynamically. The previous `headerLeft: () => null` is gone because the
+navigator header is hidden entirely; the screen renders its own
+[`GameHeader`](../../../lib/components/game/GameHeader.md) instead, titled
+`menu:entries.chooseYourCharacter` with the same "player · team" /
+tournament-name subtitle as [`settings`](../settings.md). Its hamburger
+still opens the drawer via `DrawerActions.openDrawer()`.
+
+The picker branch wraps `PlayerPickerForm` in a `pickerWrap` view
+(`flex: 1`, `paddingTop: inset.card`) so the form's own `BackButton`
+clears the hero the way the back button on settings/info/legal does; the
+form keeps its own horizontal inset. The setup step's layout (section
+labels, cards, `content` padding) mirrors `settings.tsx` so the two
+screens read as one family.
 
 ## Related
 
 - [`lib/bootstrap/PlayerProvider.tsx`](../../../lib/bootstrap/PlayerProvider.md) — `assignPlayer`
+- [`lib/bootstrap/TournamentProvider.tsx`](../../../lib/bootstrap/TournamentProvider.md) — tournament type for the hero subtitle fallback
+- [`lib/components/game/GameHeader.tsx`](../../../lib/components/game/GameHeader.md) — the hero
+- [`app/(pages)/settings.tsx`](../settings.md) — same hero + card layout
 - [`lib/components/onboarding/PlayerPickerForm.tsx`](../../../lib/components/onboarding/PlayerPickerForm.md)
 - [`lib/components/ui/PlayerSelectionCard.tsx`](../../../lib/components/ui/PlayerSelectionCard.md) — the entry point that navigates here

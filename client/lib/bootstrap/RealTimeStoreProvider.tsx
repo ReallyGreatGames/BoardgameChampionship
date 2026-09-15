@@ -70,29 +70,33 @@ export function RealTimeStoreProvider() {
   });
 
   const openTier = useCallback(async (tier: Tier, stores: any[]) => {
+    await loadTier(stores);
+    const previous = tierUnsubscribes.current[tier];
+    tierUnsubscribes.current[tier] = subscribeTier(tierEntries(stores));
+    previous?.();
+  }, []);
+
+  const closeTier = useCallback((tier: Tier) => {
     tierUnsubscribes.current[tier]?.();
     tierUnsubscribes.current[tier] = null;
-    await loadTier(stores);
-    tierUnsubscribes.current[tier] = subscribeTier(tierEntries(stores));
   }, []);
 
   const reconnectAll = useCallback(
     (reason: string) => {
       console.debug(`[realtime] ${reason} — reconnecting all subscriptions`);
-      tierUnsubscribes.current.global?.();
-      tierUnsubscribes.current.user?.();
-      tierUnsubscribes.current.admin?.();
-      tierUnsubscribes.current = { global: null, user: null, admin: null };
-
       openTier("global", globalInits);
       if (isAuthenticated) {
         openTier("user", userInits);
+      } else {
+        closeTier("user");
       }
       if (isAdmin) {
         openTier("admin", adminInits);
+      } else {
+        closeTier("admin");
       }
     },
-    [isAuthenticated, isAdmin, openTier],
+    [isAuthenticated, isAdmin, openTier, closeTier],
   );
 
   useEffect(() => {

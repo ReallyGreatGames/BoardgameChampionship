@@ -194,6 +194,7 @@ const translations = {
     account: "Account",
     currentTeam: "Team",
     currentPlayer: "Player",
+    playerValue: "Player {{n}} · {{name}}",
     changeTeam: "Change Team / Player",
     selectPlayer: "Select Team & Player",
     continueSetup: "Continue",
@@ -213,6 +214,7 @@ const translations = {
     },
     seating: {
       title: "Participants",
+      table: "Table",
       seat: "Player {{seat}}",
     },
     bell: {
@@ -297,12 +299,28 @@ const translations = {
     search: "Search rules...",
     empty: "No rules yet",
     noResults: "No rules match your search",
+    filters: {
+      all: "All",
+      change: "Chg.",
+      addition: "Add.",
+      clarification: "Clar.",
+    },
+    typeShort: {
+      change: "Change",
+      addition: "Addition",
+      clarification: "Clarification",
+    },
+    actions: {
+      edit: "Edit",
+      delete: "Delete",
+    },
     types: {
       change: "Changes",
       addition: "Additions",
       clarification: "Clarifications",
     },
     form: {
+      addShort: "Rule",
       addTitle: "Add Rule",
       editTitle: "Edit Rule",
       typeField: "Type",
@@ -581,6 +599,12 @@ const translations = {
     summaryEmpty: "Not yet entered",
     alreadySigned: "This player has already signed.",
     confirmHint: "By signing, {name} confirms this game's score and placement.",
+    discardConfirm: {
+      title: "Discard signature?",
+      message: "{name}'s signature hasn't been confirmed yet. Switching players will discard it.",
+      confirm: "Discard",
+      cancel: "Cancel",
+    },
   },
   lottery: {
     title: "Lottery",

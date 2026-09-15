@@ -11,6 +11,7 @@ import { useRoundCountdown } from "@/lib/hooks/useRoundCountdown";
 import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
+import { goTo } from "@/lib/utils/navigation";
 
 interface Props {
   match: ParticipantMatch;
@@ -26,7 +27,7 @@ export function NowPlayingCard({ match }: Props) {
 
   const openMatch = () => {
     if (player?.team && player?.$id) {
-      router.push(`/game?gameId=${match.gameId}&from=/`);
+      goTo("/", `/game?gameId=${match.gameId}&from=/`);
       return;
     }
     router.push({

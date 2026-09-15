@@ -4,31 +4,31 @@
 
 ## Purpose
 
-The home screen's welcome view for logged-out users: tournament logo,
-welcome text, a login button, and an FAQ link. Shows a banner if the
-tournament isn't currently active.
+The home screen's welcome view for logged-out users: the branded
+[`WelcomeHero`](WelcomeHero.md) band, a short description, a login button,
+and an FAQ link. Shows a banner if the tournament isn't currently active.
 
 ## Exports
 
-### `WelcomeScreen({ onLoginPress, onFaqPress }: Props): JSX.Element`
+### `WelcomeScreen({ onMenuPress, onLoginPress, onFaqPress }: Props): JSX.Element`
 
 | Prop | Type | Meaning |
 |---|---|---|
+| `onMenuPress` | `() => void` | Forwarded to the hero's menu button (the navigator header is hidden on this route). |
 | `onLoginPress` | `() => void` | Called when the login button is pressed. |
 | `onFaqPress` | `() => void` | Called when the FAQ link text is pressed. |
 
 ## How it works
 
-The displayed logo is picked from a small `LOGOS` map keyed by
-[`useTournament()`](../../bootstrap/TournamentProvider.md)'s `type`
-(`"dmmib"` or `"europemasters"`) — tournament branding swaps automatically
-based on which tournament variant is configured. `logo` is `undefined`
-(and no `<Image>` rendered) both when `tournamentType` is falsy and when it
-doesn't match a key in `LOGOS`.
+Branding (logo, tournament name) lives entirely in `WelcomeHero`; this
+component only owns the body below the band. The login button is the
+shared [`Button`](../ui/Button.md) with a trailing `arrow-forward` icon
+(`iconPosition="right"`), left-aligned rather than full-width.
 
 When [`useTournament()`](../../bootstrap/TournamentProvider.md)'s `active`
-is `false`, an inactive-event banner is shown above the login button —
-this doesn't block login, it's informational only.
+is `false`, an inactive-event banner is shown between the description and
+the button — this doesn't block navigating to login, it's informational
+only; the login screen itself disables the PIN form.
 
 ## Used by
 

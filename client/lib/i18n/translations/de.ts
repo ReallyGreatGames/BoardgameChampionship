@@ -195,6 +195,7 @@ const translations = {
     account: "Konto",
     currentTeam: "Team",
     currentPlayer: "Spieler",
+    playerValue: "Spieler {{n}} · {{name}}",
     changeTeam: "Team / Spieler wechseln",
     selectPlayer: "Team & Spieler auswählen",
     continueSetup: "Weiter",
@@ -214,6 +215,7 @@ const translations = {
     },
     seating: {
       title: "Teilnehmer",
+      table: "Tisch",
       seat: "Spieler {{seat}}",
     },
     bell: {
@@ -297,12 +299,28 @@ const translations = {
     search: "Regeln suchen...",
     empty: "Noch keine Regeln",
     noResults: "Keine Regeln gefunden",
+    filters: {
+      all: "Alle",
+      change: "Änd.",
+      addition: "Erg.",
+      clarification: "Klar.",
+    },
+    typeShort: {
+      change: "Änderung",
+      addition: "Ergänzung",
+      clarification: "Klarstellung",
+    },
+    actions: {
+      edit: "Bearbeiten",
+      delete: "Löschen",
+    },
     types: {
       change: "Änderungen",
       addition: "Ergänzungen",
       clarification: "Klarstellungen",
     },
     form: {
+      addShort: "Regel",
       addTitle: "Regel hinzufügen",
       editTitle: "Regel bearbeiten",
       typeField: "Typ",
@@ -585,6 +603,13 @@ const translations = {
     alreadySigned: "Dieser Spieler hat bereits unterschrieben.",
     confirmHint:
       "Mit der Unterschrift bestätigt {name} Punkte und Platzierung dieses Spiels.",
+    discardConfirm: {
+      title: "Unterschrift verwerfen?",
+      message:
+        "Die Unterschrift von {name} wurde noch nicht bestätigt. Beim Wechsel geht sie verloren.",
+      confirm: "Verwerfen",
+      cancel: "Abbrechen",
+    },
   },
   lottery: {
     title: "Auslosung",

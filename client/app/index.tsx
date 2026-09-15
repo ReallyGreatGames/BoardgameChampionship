@@ -81,13 +81,10 @@ export default function Index() {
     routeDeterministic();
   }, [user, loading, isAdmin, isPinVerified, routeDeterministic]);
 
-  useEffect(() => {
-    navigation.setOptions({ headerShown: !user });
-  }, [navigation, user]);
-
   if (!user) {
     return (
       <WelcomeScreen
+        onMenuPress={openMenu}
         onLoginPress={() => navigate("/(pages)/login")}
         onFaqPress={() => navigate("/(pages)/info")}
       />
