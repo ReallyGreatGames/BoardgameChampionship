@@ -18,7 +18,7 @@ is the single most complex piece of client-side logic in the app.
 | `gameId` | `string \| undefined` | Current game |
 | `tableNumber` | `number \| null` | Current table |
 | `bell` | [`TableBell`](../models/table-bell.md) `\| undefined` | This table's current bell, if any |
-| `pauseMode` | [`TimerPauseMode`](useTimerLocalSettings.md) | `"auto"` (one active seat at a time) or `"manual"` (independent seats) |
+| `pauseMode` | [`TimerPauseMode`](useTimerLocalSettings.md) | `"quickplay"` (one active seat at a time) or `"simultaneous"` (independent seats) |
 
 Returns an object (`PLAYER_COUNT = 4`, so every per-seat array below always
 has exactly 4 entries, indexed by seat):
@@ -343,18 +343,18 @@ elapsed time the table had already accumulated before this device connected.
 
 ### Actions
 
-- **`handlePress(idx)`** — toggles one seat. In `"auto"` pause mode,
+- **`handlePress(idx)`** — toggles one seat. In `"quickplay"` pause mode,
   activating a paused seat force-pauses every other running seat first
-  (classic single-active-player feel); `"manual"` mode skips this. Only
+  (classic single-active-player feel); `"simultaneous"` mode skips this. Only
   seats actually touched by this action get a fresh write (previously,
   before the per-seat document split, every press had to resend all four
   seats since they shared one document).
 - **`toggleAllPause()`** — unconditionally flips every seat between fully
   paused and fully running (used by the explicit pause-all/resume-all
-  control, and also called automatically when switching from `"manual"` to
-  `"auto"` mode while more than one seat is running — auto mode's
-  single-active-seat invariant would otherwise be silently violated until
-  the user happened to press one of the seats).
+  control, and also called automatically when switching from `"simultaneous"`
+  to `"quickplay"` mode while more than one seat is running — quickplay
+  mode's single-active-seat invariant would otherwise be silently violated
+  until the user happened to press one of the seats).
 - **`handlePause()`** — force-pauses every running seat; used when leaving
   the timer screen so nothing keeps ticking unattended.
 - **`handleReset()` / `handleSaveCustomTimer(...)` / `handleUseDefaultTimer()`** —
@@ -370,8 +370,8 @@ elapsed time the table had already accumulated before this device connected.
 ### Auto-ringing the table bell
 
 A dedicated effect tracks each seat's overtime flag independently
-(`bellFiredRef`, per seat, not one shared flag) — `"manual"` mode allows
-several seats to run and time out independently, so one seat's
+(`bellFiredRef`, per seat, not one shared flag) — `"simultaneous"` mode
+allows several seats to run and time out independently, so one seat's
 already-acknowledged bell must not silently swallow a *different* seat's
 fresh timeout. If an unacknowledged bell already exists for the table, no
 duplicate is created; if an already-acknowledged bell exists, it's re-rung

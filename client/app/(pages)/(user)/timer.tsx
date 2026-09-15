@@ -5,9 +5,11 @@ import { TimerControlPanel } from "@/lib/components/timer/TimerControlPanel";
 import { TimerMenu } from "@/lib/components/timer/TimerMenu";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
+import { useRoundCountdown } from "@/lib/hooks/useRoundCountdown";
 import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
 import { useTimerLocalSettings } from "@/lib/hooks/useTimerLocalSettings";
 import { useTimerState } from "@/lib/hooks/useTimerState";
+import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { formatElapsedSeconds } from "@/lib/utils";
 import { goBackTo } from "@/lib/utils/navigation";
@@ -64,6 +66,13 @@ function TimerScreenContent({
     [tableBellStore.collection, tableNumber],
   );
 
+  const scheduleCollection = useScheduleStore((s) => s.collection);
+  const scheduleItem = useMemo(
+    () => scheduleCollection.find((item) => item.gameId === gameId),
+    [scheduleCollection, gameId],
+  );
+  const roundCountdown = useRoundCountdown(scheduleItem);
+
   const { orientationMode, pauseMode, toggleOrientationMode, togglePauseMode } =
     useTimerLocalSettings(gameId);
 
@@ -74,7 +83,6 @@ function TimerScreenContent({
     playersInOvertime,
     playersPaused,
     allPaused,
-    tableElapsedSeconds,
     depleteAnims,
     graceAnims,
     totalSeconds,
@@ -100,7 +108,7 @@ function TimerScreenContent({
   );
 
   const bellActions = useTableBellActions();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuStage, setMenuStage] = useState<"options" | "settings" | null>(null);
   const [customTimerOpen, setCustomTimerOpen] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
@@ -136,7 +144,7 @@ function TimerScreenContent({
           })
         : false;
     if (done) {
-      setMenuOpen(false);
+      setMenuStage(null);
     }
   };
 
@@ -180,44 +188,46 @@ function TimerScreenContent({
 
       <View style={styles.centerOverlay} pointerEvents="box-none">
         <TimerControlPanel
-          onOpenMenu={() => setMenuOpen(true)}
-          orientationMode={orientationMode}
-          onToggleOrientation={toggleOrientationMode}
-          pauseMode={pauseMode}
-          onTogglePauseMode={togglePauseMode}
-          bell={bell}
-          bellElapsedLabel={bell ? formatElapsedSeconds(elapsedSeconds) : undefined}
-          onToggleBell={handleToggleBell}
-          bellLoading={bellActions.isLoading}
-          bellDisabled={bellActions.isLoading || (!!bell && !bellActions.canDelete(bell))}
+          onOpenMenu={() => setMenuStage("options")}
           allPaused={allPaused}
           onToggleAllPause={toggleAllPause}
-          tableElapsedLabel={formatElapsedSeconds(tableElapsedSeconds)}
+          roundCountdown={roundCountdown}
           spamProtectionActive={spamProtectionActive}
         />
       </View>
 
       <TimerMenu
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
+        stage={menuStage}
+        onClose={() => setMenuStage(null)}
+        onOpenSettings={() => setMenuStage("settings")}
+        onBackToOptions={() => setMenuStage("options")}
+        orientationMode={orientationMode}
+        onToggleOrientation={toggleOrientationMode}
+        pauseMode={pauseMode}
+        onTogglePauseMode={togglePauseMode}
+        bell={bell}
+        bellElapsedLabel={bell ? formatElapsedSeconds(elapsedSeconds) : undefined}
+        onToggleBell={handleToggleBell}
+        bellLoading={bellActions.isLoading}
+        bellDisabled={bellActions.isLoading || (!!bell && !bellActions.canDelete(bell))}
         onReset={async () => {
           const ok = await handleReset();
           if (ok) {
-            setMenuOpen(false);
+            setMenuStage(null);
           }
         }}
         onOpenCustomTimer={() => {
-          setMenuOpen(false);
+          setMenuStage(null);
           setCustomTimerOpen(true);
         }}
         onUseDefaultTimer={async () => {
           const ok = await handleUseDefaultTimer();
           if (ok) {
-            setMenuOpen(false);
+            setMenuStage(null);
           }
         }}
         onCloseTimer={() => {
-          setMenuOpen(false);
+          setMenuStage(null);
           handlePause();
           goBackTo(
             from ??
