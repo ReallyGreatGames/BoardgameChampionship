@@ -246,6 +246,7 @@ const translations = {
       },
     },
     colorSetup: {
+      colorOption: "{{player}}: {{color}}",
       title: "Player Colors",
       save: "Save & Open Timer",
       duplicatePlayer: "Each player can only be assigned once",
@@ -356,6 +357,8 @@ const translations = {
     timeRemaining: "Time Left",
     tableOptions: "Table Options",
     timerSettingsTitle: "Timer Settings",
+    reassignColors: "Reassign colors",
+    saveColors: "Save colors",
     backToOptions: "Back to Table Options",
     close: "Close",
     layout: "Layout",

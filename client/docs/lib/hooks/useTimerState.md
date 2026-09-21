@@ -40,6 +40,8 @@ has exactly 4 entries, indexed by seat):
 | `roundSecondsTotal` | `number` | The resolved per-round time budget in seconds; `0` means round-timing is disabled and only pool time counts down. |
 | `direction` | `"up" \| "down"` | Whether elapsed pool time should be *displayed* counting up or down (see [`TimerCell`](../components/timer/TimerCell.md)) — doesn't affect the underlying countdown mechanics. |
 | `playerColors` | `{ active: string; muted: string; elapsed: string; elapsedMuted: string }[]` | Per-seat color set (one entry per seat), from either this device's stored custom colors or the game's default palette. |
+| `savedPlayerColors` | `string[] \| null` | Raw saved hex colors for initializing the color editor; null means the game/default palette is used. |
+| `setPlayerColors` | `(colors: string[] \| null) => void` | Updates colors locally and persists the game/table preference on this device, without modifying clocks or player positions. |
 | `cellSize` | `{ w: number; h: number }` | Last-measured size of a timer cell, updated via `handleCellLayout`; seeded from half the window dimensions before any layout event fires. |
 | `handleCellLayout` | `(e: LayoutChangeEvent) => void` | Layout-event handler wired to a timer cell's `onLayout`; updates `cellSize` from the fired event. |
 | `handlePress` | `(idx: number) => void` | Toggles seat `idx` between paused/running (see Actions below). |

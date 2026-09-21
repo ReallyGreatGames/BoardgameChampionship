@@ -18,6 +18,9 @@ laid out to mirror the physical timer grid.
 | `players` | [`Player[]`](../../models/player.md) | Candidate players to cycle through for each of the 4 seats. |
 | `onSave` | `(playerIds: (string \| null)[], colors: string[]) => Promise<void>` | Called with the 4 seats' assigned player ids (in seat order, `null` for an unassigned seat) and their hex colors; awaited while `saving` is shown. |
 | `customColors` | `string[]` (optional) | Per-slot color overrides (typically the game's own previously-saved colors), indexed the same as the 4 seats; falls back to [`PLAYER_COLORS`](../../utils/timerColors.md) swatches where absent. |
+| `initialColors` | `string[]` (optional) | Current seat assignments, separate from the available palette; falls back per seat to `customColors` or the default palette. |
+| `allowPlayerReassignment` | `boolean` (optional, default `true`) | When false, player names remain fixed and only colors can change. |
+| `title`, `saveLabel` | `string` (optional) | Override the setup title and "Save & Open Timer" label when editing an active timer. |
 
 `Assignment` (internal, not exported): `{ playerId: string | null; color: string }` — one seat's current player/color pairing, held 4-wide in `assignments` state.
 
@@ -44,12 +47,14 @@ one seat.
 
 Colors default to [`PLAYER_COLORS`](../../utils/timerColors.md)'s swatches,
 overridable per-slot via `customColors` (typically the game's own saved
-colors).
+colors). `initialColors` seeds seat selections without changing the available
+palette. Duplicate palette entries render once; swatches expose their player,
+hex color, and selected state for accessibility.
 
 `colorsToUse` is a `useMemo` over `customColors` (falling back per-index to
 `SWATCHES`), recomputed only when `customColors` changes. The `useEffect`
-keyed on `[visible, players, colorsToUse]` re-seeds `assignments` from
-`players`/`colorsToUse` and clears `saving` every time the sheet becomes
+keyed on `[visible, players, colorsToUse, initialColors]` re-seeds `assignments` from
+`players`/`initialColors`/`colorsToUse` and clears `saving` every time the sheet becomes
 visible (or its inputs change while visible) — this is what makes the sheet
 start from a fresh, correct assignment each time it's reopened instead of
 carrying over stale state from a previous open/close cycle, and it also
@@ -58,3 +63,4 @@ recovers `saving` if a previous save left it stuck.
 ## Used by
 
 - [`app/(pages)/(user)/game.tsx`](../../../app/(pages)/(user)/game.md)
+- [`app/(pages)/(user)/timer.tsx`](../../../app/(pages)/(user)/timer.md) — edits colors with fixed player positions

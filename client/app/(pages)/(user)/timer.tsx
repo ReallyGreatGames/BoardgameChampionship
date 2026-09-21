@@ -1,5 +1,6 @@
 import { useScreenOrientation } from "@/lib/bootstrap/ScreenOrientationProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
+import { PlayerColorSetupModal } from "@/lib/components/onboarding/PlayerColorSetupModal";
 import { TimerCell } from "@/lib/components/timer/TimerCell";
 import { TimerControlPanel } from "@/lib/components/timer/TimerControlPanel";
 import { TimerMenu } from "@/lib/components/timer/TimerMenu";
@@ -90,6 +91,8 @@ function TimerScreenContent({
     roundSecondsTotal,
     direction,
     playerColors,
+    savedPlayerColors,
+    setPlayerColors,
     cellSize,
     handleCellLayout,
     handlePress,
@@ -99,17 +102,20 @@ function TimerScreenContent({
     handleUseDefaultTimer,
     toggleAllPause,
     existingTimer,
+    timerSettings,
     spamProtectionActive,
   } = useTimerState({ gameId, tableNumber, bell, pauseMode });
 
-  const playerNames = useMemo(
-    () => existingTimer?.playerPositions?.map((p) => p.name) ?? [],
-    [existingTimer],
+  const players = useMemo(
+    () => existingTimer?.playerPositions ?? [],
+    [existingTimer?.playerPositions],
   );
+  const playerNames = useMemo(() => players.map((p) => p.name), [players]);
 
   const bellActions = useTableBellActions();
   const [menuStage, setMenuStage] = useState<"options" | "settings" | null>(null);
   const [customTimerOpen, setCustomTimerOpen] = useState(false);
+  const [playerColorsOpen, setPlayerColorsOpen] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
@@ -220,6 +226,10 @@ function TimerScreenContent({
           setMenuStage(null);
           setCustomTimerOpen(true);
         }}
+        onOpenPlayerColors={() => {
+          setMenuStage(null);
+          setPlayerColorsOpen(true);
+        }}
         onUseDefaultTimer={async () => {
           const ok = await handleUseDefaultTimer();
           if (ok) {
@@ -242,6 +252,21 @@ function TimerScreenContent({
         initialDirection={direction}
         initialRoundSeconds={roundSecondsTotal}
         onSaveCustomTimer={handleSaveCustomTimer}
+      />
+
+      <PlayerColorSetupModal
+        visible={playerColorsOpen}
+        onClose={() => setPlayerColorsOpen(false)}
+        players={players}
+        customColors={timerSettings?.colors}
+        initialColors={savedPlayerColors ?? undefined}
+        allowPlayerReassignment={false}
+        title={t("reassignColors")}
+        saveLabel={t("saveColors")}
+        onSave={async (_playerIds, hexColors) => {
+          setPlayerColors(hexColors);
+          setPlayerColorsOpen(false);
+        }}
       />
     </View>
   );

@@ -11,7 +11,7 @@ const { act, create } = require('react-test-renderer');
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const root = path.resolve(__dirname, '..');
-const { OrientationLock } = load('node_modules/expo-screen-orientation/src/ScreenOrientation.types.ts', {});
+const { Orientation, OrientationLock } = load('node_modules/expo-screen-orientation/src/ScreenOrientation.types.ts', {});
 
 function load(relativePath, mocks) {
   const filename = path.join(root, relativePath);
@@ -31,12 +31,19 @@ function load(relativePath, mocks) {
   return module.exports;
 }
 
-async function setup(t, { timer = false, sheet = false, delayLocks = false } = {}) {
+async function setup(t, {
+  timer = false, sheet = false, delayLocks = false, holdRotation = false,
+  delayOrientationReads = false,
+} = {}) {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
   let appliedLock = OrientationLock.PORTRAIT_UP;
+  let actualOrientation = Orientation.PORTRAIT_UP;
   let focused = timer;
   const listeners = new Map();
   const appStateListeners = new Set();
+  const orientationListeners = new Set();
   const pendingLocks = [];
+  const pendingOrientationReads = [];
   const locks = [];
   const navigation = {
     isFocused: () => focused,
@@ -48,12 +55,30 @@ async function setup(t, { timer = false, sheet = false, delayLocks = false } = {
     },
   };
   const nativeOrientation = {
+    Orientation,
     OrientationLock,
+    getOrientationAsync: () => {
+      const snapshot = actualOrientation;
+      return delayOrientationReads
+        ? new Promise((resolve) => pendingOrientationReads.push(() => resolve(snapshot)))
+        : Promise.resolve(snapshot);
+    },
     getOrientationLockAsync: async () => appliedLock,
+    addOrientationChangeListener(callback) {
+      orientationListeners.add(callback);
+      return { remove: () => orientationListeners.delete(callback) };
+    },
     lockAsync(lock) {
       locks.push(lock);
       return new Promise((resolve) => {
-        const apply = () => { appliedLock = lock; resolve(); };
+        const apply = () => {
+          appliedLock = lock;
+          if (!holdRotation) {
+            actualOrientation = lock === OrientationLock.LANDSCAPE_RIGHT
+              ? Orientation.LANDSCAPE_RIGHT : Orientation.PORTRAIT_UP;
+          }
+          resolve();
+        };
         if (delayLocks) {
           pendingLocks.push(apply);
         } else {
@@ -108,6 +133,7 @@ async function setup(t, { timer = false, sheet = false, delayLocks = false } = {
     'expo-router': { useFocusEffect, useLocalSearchParams: () => ({ gameId: 'game' }) },
     'expo-keep-awake': { activateKeepAwakeAsync: async () => {}, deactivateKeepAwake() {} },
     'react-i18next': { useTranslation: () => ({ t: (key) => key }) },
+    '@/lib/components/onboarding/PlayerColorSetupModal': { PlayerColorSetupModal: () => null },
     '@/lib/components/timer/TimerCell': { TimerCell: () => null },
     '@/lib/components/timer/TimerControlPanel': { TimerControlPanel: () => null },
     '@/lib/components/timer/TimerMenu': { TimerMenu: () => null },
@@ -140,6 +166,7 @@ async function setup(t, { timer = false, sheet = false, delayLocks = false } = {
   t.after(async () => { await act(async () => { renderer.unmount(); }); });
   return {
     get appliedLock() { return appliedLock; },
+    get actualOrientation() { return actualOrientation; },
     get requestedLock() { return context.orientation; },
     locks,
     async showTimer() {
@@ -161,10 +188,33 @@ async function setup(t, { timer = false, sheet = false, delayLocks = false } = {
           callback('background');
         }
         appliedLock = OrientationLock.PORTRAIT_UP;
+        actualOrientation = Orientation.PORTRAIT_UP;
         for (const callback of appStateListeners) {
           callback('active');
         }
       });
+    },
+    async finishTransition() {
+      holdRotation = false;
+      await act(async () => { t.mock.timers.tick(1000); });
+    },
+    async tick() {
+      await act(async () => { t.mock.timers.tick(250); });
+    },
+    async finishOrientationReads() {
+      delayOrientationReads = false;
+      await act(async () => {
+        for (const resolve of pendingOrientationReads.splice(0)) { resolve(); }
+      });
+    },
+    async rotateToPortrait() {
+      await act(async () => {
+        actualOrientation = Orientation.PORTRAIT_UP;
+        for (const callback of orientationListeners) {
+          callback({ orientationInfo: { orientation: actualOrientation }, orientationLock: appliedLock });
+        }
+      });
+      await act(async () => { t.mock.timers.tick(1000); });
     },
     async focus(next) {
       focused = next;
@@ -234,4 +284,59 @@ test('resuming the app reapplies landscape only while the timer is focused', asy
   await app.focus(false);
   await app.resumeWithPortrait();
   assert.equal(app.appliedLock, OrientationLock.PORTRAIT_UP);
+});
+
+test('timer recovers when a rotation request finishes before the window can rotate', async (t) => {
+  const app = await setup(t, { timer: true, holdRotation: true });
+  assert.equal(app.appliedLock, OrientationLock.LANDSCAPE_RIGHT);
+  assert.equal(app.actualOrientation, Orientation.PORTRAIT_UP);
+  await app.finishTransition();
+  assert.equal(app.actualOrientation, Orientation.LANDSCAPE_RIGHT,
+    'the timer must recover from a portrait window even when the landscape lock was accepted');
+});
+
+test('timer recovers if the native window returns to portrait while still focused', async (t) => {
+  const app = await setup(t, { timer: true });
+  await app.tick();
+  await app.rotateToPortrait();
+  assert.equal(app.actualOrientation, Orientation.LANDSCAPE_RIGHT);
+});
+
+test('a successful rotation stops retrying', async (t) => {
+  const app = await setup(t, { timer: true });
+  const initialRequests = app.locks.length;
+  for (let step = 0; step < 12; step++) { await app.tick(); }
+  assert.equal(app.locks.length, initialRequests);
+  assert.equal(app.actualOrientation, Orientation.LANDSCAPE_RIGHT);
+});
+
+test('leaving the timer cancels a pending landscape retry', async (t) => {
+  const app = await setup(t, { timer: true, holdRotation: true });
+  await app.focus(false);
+  await app.finishTransition();
+  assert.equal(app.appliedLock, OrientationLock.PORTRAIT_UP);
+  assert.equal(app.actualOrientation, Orientation.PORTRAIT_UP);
+});
+
+test('an orientation read that finishes after blur cannot rotate the next screen', async (t) => {
+  const app = await setup(t, { timer: true, holdRotation: true, delayOrientationReads: true });
+  await app.tick();
+  await app.focus(false);
+  const requestsAfterBlur = app.locks.length;
+  await app.finishOrientationReads();
+  assert.equal(app.locks.length, requestsAfterBlur);
+  assert.equal(app.appliedLock, OrientationLock.PORTRAIT_UP);
+});
+
+test('rotation retries are bounded and resume can recover after they are exhausted', async (t) => {
+  const app = await setup(t, { timer: true, holdRotation: true });
+  const initialRequests = app.locks.length;
+  for (let step = 0; step < 20; step++) { await app.tick(); }
+  const requestsAfterRetries = app.locks.length;
+  assert.ok(requestsAfterRetries > initialRequests, 'a portrait window must trigger a retry');
+  for (let step = 0; step < 20; step++) { await app.tick(); }
+  assert.equal(app.locks.length, requestsAfterRetries, 'do not keep issuing native locks forever');
+  await app.finishTransition();
+  await app.resumeWithPortrait();
+  assert.equal(app.actualOrientation, Orientation.LANDSCAPE_RIGHT);
 });

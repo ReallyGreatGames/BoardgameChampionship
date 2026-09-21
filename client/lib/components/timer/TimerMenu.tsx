@@ -17,6 +17,7 @@ type Props = {
   onBackToOptions: () => void;
   onReset: () => Promise<void>;
   onOpenCustomTimer: () => void;
+  onOpenPlayerColors: () => void;
   onUseDefaultTimer: () => Promise<void>;
   onCloseTimer: () => void;
   orientationMode: TimerOrientationMode;
@@ -51,6 +52,7 @@ export function TimerMenu({
   onBackToOptions,
   onReset,
   onOpenCustomTimer,
+  onOpenPlayerColors,
   onUseDefaultTimer,
   onCloseTimer,
   orientationMode,
@@ -195,6 +197,13 @@ export function TimerMenu({
                 icon="timer-outline"
                 variant="secondary"
                 onPress={onUseDefaultTimer}
+                style={styles.gridButton}
+              />
+              <Button
+                label={t("reassignColors")}
+                icon="color-palette-outline"
+                variant="secondary"
+                onPress={onOpenPlayerColors}
                 style={styles.gridButton}
               />
             </View>

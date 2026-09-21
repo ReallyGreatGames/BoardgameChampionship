@@ -24,7 +24,7 @@ essentially all of the actual logic.
 
 ### Internal: `TimerScreenContent({ gameId, tableNumber }: { gameId: string \| undefined; tableNumber: number \| null }): JSX.Element`
 
-The actual timer UI: four `TimerCell`s in a 2x2 grid, a center `TimerControlPanel` overlay (pause/resume-all disc + gear), and a `TimerMenu` two-stage dialog (table options, then timer settings) opened from the gear. Owns local UI state (`menuStage`, `customTimerOpen`, `elapsedSeconds`) and delegates all timer logic to [`useTimerState`](../../../lib/hooks/useTimerState.md).
+The actual timer UI: four `TimerCell`s in a 2x2 grid, a center `TimerControlPanel` overlay (pause/resume-all disc + gear), and a `TimerMenu` two-stage dialog (table options, then timer settings) opened from the gear. Owns local UI state (`menuStage`, `customTimerOpen`, `playerColorsOpen`, `elapsedSeconds`) and delegates all timer logic to [`useTimerState`](../../../lib/hooks/useTimerState.md).
 
 ### `handleToggleBell(): Promise<void>`
 
@@ -74,8 +74,10 @@ the timer is meant to sit flat on a table for the whole game, so the
 device shouldn't rotate away or sleep mid-round.
 
 `ScreenOrientationProvider` serializes native lock requests and reapplies
-the latest lock when the app returns to the foreground. Timer settings
-sheets inherit the screen lock, so closing a sheet cannot restore an old
+the latest lock when the app returns to the foreground. It verifies the
+actual native orientation and retries when a transition leaves the timer
+in portrait, with pending checks cancelled when the requested lock changes.
+Timer settings sheets inherit the screen lock, so closing a sheet cannot restore an old
 portrait lock over the focused timer's landscape request.
 
 ### Seat layout
@@ -94,6 +96,15 @@ re-deriving them from the raw stored fields — `hasCustomTimer` (used inside
 per-table override (including an explicit `0` round time) from a table
 that was never customized; comparing raw numbers/strings against the
 game's default directly can't make that distinction.
+
+### Reassigning colors during play
+
+The timer settings' "Reassign colors" entry opens `PlayerColorSetupModal`
+with the current seat colors and the game's palette. Player positions are
+fixed in this mode. Saving updates the timer cells immediately and stores
+the colors on this device under `playerColors_{gameId}_{tableNumber}` via
+`useTimerState.setPlayerColors`; closing without saving discards the draft.
+Opening, editing, and saving leave the running clocks and pause states intact.
 
 ### Bell elapsed-time ticker
 

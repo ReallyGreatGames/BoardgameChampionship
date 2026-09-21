@@ -246,6 +246,7 @@ const translations = {
       },
     },
     colorSetup: {
+      colorOption: "{{player}}: {{color}}",
       title: "Spielerfarben",
       save: "Speichern & Timer öffnen",
       duplicatePlayer: "Jeder Spieler kann nur einmal zugewiesen werden",
@@ -356,6 +357,8 @@ const translations = {
     timeRemaining: "Restzeit",
     tableOptions: "Tischoptionen",
     timerSettingsTitle: "Einstellungen",
+    reassignColors: "Farben zuordnen",
+    saveColors: "Farben speichern",
     backToOptions: "Zurück zu den Tischoptionen",
     close: "Schließen",
     layout: "Ausrichtung",

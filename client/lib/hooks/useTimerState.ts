@@ -252,7 +252,7 @@ export function useTimerState({
 
   const playerColorsScope =
     gameId && tableNumber !== null ? `${gameId}_${tableNumber}` : undefined;
-  const [storedHexColors] = useSecureStoragePerGame<string[] | null>(
+  const [storedHexColors, setPlayerColors] = useSecureStoragePerGame<string[] | null>(
     "playerColors",
     playerColorsScope,
     null,
@@ -1104,6 +1104,8 @@ export function useTimerState({
     roundSecondsTotal,
     direction,
     playerColors,
+    savedPlayerColors: storedHexColors,
+    setPlayerColors,
     cellSize,
     handleCellLayout,
     handlePress,

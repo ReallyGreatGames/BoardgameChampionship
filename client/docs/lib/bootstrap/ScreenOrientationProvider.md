@@ -54,12 +54,26 @@ removed on unmount. Lock errors are logged and handled so a failed request
 does not stop subsequent requests. The context reflects the last requested
 mode, not necessarily the mode the OS actually applied.
 
+On native platforms, the provider also checks the actual screen orientation
+after requesting a lock. A resolved native request can leave the window in
+portrait while a navigation or modal transition is finishing. If the actual
+orientation does not match the requested lock, it retries at 250 ms intervals
+(up to eight retries). Checks stop once the orientation matches. Native
+orientation changes trigger another check, and returning to the foreground
+resets the retry budget. Web skips these checks.
+
+Changing the requested lock or unmounting cancels pending checks and removes
+the listeners. An orientation read that resolves after cleanup is ignored,
+so leaving the timer cannot let an old landscape retry rotate the next screen.
+
 Shared bottom sheets inherit this lock instead of unlocking and restoring
 an asynchronously captured mode that may belong to a previous screen.
 
 Run `npm run test:timer-orientation` from `client` to exercise the actual
 provider, timer focus lifecycle and bottom sheet with controlled native
-orientation responses.
+orientation responses, including accepted locks that leave the window in
+portrait, later native rotation changes, retry limits, and checks finishing
+after the timer loses focus.
 
 ## Used by
 

@@ -8,7 +8,7 @@ Two-stage overflow dialog for the timer screen, opened from
 [`TimerControlPanel`](TimerControlPanel.md)'s gear button. The "options"
 stage holds layout (orientation) and mode (pause mode) toggles, the table
 bell, exit timer, and is the entry point to the "settings" stage (reset,
-custom timer, revert to default). Also hosts (renders) the
+custom timer, revert to default, reassign colors). Also hosts (renders) the
 [`CustomTimerModal`](CustomTimerModal.md) itself.
 
 ## Exports
@@ -23,6 +23,7 @@ custom timer, revert to default). Also hosts (renders) the
 | `onBackToOptions` | `() => void` | Header back-arrow in the settings stage; returns to `stage === "options"`. |
 | `onReset` | `() => Promise<void>` | "Reset Timer" button handler; resets all seats' clocks. |
 | `onOpenCustomTimer` | `() => void` | "Custom Timer" button handler; opens the hosted [`CustomTimerModal`](CustomTimerModal.md) by setting `customTimerOpen`. |
+| `onOpenPlayerColors` | `() => void` | "Reassign colors" button handler in the settings stage; opens the screen's color editor. |
 | `onUseDefaultTimer` | `() => Promise<void>` | "Default Timer" button handler; discards the table's custom override in favor of the game's default settings. |
 | `onCloseTimer` | `() => void` | "Exit Timer" button handler in the options stage (styled with the `danger` `Button` variant); ends the timer session for the table. |
 | `orientationMode` | `TimerOrientationMode` | `"center"` or `"side"`; selects the layout toggle card's icon/value. |
@@ -63,8 +64,8 @@ Both stages reuse [`Button`](../ui/Button.md) (the same
 `BoardgameChampionship.Button` used elsewhere) for their action rows, laid
 out via the shared `grid`/`gridButton` styles — two per row where there are
 an even number of buttons, a single full-width `Button` on its own `grid`
-row otherwise (the options stage's trailing "Exit Timer" row; the settings
-stage's trailing "Default Timer" row). The options stage's "Exit Timer"
+row otherwise (the options stage's trailing "Exit Timer" row). The
+settings stage pairs "Default Timer" with "Reassign colors". The "Exit Timer"
 button uses the `danger` variant to signal it's a different kind of action
 from the others, and sits at the options level (not behind "Timer
 Settings") since ending the session is a decision independent of the
