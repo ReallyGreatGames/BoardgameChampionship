@@ -35,11 +35,6 @@ export function GameSeatingList({ table }: Props) {
 
   return (
     <View style={styles.section}>
-      <View style={styles.tableHero}>
-        <Text style={styles.tableHeroLabel}>{t("seating.table")}</Text>
-        <Text style={styles.tableHeroNumber}>{table.tableNumber}</Text>
-      </View>
-
       <Text style={styles.eyebrow}>{t("seating.title")}</Text>
 
       <View style={styles.card}>
