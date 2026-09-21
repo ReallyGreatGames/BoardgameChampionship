@@ -73,6 +73,11 @@ game switch.
 the timer is meant to sit flat on a table for the whole game, so the
 device shouldn't rotate away or sleep mid-round.
 
+`ScreenOrientationProvider` serializes native lock requests and reapplies
+the latest lock when the app returns to the foreground. Timer settings
+sheets inherit the screen lock, so closing a sheet cannot restore an old
+portrait lock over the focused timer's landscape request.
+
 ### Seat layout
 
 `seatOrder = [[0,1],[3,2]]` mirrors
