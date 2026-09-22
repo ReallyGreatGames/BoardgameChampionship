@@ -19,7 +19,8 @@ output directly:
 | Prop | Type | Meaning |
 | --- | --- | --- |
 | `idx` | `number` | This seat's index (0–3); drives name fallback, overlay-anchor side, and center-mode rotation. |
-| `playerName` | `string \| undefined` | Display name; falls back to `P${idx + 1}` when unset. |
+| `playerName` | `string \| undefined` | Display name; falls back to `P${idx + 1}` when unset. Shown as a small line under the team name. |
+| `teamName` | `string \| undefined` | This seat's team name (via [`teamName()`](../../utils.md)). The primary, larger line in the name badge — a player finding their table cares which team is at it more than which specific name is on the badge; not rendered when falsy. Centered and wraps up to 2 lines (`numberOfLines={2}`) since team names can be long; the badge itself caps at `maxWidth: "90%"` of the cell so long/wrapped names can't push past the cell's edge. |
 | `timeLeft` | `number` | Signed seconds remaining in the pool. Ticks down uniformly regardless of `direction` and can go negative once depleted. |
 | `totalSeconds` | `number` | Total pool duration in seconds, used to derive the "up" display. |
 | `direction` | `"up" \| "down"` | Whether the pool display counts up from 0 (elapsed) or down from `totalSeconds` (remaining). |

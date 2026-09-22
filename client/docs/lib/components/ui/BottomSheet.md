@@ -26,25 +26,15 @@ scrollable body, footer) used by every modal in the app.
 
 ## How it works
 
-### Orientation lock effect
+### Orientation
 
-```
-useEffect(() => {
-  if (visible) { ...lock to DEFAULT... }
-  else if (prevOrientationLock.current !== null) { ...restore... }
-}, [visible]);
-```
-
-While `visible`, temporarily overrides the screen's orientation lock to
-`OrientationLock.DEFAULT` (allowing rotation), restoring whatever lock was
-active beforehand once closed — so a sheet opened on a rotatable screen
-(e.g. the timer) doesn't fight the screen's own orientation handling. The
-previous lock is read asynchronously via `getOrientationLockAsync()` and
-stashed in `prevOrientationLock` (a ref, not state, since it doesn't need to
-trigger a re-render); the restore branch only runs if a previous lock was
-actually captured, so closing a sheet that never became visible is a no-op.
-Both `lockAsync` calls swallow errors with `.catch(() => {})` since locking
-can fail on devices/platforms that don't support the requested orientation.
+Inherits the active screen's orientation lock from
+[`ScreenOrientationProvider`](../../bootstrap/ScreenOrientationProvider.md).
+The native `Modal` supports portrait and landscape, so timer settings stay
+in landscape and sheets on other screens stay in portrait. Opening or
+closing a sheet does not issue orientation requests: restoring a saved
+portrait lock after navigating to the timer could otherwise override its
+landscape request.
 
 ## Used by
 

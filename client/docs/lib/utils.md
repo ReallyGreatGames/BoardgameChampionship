@@ -141,7 +141,7 @@ dashboard so the two can't drift apart.
 [`ParticipantHero.tsx`](components/home/ParticipantHero.md) (`teamName`),
 [`useParticipantOverview.ts`](hooks/useParticipantOverview.md) (`resolveGameId`),
 [`useRoundCountdown.ts`](hooks/useRoundCountdown.md) (`formatElapsedSeconds`, `computeTableElapsedSeconds`),
-[`TimerCell.tsx`](components/timer/TimerCell.md),
+[`TimerCell.tsx`](components/timer/TimerCell.md) (`teamName`),
 [`RankingsTab.tsx`](components/admin/RankingsTab.md),
 [`lib/import/*`](import/README.md) (player-, table-import-service, wipe-service),
 [`lib/stores/appwrite/timer-seat-store.ts`](stores/appwrite/timer-seat-store.md),

@@ -13,7 +13,7 @@ pause mode are a seating/device-setup decision, not shared tournament state.
 | Export | Type | Meaning |
 |---|---|---|
 | `TimerOrientationMode` | Type | `"center" \| "side"` |
-| `TimerPauseMode` | Type | `"auto" \| "manual"` |
+| `TimerPauseMode` | Type | `"quickplay" \| "simultaneous"` |
 | `useTimerLocalSettings(gameId)` | Hook | See below |
 
 ### `useTimerLocalSettings(gameId: string | undefined)`
@@ -25,11 +25,11 @@ Returns:
 | Property | Type | Meaning |
 |---|---|---|
 | `orientationMode` | `TimerOrientationMode` (`"center" \| "side"`) | Whether timer cells are laid out facing the center of the table or along its side; defaults to `"center"`. |
-| `pauseMode` | `TimerPauseMode` (`"auto" \| "manual"`) | Whether tapping a seat auto-pauses the previously active seat or requires an explicit manual pause; defaults to `"auto"`. |
+| `pauseMode` | `TimerPauseMode` (`"quickplay" \| "simultaneous"`) | Whether tapping a seat auto-pauses the previously active seat (`"quickplay"`) or every seat runs independently and pausing is explicit per seat (`"simultaneous"`); defaults to `"quickplay"`. |
 | `setOrientationMode` | `(next: TimerOrientationMode) => void` | Sets and persists `orientationMode` for this `gameId`. |
 | `setPauseMode` | `(next: TimerPauseMode) => void` | Sets and persists `pauseMode` for this `gameId`. |
 | `toggleOrientationMode` | `() => void` | Flips `orientationMode` between `"center"` and `"side"`. |
-| `togglePauseMode` | `() => void` | Flips `pauseMode` between `"auto"` and `"manual"`. |
+| `togglePauseMode` | `() => void` | Flips `pauseMode` between `"quickplay"` and `"simultaneous"`. |
 
 ## How it works
 
@@ -39,7 +39,7 @@ Backed by two independent
 player-color storage in [`useTimerState`](useTimerState.md). `toggle*`
 helpers flip between the two possible values of each mode.
 
-`pauseMode` (`"auto"` vs `"manual"`) directly controls the
+`pauseMode` (`"quickplay"` vs `"simultaneous"`) directly controls the
 single-active-seat behavior implemented in `useTimerState`'s `handlePress`
 and the mode-switch effect there.
 

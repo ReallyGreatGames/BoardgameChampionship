@@ -1,12 +1,12 @@
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
-import { Platform } from "react-native";
 import { Permission, Role } from "react-native-appwrite";
 import { useAuth } from "../auth";
-import { ID, LOTTERY_BUCKET_ID, storage } from "../appwrite";
+import { client, ID, LOTTERY_BUCKET_ID, storage } from "../appwrite";
 import { DialogOptions, useDialog } from "@/lib/components/ui/Dialog";
 import { useLotteryStore } from "../stores/appwrite/lottery-store";
 import { buildLotteryFileName } from "../utils/lottery";
+import { uploadLotteryPhoto } from "../utils/upload-lottery-photo";
 
 const IMAGE_QUALITY = 0.6;
 
@@ -15,26 +15,6 @@ function extensionFor(mimeType: string | null | undefined): string {
     return "png";
   }
   return "jpg";
-}
-
-async function toUploadableFile(
-  asset: ImagePicker.ImagePickerAsset,
-  name: string,
-): Promise<any> {
-  const type = asset.mimeType ?? "image/jpeg";
-
-  if (Platform.OS === "web") {
-    const response = await fetch(asset.uri);
-    const blob = await response.blob();
-    return new globalThis.File([blob], name, { type });
-  }
-
-  return {
-    name,
-    type,
-    size: asset.fileSize ?? 0,
-    uri: asset.uri,
-  };
 }
 
 export function useLotteryActions() {
@@ -47,17 +27,11 @@ export function useLotteryActions() {
     setUploading(true);
     try {
       const name = buildLotteryFileName(gameId, extensionFor(asset.mimeType));
-      const file = await toUploadableFile(asset, name);
-      await storage.createFile({
-        bucketId: LOTTERY_BUCKET_ID,
-        fileId: ID.unique(),
-        file,
-        permissions: [
-          Permission.read(Role.any()),
-          Permission.update(Role.label("admin")),
-          Permission.delete(Role.label("admin")),
-        ],
-      });
+      await uploadLotteryPhoto(client, LOTTERY_BUCKET_ID, ID.unique(), asset, name, [
+        Permission.read(Role.any()),
+        Permission.update(Role.label("admin")),
+        Permission.delete(Role.label("admin")),
+      ]);
       await useLotteryStore.getState().init();
     } catch (e: any) {
       await confirm({

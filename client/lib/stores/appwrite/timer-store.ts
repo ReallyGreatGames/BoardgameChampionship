@@ -30,7 +30,7 @@ export const useTimerStore = create<TimerState>((set) => {
       await fetchCollection<Timer, TimerState>(
         key,
         set,
-        [Query.select(["*", "playerPositions.*"])],
+        [Query.select(["*", "playerPositions.*", "playerPositions.team.*"])],
       );
     },
 

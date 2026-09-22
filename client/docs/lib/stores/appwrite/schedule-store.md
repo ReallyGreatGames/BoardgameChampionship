@@ -31,4 +31,4 @@ Zustand store for the `schedule` collection ([`Schedule`](../../models/schedule.
 - [`lib/components/ui/PlayerSelectionCard.tsx`](../../components/ui/PlayerSelectionCard.md)
 - [`lib/hooks/useParticipantOverview.ts`](../../hooks/useParticipantOverview.md)
 - [`lib/bootstrap/RealTimeStoreProvider.tsx`](../../bootstrap/RealTimeStoreProvider.md)
-- Screens: [`game.tsx`](../../../app/(pages)/(user)/game.md), [`results.tsx`](../../../app/(pages)/(user)/results.md), [`app/index.tsx`](../../../app/index.md)
+- Screens: [`game.tsx`](../../../app/(pages)/(user)/game.md), [`results.tsx`](../../../app/(pages)/(user)/results.md), [`app/index.tsx`](../../../app/index.md), [`timer.tsx`](../../../app/(pages)/(user)/timer.md) — looks up the `Schedule` item matching the current `gameId` for the round-countdown pill

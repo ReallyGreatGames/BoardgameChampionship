@@ -11,6 +11,7 @@ helpers in [`lib/utils.ts`](../utils.md)).
 |---|---|
 | [navigation.md](navigation.md) | Back-navigation helpers: record where each screen was opened from and return there |
 | [lottery.md](lottery.md) | Filename convention & parsing for lottery photos in the storage bucket |
+| [upload-lottery-photo.md](upload-lottery-photo.md) | Chunked lottery-photo upload straight over the Appwrite REST endpoint |
 | [lottery-draw.md](lottery-draw.md) | Pure weighted-draw algorithm for options lotteries |
 | [options-lottery.md](options-lottery.md) | Raw-row ↔ derived-shape conversion and lookups for options lotteries |
 | [placements.md](placements.md) | Validation of placements and computation of tournament points/team rankings |

@@ -18,7 +18,7 @@ is the single most complex piece of client-side logic in the app.
 | `gameId` | `string \| undefined` | Current game |
 | `tableNumber` | `number \| null` | Current table |
 | `bell` | [`TableBell`](../models/table-bell.md) `\| undefined` | This table's current bell, if any |
-| `pauseMode` | [`TimerPauseMode`](useTimerLocalSettings.md) | `"auto"` (one active seat at a time) or `"manual"` (independent seats) |
+| `pauseMode` | [`TimerPauseMode`](useTimerLocalSettings.md) | `"quickplay"` (one active seat at a time) or `"simultaneous"` (independent seats) |
 
 Returns an object (`PLAYER_COUNT = 4`, so every per-seat array below always
 has exactly 4 entries, indexed by seat):
@@ -32,7 +32,6 @@ has exactly 4 entries, indexed by seat):
 | `playersPaused` | `boolean[]` | Whether each seat is currently paused (not ticking). |
 | `allPaused` | `boolean` | `playersPaused.every(Boolean)` — true only when every seat is paused. |
 | `spamProtectionActive` | `boolean` | `true` while input is being throttled after a burst of rapid presses (see How it works). |
-| `tableElapsedSeconds` | `number` | Total wall-clock seconds the table has been "active" (at least one seat running), computed from the table doc's accumulated-ms/resumed-at fields plus any currently-live running span. |
 | `depleteAnims` | `React.RefObject<Animated.Value[]>` | One `Animated.Value` per seat (0 → 1) driving the pool-time depletion bar; mutated directly, not through React state. |
 | `graceAnims` | `React.RefObject<Animated.Value[]>` | One `Animated.Value` per seat (0 → 1) driving the round-reset grace-period bar; see the grace-bar sync section below. |
 | `totalSeconds` | `number` | The full per-seat pool-time budget in seconds (`effectiveDuration` minutes split evenly across `PLAYER_COUNT`, or `DEFAULT_SECONDS` if no duration is configured). |
@@ -40,6 +39,8 @@ has exactly 4 entries, indexed by seat):
 | `roundSecondsTotal` | `number` | The resolved per-round time budget in seconds; `0` means round-timing is disabled and only pool time counts down. |
 | `direction` | `"up" \| "down"` | Whether elapsed pool time should be *displayed* counting up or down (see [`TimerCell`](../components/timer/TimerCell.md)) — doesn't affect the underlying countdown mechanics. |
 | `playerColors` | `{ active: string; muted: string; elapsed: string; elapsedMuted: string }[]` | Per-seat color set (one entry per seat), from either this device's stored custom colors or the game's default palette. |
+| `savedPlayerColors` | `string[] \| null` | Raw saved hex colors for initializing the color editor; null means the game/default palette is used. |
+| `setPlayerColors` | `(colors: string[] \| null) => void` | Updates colors locally and persists the game/table preference on this device, without modifying clocks or player positions. |
 | `cellSize` | `{ w: number; h: number }` | Last-measured size of a timer cell, updated via `handleCellLayout`; seeded from half the window dimensions before any layout event fires. |
 | `handleCellLayout` | `(e: LayoutChangeEvent) => void` | Layout-event handler wired to a timer cell's `onLayout`; updates `cellSize` from the fired event. |
 | `handlePress` | `(idx: number) => void` | Toggles seat `idx` between paused/running (see Actions below). |
@@ -343,18 +344,18 @@ elapsed time the table had already accumulated before this device connected.
 
 ### Actions
 
-- **`handlePress(idx)`** — toggles one seat. In `"auto"` pause mode,
+- **`handlePress(idx)`** — toggles one seat. In `"quickplay"` pause mode,
   activating a paused seat force-pauses every other running seat first
-  (classic single-active-player feel); `"manual"` mode skips this. Only
+  (classic single-active-player feel); `"simultaneous"` mode skips this. Only
   seats actually touched by this action get a fresh write (previously,
   before the per-seat document split, every press had to resend all four
   seats since they shared one document).
 - **`toggleAllPause()`** — unconditionally flips every seat between fully
   paused and fully running (used by the explicit pause-all/resume-all
-  control, and also called automatically when switching from `"manual"` to
-  `"auto"` mode while more than one seat is running — auto mode's
-  single-active-seat invariant would otherwise be silently violated until
-  the user happened to press one of the seats).
+  control, and also called automatically when switching from `"simultaneous"`
+  to `"quickplay"` mode while more than one seat is running — quickplay
+  mode's single-active-seat invariant would otherwise be silently violated
+  until the user happened to press one of the seats).
 - **`handlePause()`** — force-pauses every running seat; used when leaving
   the timer screen so nothing keeps ticking unattended.
 - **`handleReset()` / `handleSaveCustomTimer(...)` / `handleUseDefaultTimer()`** —
@@ -370,8 +371,8 @@ elapsed time the table had already accumulated before this device connected.
 ### Auto-ringing the table bell
 
 A dedicated effect tracks each seat's overtime flag independently
-(`bellFiredRef`, per seat, not one shared flag) — `"manual"` mode allows
-several seats to run and time out independently, so one seat's
+(`bellFiredRef`, per seat, not one shared flag) — `"simultaneous"` mode
+allows several seats to run and time out independently, so one seat's
 already-acknowledged bell must not silently swallow a *different* seat's
 fresh timeout. If an unacknowledged bell already exists for the table, no
 duplicate is created; if an already-acknowledged bell exists, it's re-rung
@@ -413,7 +414,7 @@ manually. Auto-ringing that case is what made a dismissed bell come back.
 
 ## Related
 
-- [`lib/utils.ts`](../utils.md) — `resolveEffectiveTimer`, `reconcileRoundAndPool`, `computeTableElapsedSeconds`
+- [`lib/utils.ts`](../utils.md) — `resolveEffectiveTimer`, `reconcileRoundAndPool`
 - [`lib/utils/timerColors.ts`](../utils/timerColors.md)
 - [`lib/hooks/useSecureStoragePerGame.ts`](useSecureStoragePerGame.md) — player-color storage
 - [`lib/hooks/useTimerLocalSettings.ts`](useTimerLocalSettings.md) — supplies `pauseMode`

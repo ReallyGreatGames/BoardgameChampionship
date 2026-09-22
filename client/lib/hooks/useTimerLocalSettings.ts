@@ -2,15 +2,15 @@ import { useCallback } from "react";
 import { useSecureStoragePerGame } from "./useSecureStoragePerGame";
 
 export type TimerOrientationMode = "center" | "side";
-export type TimerPauseMode = "auto" | "manual";
+export type TimerPauseMode = "quickplay" | "simultaneous";
 
 const DEFAULT_ORIENTATION: TimerOrientationMode = "center";
-const DEFAULT_PAUSE_MODE: TimerPauseMode = "auto";
+const DEFAULT_PAUSE_MODE: TimerPauseMode = "quickplay";
 
 const parseOrientation = (v: string): TimerOrientationMode =>
   v === "side" ? "side" : DEFAULT_ORIENTATION;
 const parsePauseMode = (v: string): TimerPauseMode =>
-  v === "manual" ? "manual" : DEFAULT_PAUSE_MODE;
+  v === "simultaneous" ? "simultaneous" : DEFAULT_PAUSE_MODE;
 
 export function useTimerLocalSettings(gameId: string | undefined) {
   const [orientationMode, setOrientationMode] = useSecureStoragePerGame(
@@ -31,7 +31,7 @@ export function useTimerLocalSettings(gameId: string | undefined) {
   }, [orientationMode, setOrientationMode]);
 
   const togglePauseMode = useCallback(() => {
-    setPauseMode(pauseMode === "auto" ? "manual" : "auto");
+    setPauseMode(pauseMode === "quickplay" ? "simultaneous" : "quickplay");
   }, [pauseMode, setPauseMode]);
 
   return {

@@ -24,7 +24,7 @@ and two local loading flags (`uploading`, `deletingId`). Returns:
 | `remove` | `(fileId: string, confirmOpts?: DialogOptions) => Promise<boolean>` | No-op returning `false` if the caller isn't admin. Otherwise optionally confirms, deletes the file from the `lottery` bucket, refreshes the store, and returns `true`; on any error shows an error dialog and returns `false`. Tracks `deletingId` for the duration. |
 | `isDeleting` | `(fileId: string) => boolean` | `true` if `fileId` is the specific file currently being deleted. |
 
-The internal (unexported) `uploadAsset(gameId: string, asset: ImagePicker.ImagePickerAsset): Promise<void>` helper drives both `takePhoto` and `pickFromLibrary`: it sets `uploading`, builds the filename, converts the asset, uploads it, refreshes the lottery store, and shows an error dialog on failure — see How it works below for the upload/permission/race-condition details.
+The internal (unexported) `uploadAsset(gameId: string, asset: ImagePicker.ImagePickerAsset): Promise<void>` helper drives both `takePhoto` and `pickFromLibrary`: it sets `uploading`, builds the filename, uploads the asset via [`uploadLotteryPhoto`](../utils/upload-lottery-photo.md), refreshes the lottery store, and shows an error dialog on failure — see How it works below for the upload/permission/race-condition details.
 
 ## How it works
 
@@ -33,15 +33,17 @@ permission, launch the camera/library picker, and on success hand the
 result to `uploadAsset`.
 
 `uploadAsset` builds the filename via
-[`buildLotteryFileName`](../utils/lottery.md), converts the picked asset
-into an uploadable `File`/blob (`toUploadableFile` — web builds an actual
-`File` from a `fetch`+`blob()` round-trip; native passes the asset's `uri`
-directly, since Appwrite's SDK accepts that shape there), and uploads it
-with `Permission.read(Role.any())` — **not** scoped to logged-in users,
-because native image loading (`expo-image` on iOS/Android) fetches the
-file URL directly with no Appwrite session attached, so a `Role.users()`
-restriction would break loading the photo back. Update/delete permissions
-stay restricted to the `admin` label.
+[`buildLotteryFileName`](../utils/lottery.md) and uploads the picked asset
+with [`uploadLotteryPhoto`](../utils/upload-lottery-photo.md) — a chunked
+upload against the Appwrite REST endpoint directly via `client.call`,
+rather than building a `File`/blob and calling `storage.createFile`
+(Appwrite's own SDK method rejects the plain `{ name, type, size, uri }`
+shape native platforms need, and silently mishandles files over 5MB on
+web) — with `Permission.read(Role.any())` — **not** scoped to logged-in
+users, because native image loading (`expo-image` on iOS/Android) fetches
+the file URL directly with no Appwrite session attached, so a
+`Role.users()` restriction would break loading the photo back. Update/delete
+permissions stay restricted to the `admin` label.
 
 After a successful upload or delete, it explicitly calls
 `useLotteryStore.getState().init()` to refetch the bucket listing. This is
@@ -63,3 +65,4 @@ that race.
 
 - [`lib/stores/appwrite/lottery-store.ts`](../stores/appwrite/lottery-store.md)
 - [`lib/utils/lottery.ts`](../utils/lottery.md)
+- [`lib/utils/upload-lottery-photo.ts`](../utils/upload-lottery-photo.md) — the chunked upload implementation

@@ -5,7 +5,6 @@ import { useTimerSeatStore } from "@/lib/stores/appwrite/timer-seat-store";
 import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-store";
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
 import {
-  computeTableElapsedSeconds,
   reconcileRoundAndPool,
   resolveEffectiveTimer,
   resolveGameId,
@@ -252,7 +251,7 @@ export function useTimerState({
 
   const playerColorsScope =
     gameId && tableNumber !== null ? `${gameId}_${tableNumber}` : undefined;
-  const [storedHexColors] = useSecureStoragePerGame<string[] | null>(
+  const [storedHexColors, setPlayerColors] = useSecureStoragePerGame<string[] | null>(
     "playerColors",
     playerColorsScope,
     null,
@@ -834,7 +833,7 @@ export function useTimerState({
     const nextCorrectedLastPaused = [...correctedLastPausedAtRef.current];
     const touchedSeats = new Set<number>([idx]);
 
-    if (pauseMode === "auto" && wasPaused) {
+    if (pauseMode === "quickplay" && wasPaused) {
       for (let i = 0; i < PLAYER_COUNT; i++) {
         if (i !== idx && !nextPaused[i]) {
           nextPaused[i] = true;
@@ -959,7 +958,7 @@ export function useTimerState({
   useEffect(() => {
     const prev = prevPauseModeRef.current;
     prevPauseModeRef.current = pauseMode;
-    if (prev === pauseMode || pauseMode !== "auto") {
+    if (prev === pauseMode || pauseMode !== "quickplay") {
       return;
     }
     if (playersPausedRef.current.filter((p) => !p).length <= 1) {
@@ -1082,12 +1081,6 @@ export function useTimerState({
     });
   }, [persistSeatPatch, applyTableActiveTransition, pauseSeatLocally]);
 
-  const tableElapsedSeconds = computeTableElapsedSeconds(
-    tableActiveAccumulatedMsRef.current,
-    tableActiveResumedAtRef.current,
-    Date.now(),
-  );
-
   return {
     times: tickState.times,
     roundTimesLeft: tickState.roundTimesLeft,
@@ -1096,7 +1089,6 @@ export function useTimerState({
     playersPaused,
     allPaused,
     spamProtectionActive,
-    tableElapsedSeconds,
     depleteAnims,
     graceAnims,
     totalSeconds,
@@ -1104,6 +1096,8 @@ export function useTimerState({
     roundSecondsTotal,
     direction,
     playerColors,
+    savedPlayerColors: storedHexColors,
+    setPlayerColors,
     cellSize,
     handleCellLayout,
     handlePress,

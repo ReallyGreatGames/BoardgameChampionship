@@ -34,6 +34,7 @@ type PlayerColor = ReturnType<typeof buildPlayerColor>;
 type Props = {
   idx: number;
   playerName: string | undefined;
+  teamName: string | undefined;
   timeLeft: number;
   totalSeconds: number;
   direction: "up" | "down";
@@ -54,6 +55,7 @@ type Props = {
 export function TimerCell({
   idx,
   playerName,
+  teamName,
   timeLeft,
   totalSeconds,
   direction,
@@ -173,11 +175,34 @@ export function TimerCell({
         />
         <View style={[styles.cellContent, { transform: [{ rotate: rotation }] }]}>
           <View style={styles.nameBadge}>
+            {!!teamName && (
+              <Text
+                style={[
+                  type.eyebrow,
+                  {
+                    color: NAME_TEXT_COLOR,
+                    fontSize: 14,
+                    lineHeight: 18,
+                    textAlign: "center",
+                  },
+                ]}
+                numberOfLines={2}
+              >
+                {teamName}
+              </Text>
+            )}
             <Text
               style={[
                 type.eyebrow,
-                { color: NAME_TEXT_COLOR, fontSize: 14, lineHeight: 20 },
+                {
+                  color: NAME_TEXT_COLOR,
+                  fontSize: 10,
+                  lineHeight: 12,
+                  opacity: 0.75,
+                  textAlign: "center",
+                },
               ]}
+              numberOfLines={1}
             >
               {playerName ?? `P${idx + 1}`}
             </Text>
@@ -272,6 +297,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   nameBadge: {
+    maxWidth: "90%",
     backgroundColor: BADGE_BG,
     borderWidth: 1,
     borderColor: BADGE_BORDER,

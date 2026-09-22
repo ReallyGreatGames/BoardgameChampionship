@@ -1,15 +1,18 @@
 import { useScreenOrientation } from "@/lib/bootstrap/ScreenOrientationProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
+import { PlayerColorSetupModal } from "@/lib/components/onboarding/PlayerColorSetupModal";
 import { TimerCell } from "@/lib/components/timer/TimerCell";
 import { TimerControlPanel } from "@/lib/components/timer/TimerControlPanel";
 import { TimerMenu } from "@/lib/components/timer/TimerMenu";
 import { usePlayerTable } from "@/lib/hooks/usePlayerTable";
 import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
+import { useRoundCountdown } from "@/lib/hooks/useRoundCountdown";
 import { useTableBellActions } from "@/lib/hooks/useTableBellActions";
 import { useTimerLocalSettings } from "@/lib/hooks/useTimerLocalSettings";
 import { useTimerState } from "@/lib/hooks/useTimerState";
+import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
-import { formatElapsedSeconds } from "@/lib/utils";
+import { formatElapsedSeconds, teamName } from "@/lib/utils";
 import { goBackTo } from "@/lib/utils/navigation";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -64,6 +67,16 @@ function TimerScreenContent({
     [tableBellStore.collection, tableNumber],
   );
 
+  const scheduleCollection = useScheduleStore((s) => s.collection);
+  const scheduleItem = useMemo(
+    () =>
+      gameId
+        ? scheduleCollection.find((item) => item.gameId === gameId)
+        : undefined,
+    [scheduleCollection, gameId],
+  );
+  const roundCountdown = useRoundCountdown(scheduleItem);
+
   const { orientationMode, pauseMode, toggleOrientationMode, togglePauseMode } =
     useTimerLocalSettings(gameId);
 
@@ -74,7 +87,6 @@ function TimerScreenContent({
     playersInOvertime,
     playersPaused,
     allPaused,
-    tableElapsedSeconds,
     depleteAnims,
     graceAnims,
     totalSeconds,
@@ -82,6 +94,8 @@ function TimerScreenContent({
     roundSecondsTotal,
     direction,
     playerColors,
+    savedPlayerColors,
+    setPlayerColors,
     cellSize,
     handleCellLayout,
     handlePress,
@@ -91,17 +105,21 @@ function TimerScreenContent({
     handleUseDefaultTimer,
     toggleAllPause,
     existingTimer,
+    timerSettings,
     spamProtectionActive,
   } = useTimerState({ gameId, tableNumber, bell, pauseMode });
 
-  const playerNames = useMemo(
-    () => existingTimer?.playerPositions?.map((p) => p.name) ?? [],
-    [existingTimer],
+  const players = useMemo(
+    () => existingTimer?.playerPositions ?? [],
+    [existingTimer?.playerPositions],
   );
+  const playerNames = useMemo(() => players.map((p) => p.name), [players]);
+  const playerTeams = useMemo(() => players.map((p) => teamName(p)), [players]);
 
   const bellActions = useTableBellActions();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuStage, setMenuStage] = useState<"options" | "settings" | null>(null);
   const [customTimerOpen, setCustomTimerOpen] = useState(false);
+  const [playerColorsOpen, setPlayerColorsOpen] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
@@ -136,7 +154,7 @@ function TimerScreenContent({
           })
         : false;
     if (done) {
-      setMenuOpen(false);
+      setMenuStage(null);
     }
   };
 
@@ -157,6 +175,7 @@ function TimerScreenContent({
                 key={idx}
                 idx={idx}
                 playerName={playerNames[idx]}
+                teamName={playerTeams[idx]}
                 timeLeft={times[idx]}
                 totalSeconds={totalSeconds}
                 direction={direction}
@@ -180,44 +199,51 @@ function TimerScreenContent({
 
       <View style={styles.centerOverlay} pointerEvents="box-none">
         <TimerControlPanel
-          onOpenMenu={() => setMenuOpen(true)}
-          orientationMode={orientationMode}
-          onToggleOrientation={toggleOrientationMode}
-          pauseMode={pauseMode}
-          onTogglePauseMode={togglePauseMode}
-          bell={bell}
-          bellElapsedLabel={bell ? formatElapsedSeconds(elapsedSeconds) : undefined}
-          onToggleBell={handleToggleBell}
-          bellLoading={bellActions.isLoading}
-          bellDisabled={bellActions.isLoading || (!!bell && !bellActions.canDelete(bell))}
+          onOpenMenu={() => setMenuStage("options")}
           allPaused={allPaused}
           onToggleAllPause={toggleAllPause}
-          tableElapsedLabel={formatElapsedSeconds(tableElapsedSeconds)}
+          roundCountdown={roundCountdown}
           spamProtectionActive={spamProtectionActive}
+          bell={bell}
         />
       </View>
 
       <TimerMenu
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
+        stage={menuStage}
+        onClose={() => setMenuStage(null)}
+        onOpenSettings={() => setMenuStage("settings")}
+        onBackToOptions={() => setMenuStage("options")}
+        orientationMode={orientationMode}
+        onToggleOrientation={toggleOrientationMode}
+        pauseMode={pauseMode}
+        onTogglePauseMode={togglePauseMode}
+        bell={bell}
+        bellElapsedLabel={bell ? formatElapsedSeconds(elapsedSeconds) : undefined}
+        onToggleBell={handleToggleBell}
+        bellLoading={bellActions.isLoading}
+        bellDisabled={bellActions.isLoading || (!!bell && !bellActions.canDelete(bell))}
         onReset={async () => {
           const ok = await handleReset();
           if (ok) {
-            setMenuOpen(false);
+            setMenuStage(null);
           }
         }}
         onOpenCustomTimer={() => {
-          setMenuOpen(false);
+          setMenuStage(null);
           setCustomTimerOpen(true);
+        }}
+        onOpenPlayerColors={() => {
+          setMenuStage(null);
+          setPlayerColorsOpen(true);
         }}
         onUseDefaultTimer={async () => {
           const ok = await handleUseDefaultTimer();
           if (ok) {
-            setMenuOpen(false);
+            setMenuStage(null);
           }
         }}
         onCloseTimer={() => {
-          setMenuOpen(false);
+          setMenuStage(null);
           handlePause();
           goBackTo(
             from ??
@@ -232,6 +258,21 @@ function TimerScreenContent({
         initialDirection={direction}
         initialRoundSeconds={roundSecondsTotal}
         onSaveCustomTimer={handleSaveCustomTimer}
+      />
+
+      <PlayerColorSetupModal
+        visible={playerColorsOpen}
+        onClose={() => setPlayerColorsOpen(false)}
+        players={players}
+        customColors={timerSettings?.colors}
+        initialColors={savedPlayerColors ?? undefined}
+        allowPlayerReassignment={false}
+        title={t("reassignColors")}
+        saveLabel={t("saveColors")}
+        onSave={async (_playerIds, hexColors) => {
+          setPlayerColors(hexColors);
+          setPlayerColorsOpen(false);
+        }}
       />
     </View>
   );

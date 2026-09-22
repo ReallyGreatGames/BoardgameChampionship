@@ -24,13 +24,30 @@ essentially all of the actual logic.
 
 ### Internal: `TimerScreenContent({ gameId, tableNumber }: { gameId: string \| undefined; tableNumber: number \| null }): JSX.Element`
 
-The actual timer UI: four `TimerCell`s in a 2x2 grid, a center `TimerControlPanel` overlay, and a `TimerMenu` for reset/custom-timer/close actions. Owns local UI state (`menuOpen`, `customTimerOpen`, `elapsedSeconds`) and delegates all timer logic to [`useTimerState`](../../../lib/hooks/useTimerState.md).
+The actual timer UI: four `TimerCell`s in a 2x2 grid, a center `TimerControlPanel` overlay (pause/resume-all disc + gear), and a `TimerMenu` two-stage dialog (table options, then timer settings) opened from the gear. Owns local UI state (`menuStage`, `customTimerOpen`, `playerColorsOpen`, `elapsedSeconds`) and delegates all timer logic to [`useTimerState`](../../../lib/hooks/useTimerState.md).
 
 ### `handleToggleBell(): Promise<void>`
 
-If a bell is currently ringing for this table, calls `bellActions.dismiss(bell, ...)` with a translated confirm dialog; otherwise, if `tableNumber` is known, calls `bellActions.ring(tableNumber, undefined, ...)` with its own confirm dialog. Closes the menu (`setMenuOpen(false)`) only if the action actually completed (`done` is truthy), so a cancelled confirm dialog leaves the menu open.
+If a bell is currently ringing for this table, calls `bellActions.dismiss(bell, ...)` with a translated confirm dialog; otherwise, if `tableNumber` is known, calls `bellActions.ring(tableNumber, undefined, ...)` with its own confirm dialog. Closes the whole menu (`setMenuStage(null)`) only if the action actually completed (`done` is truthy), so a cancelled confirm dialog leaves the options dialog open.
 
 ## How it works
+
+### Round-countdown pill
+
+`TimerControlPanel`'s time-left pill shows the *scheduled round's* time
+remaining, not anything derived from the per-seat chess clock. `timer.tsx`
+finds the [`Schedule`](../../../lib/models/schedule.md) item whose
+`gameId` matches this screen's `gameId` (`scheduleCollection.find((item)
+=> item.gameId === gameId)`, from
+[`useScheduleStore`](../../../lib/stores/appwrite/schedule-store.md) —
+skipped entirely, returning `undefined`, when `gameId` itself is
+`undefined`, since `Schedule.gameId` is optional and would otherwise
+`.find()`-match an unrelated schedule row that also has no `gameId`) and
+feeds it to [`useRoundCountdown`](../../../lib/hooks/useRoundCountdown.md)
+— the same hook and lookup shape the home screen's
+[`NowPlayingCard`](../../../lib/components/home/NowPlayingCard.md) uses,
+so the number on the timer screen always matches what players saw on the
+home screen for this game.
 
 ### `TimerScreenContent`, keyed by `(gameId, tableNumber)`
 
@@ -59,6 +76,33 @@ game switch.
 the timer is meant to sit flat on a table for the whole game, so the
 device shouldn't rotate away or sleep mid-round.
 
+`ScreenOrientationProvider` serializes native lock requests and reapplies
+the latest lock when the app returns to the foreground. It verifies the
+actual native orientation and retries when a transition leaves the timer
+in portrait, with pending checks cancelled when the requested lock changes.
+Timer settings sheets inherit the screen lock, so closing a sheet cannot restore an old
+portrait lock over the focused timer's landscape request.
+
+### Player and team labels
+
+Alongside `playerNames` (`players.map((p) => p.name)`), `timer.tsx` derives
+`playerTeams` the same way using [`teamName`](../../../lib/utils.md), and
+passes both to each [`TimerCell`](../../../lib/components/timer/TimerCell.md)
+as `playerName`/`teamName` — the team name is the larger, primary line in
+the name badge, with the player's own name shown smaller underneath it.
+This only shows a real team name because
+[`useTimerStore`](../../../lib/stores/appwrite/timer-store.md) now expands
+`playerPositions.team.*`; without that, `player.team` on a seat would be an
+unexpanded relation id rather than a `Team` object.
+
+### Bell status while the menu is closed
+
+`bell` (this table's current [`TableBell`](../../../lib/models/table-bell.md),
+if any) is passed to both `TimerMenu` (drives the bell button) and
+`TimerControlPanel` (renders a small ringing/acknowledged badge below the
+round-countdown pill) — so the table's bell status stays visible even while
+the options menu is closed, instead of only being discoverable by opening it.
+
 ### Seat layout
 
 `seatOrder = [[0,1],[3,2]]` mirrors
@@ -75,6 +119,15 @@ re-deriving them from the raw stored fields — `hasCustomTimer` (used inside
 per-table override (including an explicit `0` round time) from a table
 that was never customized; comparing raw numbers/strings against the
 game's default directly can't make that distinction.
+
+### Reassigning colors during play
+
+The timer settings' "Reassign colors" entry opens `PlayerColorSetupModal`
+with the current seat colors and the game's palette. Player positions are
+fixed in this mode. Saving updates the timer cells immediately and stores
+the colors on this device under `playerColors_{gameId}_{tableNumber}` via
+`useTimerState.setPlayerColors`; closing without saving discards the draft.
+Opening, editing, and saving leave the running clocks and pause states intact.
 
 ### Bell elapsed-time ticker
 
@@ -97,4 +150,7 @@ with no `gameId`). `from` is a route param on `TimerPage`, passed down to
 - [`lib/hooks/useTimerState.ts`](../../../lib/hooks/useTimerState.md) — essentially all the logic
 - [`lib/hooks/useTimerLocalSettings.ts`](../../../lib/hooks/useTimerLocalSettings.md) — orientation/pause-mode preference
 - [`lib/hooks/useTableBellActions.ts`](../../../lib/hooks/useTableBellActions.md)
+- [`lib/hooks/useRoundCountdown.ts`](../../../lib/hooks/useRoundCountdown.md) — the schedule round countdown shown in `TimerControlPanel`'s pill
+- [`lib/stores/appwrite/schedule-store.ts`](../../../lib/stores/appwrite/schedule-store.md) — source of the `Schedule` item looked up by `gameId`
 - [`lib/bootstrap/ScreenOrientationProvider.tsx`](../../../lib/bootstrap/ScreenOrientationProvider.md)
+- [`lib/utils.ts`](../../../lib/utils.md) — `teamName`, used for each seat's team label

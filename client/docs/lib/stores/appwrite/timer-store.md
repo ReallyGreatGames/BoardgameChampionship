@@ -14,7 +14,7 @@ table-wide timer settings/bookkeeping).
 | State/Method | Purpose |
 |---|---|
 | `collection: Timer[]` | All `Timer` documents — `{ table, games, durationMinutesTotal?, roundSecondsTotal?, direction?, hasCustomTimer?, tableActiveAccumulatedMs?, tableActiveResumedAt?, playerPositions }` table-wide timer state |
-| `init(): Promise<void>` | `fetchCollection<Timer>(key, set, [Query.select(["*", "playerPositions.*"])])` — loads every `Timer` with `playerPositions` (the related `Player` documents) inlined |
+| `init(): Promise<void>` | `fetchCollection<Timer>(key, set, [Query.select(["*", "playerPositions.*", "playerPositions.team.*"])])` — loads every `Timer` with `playerPositions` (the related `Player` documents) inlined, each with its own `team` relation expanded too, so the timer UI can show each seat's team name without a second fetch |
 | `add(data: Omit<Timer, keyof Models.Document>): Promise<Timer \| null>` | Creates a `Timer` via `addToCollection(key, data, { rowId: timerRowId(data.table, resolveGameId(data.games)), silentOnConflict: true })` — `data.table`/`data.games` drive a deterministic id (see below); returns the created/existing document or `null` on a non-conflict failure |
 | `update(item: PartialTimer, silent?: boolean): Promise<boolean>` | `updateInCollection(key, item, silent)` — partial update by `item.$id`; `silent` (default `false`) suppresses the failure `Alert` for frequent tick-driven writes; returns whether the update succeeded |
 
@@ -31,6 +31,12 @@ same table's timer for the first time converge on one document instead of
 each creating their own. `resolveGameId` (from
 [`lib/utils.ts`](../../../utils.md)) normalizes `data.games` down to a
 single `string | null` game id before it's folded into the row id.
+
+`playerPositions.team.*` is selected explicitly because Appwrite doesn't
+expand a relation nested two levels deep by default — without it,
+`Player.team` on each seat comes back as a bare id string rather than a
+[`Team`](../../models/team.md) object, which is what
+[`teamName`](../../../utils.md) (used by [`TimerCell`](../../components/timer/TimerCell.md)) needs to show an actual name instead of an id.
 
 `relationshipFields: ["playerPositions"]` — `playerPositions` (to-many) is
 the only relationship attribute on this document; every other field

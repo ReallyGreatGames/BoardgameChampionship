@@ -5,7 +5,7 @@
 ## Purpose
 
 App-wide screen-orientation lock, overridable by individual screens (e.g.
-the timer screen wants landscape/rotatable while the rest of the app stays
+the timer screen wants landscape-right while the rest of the app stays
 portrait-locked).
 
 ## Exports
@@ -21,20 +21,20 @@ portrait-locked).
 ### `ScreenOrientationProvider(props: PropsWithChildren): JSX.Element`
 
 `props.children: ReactNode` — the subtree given access to
-`orientationContext`. Owns the `orientation` state and locks the OS to
-`PORTRAIT_UP` once on mount.
+`orientationContext`. Owns the requested `orientation` state and applies
+the current lock on mount and whenever the app returns to the foreground.
 
 ### `useScreenOrientation(): ScreenOrientationContext`
 
 No parameters. Thin `useContext(orientationContext)` wrapper.
 
-### `forceOrientation(o: OrientationLock): Promise<void>` — `useCallback`, deps `[]`
+### `forceOrientation(o: OrientationLock): Promise<void>`
 
 `o` — the orientation lock mode to switch to (e.g. `LANDSCAPE` for the
-timer screen). Updates `orientation` state immediately, then awaits
-`lockAsync(o)` to actually apply the OS-level lock.
+timer screen). Updates the requested orientation immediately and queues
+the native lock request. Its callback remains stable across state updates.
 
-### `unlockOrientation(): Promise<void>` — `useCallback`, deps `[]`
+### `unlockOrientation(): Promise<void>`
 
 No parameters. Resets `orientation` state back to `PORTRAIT_UP` and
 re-applies that lock via `lockAsync`, undoing whatever `forceOrientation`
@@ -42,14 +42,38 @@ set.
 
 ## How it works
 
-Locks to `OrientationLock.PORTRAIT_UP` on mount. `forceOrientation`
-overrides the lock (e.g. to allow landscape) and `unlockOrientation`
-reverts to the portrait default. Both swallow lock errors (`.catch(() =>
-{})`) — orientation locking can fail on some platforms/configurations, and
-that failure isn't worth surfacing to the user. Note the state update
-happens before the (possibly-failing) `lockAsync` call in both functions,
-so `orientation` in context always reflects the last *requested* mode,
-not necessarily the mode the OS actually applied.
+Defaults to `OrientationLock.PORTRAIT_UP`. `forceOrientation` overrides
+the lock and `unlockOrientation` reverts to portrait. Native requests run
+through one promise chain, reading the latest requested orientation when
+each operation starts. This prevents delayed startup or blur requests from
+overwriting the timer's landscape lock during navigation.
+
+An `AppState` listener reapplies the current request on `active`, since the
+timer can remain focused while the app is backgrounded. The listener is
+removed on unmount. Lock errors are logged and handled so a failed request
+does not stop subsequent requests. The context reflects the last requested
+mode, not necessarily the mode the OS actually applied.
+
+On native platforms, the provider also checks the actual screen orientation
+after requesting a lock. A resolved native request can leave the window in
+portrait while a navigation or modal transition is finishing. If the actual
+orientation does not match the requested lock, it retries at 250 ms intervals
+(up to eight retries). Checks stop once the orientation matches. Native
+orientation changes trigger another check, and returning to the foreground
+resets the retry budget. Web skips these checks.
+
+Changing the requested lock or unmounting cancels pending checks and removes
+the listeners. An orientation read that resolves after cleanup is ignored,
+so leaving the timer cannot let an old landscape retry rotate the next screen.
+
+Shared bottom sheets inherit this lock instead of unlocking and restoring
+an asynchronously captured mode that may belong to a previous screen.
+
+Run `npm run test:timer-orientation` from `client` to exercise the actual
+provider, timer focus lifecycle and bottom sheet with controlled native
+orientation responses, including accepted locks that leave the window in
+portrait, later native rotation changes, retry limits, and checks finishing
+after the timer loses focus.
 
 ## Used by
 

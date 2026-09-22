@@ -87,7 +87,8 @@ const translations = {
       importButton: "Import {{count}} rule(s)",
       nothingToImport: "Nothing to import",
       confirmTitle: "Import {{count}} rule(s)?",
-      confirmMessage: 'This will create/update rule clarifications for "{{game}}".',
+      confirmMessage:
+        'This will create/update rule clarifications for "{{game}}".',
       confirmWipeTitle: "Replace all rules for this game?",
       confirmWipeMessage:
         'This will permanently delete {{count}} existing rule(s) for "{{game}}", then import {{importCount}} new rule(s). This cannot be undone.',
@@ -150,7 +151,8 @@ const translations = {
     pinHint: "Find your PIN on the projector screen.",
     welcome: "Welcome",
     password: "Password",
-    eventInactiveHint: "Login is disabled because there's no active event right now.",
+    eventInactiveHint:
+      "Login is disabled because there's no active event right now.",
     eventInactiveFaqLink: "Have questions? View FAQ",
   },
   menu: {
@@ -237,12 +239,14 @@ const translations = {
       },
       confirmDismiss: {
         title: "Dismiss Bell",
-        message: "Clear the table bell notification?",
+        message:
+          "Dismiss table bell? A judge will no longer come to your table.",
         confirm: "Dismiss",
         cancel: "Cancel",
       },
     },
     colorSetup: {
+      colorOption: "{{player}}: {{color}}",
       title: "Player Colors",
       save: "Save & Open Timer",
       duplicatePlayer: "Each player can only be assigned once",
@@ -345,12 +349,24 @@ const translations = {
     openMenu: "Open Menu",
     orientationCenter: "Orientation: Centered",
     orientationSide: "Orientation: Same Direction",
-    pauseModeAuto: "Pause Mode: Auto",
-    pauseModeManual: "Pause Mode: Manual",
+    pauseModeQuickplay: "Pause Mode: Quickplay",
+    pauseModeSimultaneous: "Pause Mode: Simultaneous",
     pauseAll: "Pause All",
     resumeAll: "Resume All",
     spamProtectionActive: "Too many taps",
-    tableTimeElapsed: "Table time",
+    timeRemaining: "Time Left",
+    tableOptions: "Timer Settings",
+    timerSettingsTitle: "Timer Setup",
+    reassignColors: "Reassign colors",
+    saveColors: "Save colors",
+    backToOptions: "Back to Timer Settings",
+    close: "Close",
+    layout: "Layout",
+    mode: "Mode",
+    layoutCentre: "Centre",
+    layoutSide: "Side",
+    modeQuickplay: "Quickplay",
+    modeSimultaneous: "Simultaneous",
     confirmRing: {
       title: "Ring Table Bell",
       message: "Alert the judges that your table needs assistance?",
@@ -359,7 +375,7 @@ const translations = {
     },
     confirmDismiss: {
       title: "Dismiss Bell",
-      message: "Clear the table bell notification?",
+      message: "Dismiss table bell? A judge will no longer come to your table.",
       confirm: "Dismiss",
       cancel: "Cancel",
     },
@@ -374,7 +390,8 @@ const translations = {
     useDefaultTimer: "Default Timer",
     confirmUseDefaultTimer: {
       title: "Use Default Timer",
-      message: "Discard the custom timer and use this game's default timer instead?",
+      message:
+        "Discard the custom timer and use this game's default timer instead?",
       confirm: "Use Default",
       cancel: "Cancel",
     },
@@ -458,7 +475,8 @@ const translations = {
     resetSignatures: "Reset Signatures",
     confirmReset: {
       title: "Reset Signatures?",
-      message: "This clears all signatures for this table. Scores and submission state are kept.",
+      message:
+        "This clears all signatures for this table. Scores and submission state are kept.",
       confirm: "Reset",
       cancel: "Cancel",
     },
@@ -470,7 +488,8 @@ const translations = {
     },
     confirmResetOne: {
       title: "Reset Signature?",
-      message: "This clears only this player's signature. Scores and submission state are kept.",
+      message:
+        "This clears only this player's signature. Scores and submission state are kept.",
       reset: "Reset",
       cancel: "Close",
     },
@@ -609,7 +628,8 @@ const translations = {
     typePhoto: "Photos",
     typePhotoDescription: "Upload or take photos for this game",
     typeOptions: "Options",
-    typeOptionsDescription: "Configure a weighted pool and draw one result per table",
+    typeOptionsDescription:
+      "Configure a weighted pool and draw one result per table",
     editTitleNew: "New Options Lottery",
     editTitleExisting: "Edit Options Lottery",
     nameLabel: "Name",
@@ -625,7 +645,8 @@ const translations = {
     optionMaxPerTableLabel: "Max per table",
     addOption: "Add Option",
     removeOption: "Remove",
-    removeOptionBlocked: "Can't remove — still used in a pulled result. Re-pull first.",
+    removeOptionBlocked:
+      "Can't remove — still used in a pulled result. Re-pull first.",
     save: "Save",
     pull: "Pull for All Tables",
     rePullConfirm: {
@@ -655,10 +676,12 @@ const translations = {
     notAssignedToTable: "You're not assigned to a table yet.",
     errors: {
       "no-options": "Add at least one option.",
-      "invalid-pulls-per-table": "Pulls per table must be a whole number of at least 1.",
+      "invalid-pulls-per-table":
+        "Pulls per table must be a whole number of at least 1.",
       "missing-title": "Every option needs a title.",
-      "invalid-weight": "\"{{title}}\" needs a weight of at least 1.",
-      "invalid-max-per-table": "\"{{title}}\" needs a max-per-table of at least 1.",
+      "invalid-weight": '"{{title}}" needs a weight of at least 1.',
+      "invalid-max-per-table":
+        '"{{title}}" needs a max-per-table of at least 1.',
       "insufficient-capacity":
         "Pulls per table ({{pullsPerTable}}) exceeds what max-per-table values can fill ({{capacity}}).",
     },

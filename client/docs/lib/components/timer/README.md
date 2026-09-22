@@ -12,7 +12,7 @@ for how they're assembled.
 | File | Purpose |
 |---|---|
 | [TimerCell.md](TimerCell.md) | One seat's clock face — the most visually complex component in the app |
-| [TimerControlPanel.md](TimerControlPanel.md) | Floating control panel (orientation/menu/pause-mode toggles, bell, pause-all) |
-| [TimerMenu.md](TimerMenu.md) | Overflow menu (reset, custom timer, revert to default, close) |
+| [TimerControlPanel.md](TimerControlPanel.md) | Floating hub (pause/resume-all disc, gear to open the menu, table-elapsed pill) |
+| [TimerMenu.md](TimerMenu.md) | Two-stage overflow dialog: table options (layout, mode, bell, exit, entry to timer settings) and timer settings (reset, custom timer, revert to default) |
 | [CustomTimerModal.md](CustomTimerModal.md) | Modal for setting a per-table custom timer override |
 | [TimerDurationFields.md](TimerDurationFields.md) | Shared duration/round-time/direction form fields |

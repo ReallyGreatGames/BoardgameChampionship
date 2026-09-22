@@ -37,6 +37,10 @@ type Props = {
   players: Player[];
   onSave: (playerIds: (string | null)[], colors: string[]) => Promise<void>;
   customColors?: string[];
+  initialColors?: string[];
+  allowPlayerReassignment?: boolean;
+  title?: string;
+  saveLabel?: string;
 };
 
 export function PlayerColorSetupModal({
@@ -45,6 +49,10 @@ export function PlayerColorSetupModal({
   players,
   onSave,
   customColors,
+  initialColors,
+  allowPlayerReassignment = true,
+  title,
+  saveLabel,
 }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeSheetStyles(colors), [colors]);
@@ -58,15 +66,15 @@ export function PlayerColorSetupModal({
   const [assignments, setAssignments] = useState<Assignment[]>(() =>
     Array.from({ length: 4 }, (_, i) => ({
       playerId: players[i]?.$id ?? null,
-      color: colorsToUse[i],
+      color: initialColors?.[i] ?? colorsToUse[i],
     })),
   );
   const [saving, setSaving] = useState(false);
 
   const hasDuplicatePlayers = useMemo(() => {
     const ids = assignments.map((a) => a.playerId).filter(Boolean);
-    return ids.length !== new Set(ids).size;
-  }, [assignments]);
+    return allowPlayerReassignment && ids.length !== new Set(ids).size;
+  }, [assignments, allowPlayerReassignment]);
 
   useEffect(() => {
     if (!visible) {
@@ -75,11 +83,11 @@ export function PlayerColorSetupModal({
     setAssignments(
       Array.from({ length: 4 }, (_, i) => ({
         playerId: players[i]?.$id ?? null,
-        color: colorsToUse[i],
+        color: initialColors?.[i] ?? colorsToUse[i],
       })),
     );
     setSaving(false);
-  }, [visible, players, colorsToUse]);
+  }, [visible, players, colorsToUse, initialColors]);
 
   function cyclePlayer(posIdx: number) {
     if (players.length === 0) {
@@ -122,7 +130,7 @@ export function PlayerColorSetupModal({
     <BottomSheet
       visible={visible}
       onClose={onClose}
-      title={t("colorSetup.title")}
+      title={title ?? t("colorSetup.title")}
       footer={
         <View style={{ gap: 8 }}>
           {hasDuplicatePlayers && (
@@ -146,7 +154,7 @@ export function PlayerColorSetupModal({
             {saving ? (
               <ActivityIndicator size="small" color={colors.onAccent} />
             ) : (
-              <Text style={styles.saveBtnText}>{t("colorSetup.save")}</Text>
+              <Text style={styles.saveBtnText}>{saveLabel ?? t("colorSetup.save")}</Text>
             )}
           </Pressable>
         </View>
@@ -178,6 +186,7 @@ export function PlayerColorSetupModal({
 
                 <TouchableOpacity
                   activeOpacity={0.7}
+                  disabled={!allowPlayerReassignment}
                   onPress={() => cyclePlayer(posIdx)}
                   style={{
                     flexDirection: "row",
@@ -198,20 +207,28 @@ export function PlayerColorSetupModal({
                     {playerName ??
                       t("colorSetup.playerFallback", { number: posIdx + 1 })}
                   </Text>
-                  <Ionicons
-                    name="swap-horizontal"
-                    size={12}
-                    color={colors.textMuted}
-                  />
+                  {allowPlayerReassignment && (
+                    <Ionicons
+                      name="swap-horizontal"
+                      size={12}
+                      color={colors.textMuted}
+                    />
+                  )}
                 </TouchableOpacity>
 
                 <View style={{ flexDirection: "row", gap: 6 }}>
-                  {colorsToUse.map((hex) => {
+                  {Array.from(new Set(colorsToUse)).map((hex) => {
                     const isSelected = assignment.color === hex;
                     return (
                       <Pressable
                         key={hex}
                         onPress={() => setColor(posIdx, hex)}
+                        accessibilityRole="radio"
+                        accessibilityLabel={t("colorSetup.colorOption", {
+                          player: playerName ?? t("colorSetup.playerFallback", { number: posIdx + 1 }),
+                          color: hex,
+                        })}
+                        accessibilityState={{ checked: isSelected }}
                         style={{
                           flex: 1,
                           aspectRatio: 1,

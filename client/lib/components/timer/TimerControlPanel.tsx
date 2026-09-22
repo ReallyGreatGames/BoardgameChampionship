@@ -1,197 +1,140 @@
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
-import { type } from "@/lib/theme/typography";
-import { inset } from "@/lib/theme/spacing";
-import { TimerOrientationMode, TimerPauseMode } from "@/lib/hooks/useTimerLocalSettings";
-import { Ionicons } from "@expo/vector-icons";
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { useTranslation } from "react-i18next";
+import { RoundCountdown } from "@/lib/hooks/useRoundCountdown";
 import { TableBell } from "@/lib/models/table-bell";
+import { fonts, type } from "@/lib/theme/typography";
+import { ui } from "@/lib/theme/ui";
+import { Ionicons } from "@expo/vector-icons";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   onOpenMenu: () => void;
-  orientationMode: TimerOrientationMode;
-  onToggleOrientation: () => void;
-  pauseMode: TimerPauseMode;
-  onTogglePauseMode: () => void;
-  bell: TableBell | undefined;
-  bellElapsedLabel: string | undefined;
-  onToggleBell: () => void;
-  bellLoading?: boolean;
-  bellDisabled?: boolean;
   allPaused: boolean;
   onToggleAllPause: () => void;
-  tableElapsedLabel: string;
+  roundCountdown: RoundCountdown;
   spamProtectionActive: boolean;
+  bell: TableBell | undefined;
 };
 
 export function TimerControlPanel({
   onOpenMenu,
-  orientationMode,
-  onToggleOrientation,
-  pauseMode,
-  onTogglePauseMode,
-  bell,
-  bellElapsedLabel,
-  onToggleBell,
-  bellLoading,
-  bellDisabled,
   allPaused,
   onToggleAllPause,
-  tableElapsedLabel,
+  roundCountdown,
   spamProtectionActive,
+  bell,
 }: Props) {
   const { colors } = useTheme();
   const { t } = useTranslation(["timer"]);
 
-  const bellColor = bell?.acknowledgeTime ? colors.success : bell ? colors.accent : colors.text;
-  const bellLabel = bell?.acknowledgeTime
-    ? t("bellAcknowledged")
-    : bell
-      ? t("bellRinging")
-      : t("ringBell");
-
   return (
-    <View
-      style={[
-        styles.panel,
-        { backgroundColor: colors.surfaceHigh + "ee", borderColor: colors.border },
-      ]}
-      pointerEvents="box-none"
-    >
-      {}
-      <View style={styles.tableElapsedRow}>
-        <Ionicons name="time-outline" size={14} color={colors.textMuted} />
-        <Text style={[type.eyebrow, { color: colors.textMuted }]}>
-          {t("tableTimeElapsed")} · {tableElapsedLabel}
-        </Text>
-      </View>
-
+    <View style={styles.root} pointerEvents="box-none">
       {spamProtectionActive && (
-        <View style={[styles.spamBanner, { backgroundColor: colors.error + "22", borderColor: colors.error }]}>
+        <View
+          style={[
+            styles.spamBanner,
+            { backgroundColor: colors.error + "22", borderColor: colors.error },
+          ]}
+        >
           <Ionicons name="hourglass-outline" size={16} color={colors.error} />
-          <Text style={[type.bodySmall, { color: colors.error, flex: 1 }]} numberOfLines={2}>
+          <Text style={[type.bodySmall, { color: colors.error }]} numberOfLines={2}>
             {t("spamProtectionActive")}
           </Text>
         </View>
       )}
 
-      <View style={styles.iconRow}>
-        <IconToggle
-          icon={orientationMode === "center" ? "grid-outline" : "reorder-two-outline"}
-          accessibilityLabel={
-            orientationMode === "center" ? t("orientationCenter") : t("orientationSide")
-          }
-          onPress={onToggleOrientation}
-        />
-        <IconToggle icon="ellipsis-horizontal" accessibilityLabel={t("openMenu")} onPress={onOpenMenu} />
-        <IconToggle
-          icon={pauseMode === "auto" ? "flash-outline" : "hand-left-outline"}
-          accessibilityLabel={pauseMode === "auto" ? t("pauseModeAuto") : t("pauseModeManual")}
-          onPress={onTogglePauseMode}
-        />
+      {/* Fixed-size anchor box: its own center is the true dead-center point.
+          The disc sits exactly on that point; the gear and pill are offset
+          satellites around it, so adding/removing them never moves the disc. */}
+      <View style={styles.anchor}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.disc,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+            pressed && !spamProtectionActive && { backgroundColor: colors.surfaceHigh },
+            spamProtectionActive && styles.disabled,
+          ]}
+          onPress={onToggleAllPause}
+          disabled={spamProtectionActive}
+          accessibilityLabel={allPaused ? t("resumeAll") : t("pauseAll")}
+        >
+          <Ionicons name={allPaused ? "play" : "pause"} size={36} color={colors.accent} />
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.gear,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+            pressed && { backgroundColor: colors.surfaceHigh },
+          ]}
+          onPress={onOpenMenu}
+          accessibilityLabel={t("openMenu")}
+        >
+          <Ionicons name="settings-outline" size={18} color={colors.textSecondary} />
+        </Pressable>
+
+        <View style={styles.pillRow}>
+          <View style={[styles.pill, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[type.eyebrow, { color: colors.textSecondary }]}>
+              {t("timeRemaining")}
+            </Text>
+            <Text
+              style={[
+                styles.pillValue,
+                {
+                  color: roundCountdown.isOvertime
+                    ? colors.error
+                    : roundCountdown.isPaused
+                      ? colors.textMuted
+                      : colors.text,
+                },
+              ]}
+            >
+              {roundCountdown.label}
+            </Text>
+          </View>
+
+          {bell && (
+            <View
+              style={[
+                styles.bellBadge,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: bell.acknowledgeTime ? colors.success : colors.accent,
+                },
+              ]}
+            >
+              <Ionicons
+                name="notifications"
+                size={11}
+                color={bell.acknowledgeTime ? colors.success : colors.accent}
+              />
+              <Text
+                style={[
+                  type.eyebrow,
+                  { color: bell.acknowledgeTime ? colors.success : colors.accent },
+                ]}
+              >
+                {bell.acknowledgeTime ? t("bellAcknowledged") : t("bellRinging")}
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
-
-      <PanelBar
-        icon={bell ? "notifications-off-outline" : "notifications-outline"}
-        color={bellColor}
-        label={bellLabel}
-        trailingLabel={bellElapsedLabel}
-        onPress={onToggleBell}
-        loading={bellLoading}
-        disabled={bellDisabled}
-      />
-
-      <PanelBar
-        icon={allPaused ? "play-circle-outline" : "pause-circle-outline"}
-        color={colors.text}
-        label={allPaused ? t("resumeAll") : t("pauseAll")}
-        onPress={onToggleAllPause}
-        disabled={spamProtectionActive}
-      />
     </View>
   );
 }
 
-type IconToggleProps = {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
-  accessibilityLabel: string;
-  onPress: () => void;
-};
-
-function IconToggle({ icon, accessibilityLabel, onPress }: IconToggleProps) {
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.iconToggle,
-        { borderColor: colors.border },
-        pressed && { backgroundColor: colors.surface },
-      ]}
-      accessibilityLabel={accessibilityLabel}
-      onPress={onPress}
-    >
-      <Ionicons name={icon} size={18} color={colors.textSecondary} />
-    </Pressable>
-  );
-}
-
-type PanelBarProps = {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
-  color: string;
-  label: string;
-  trailingLabel?: string;
-  onPress: () => void;
-  loading?: boolean;
-  disabled?: boolean;
-};
-
-function PanelBar({ icon, color, label, trailingLabel, onPress, loading, disabled }: PanelBarProps) {
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.panelBar,
-        { borderColor: colors.border },
-        pressed && !disabled && { backgroundColor: colors.surface },
-        disabled && { opacity: 0.4 },
-      ]}
-      onPress={onPress}
-      disabled={disabled}
-    >
-      {loading ? (
-        <ActivityIndicator size="small" color={color} />
-      ) : (
-        <Ionicons name={icon} size={20} color={color} />
-      )}
-      <Text style={[type.bodySmall, { color, flex: 1 }]} numberOfLines={1}>
-        {label}
-      </Text>
-      {trailingLabel && (
-        <Text style={[styles.trailingLabel, { color }]}>{trailingLabel}</Text>
-      )}
-    </Pressable>
-  );
-}
+const DISC_SIZE = 84;
+const GEAR_SIZE = 40;
+const GAP = 10;
+// Wide enough for "MM:SS" (and the "--:--" placeholder) at the pillValue
+// font/size, so the pill never resizes as the countdown's digits change.
+const PILL_VALUE_WIDTH = 52;
 
 const styles = StyleSheet.create({
-  panel: {
-    width: 220,
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: inset.tight,
-    gap: inset.tight,
-  },
-  tableElapsedRow: {
-    flexDirection: "row",
+  root: {
     alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
   },
   spamBanner: {
     flexDirection: "row",
@@ -201,32 +144,84 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 8,
     paddingHorizontal: 10,
+    maxWidth: 260,
+    marginBottom: 10,
   },
-  iconRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: inset.tight,
+  anchor: {
+    width: DISC_SIZE,
+    height: DISC_SIZE,
   },
-  iconToggle: {
-    flex: 1,
-    height: 36,
-    borderRadius: 10,
+  disc: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    marginTop: -DISC_SIZE / 2,
+    marginLeft: -DISC_SIZE / 2,
+    width: DISC_SIZE,
+    height: DISC_SIZE,
+    borderRadius: DISC_SIZE / 2,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 6,
   },
-  panelBar: {
+  gear: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    marginTop: -GEAR_SIZE / 2,
+    marginLeft: DISC_SIZE / 2 + GAP,
+    width: GEAR_SIZE,
+    height: GEAR_SIZE,
+    borderRadius: GEAR_SIZE / 2,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  disabled: {
+    opacity: ui.disabledOpacity,
+  },
+  pillRow: {
+    position: "absolute",
+    top: "50%",
+    left: 0,
+    right: 0,
+    marginTop: DISC_SIZE / 2 + GAP,
+    alignItems: "center",
+    gap: 6,
+  },
+  pill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
     borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    borderRadius: 11,
+    paddingVertical: 3,
+    paddingHorizontal: 10,
   },
-  trailingLabel: {
-    fontFamily: "BarlowCondensed_700Bold",
-    fontSize: 13,
+  bellBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderWidth: 1,
+    borderRadius: 9,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+  },
+  pillValue: {
+    fontFamily: fonts.displayExtraBold,
+    fontSize: 15,
     letterSpacing: 0.5,
+    width: PILL_VALUE_WIDTH,
+    textAlign: "right",
   },
 });
