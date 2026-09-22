@@ -5,7 +5,6 @@ import { useTimerSeatStore } from "@/lib/stores/appwrite/timer-seat-store";
 import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-store";
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
 import {
-  computeTableElapsedSeconds,
   reconcileRoundAndPool,
   resolveEffectiveTimer,
   resolveGameId,
@@ -1082,12 +1081,6 @@ export function useTimerState({
     });
   }, [persistSeatPatch, applyTableActiveTransition, pauseSeatLocally]);
 
-  const tableElapsedSeconds = computeTableElapsedSeconds(
-    tableActiveAccumulatedMsRef.current,
-    tableActiveResumedAtRef.current,
-    Date.now(),
-  );
-
   return {
     times: tickState.times,
     roundTimesLeft: tickState.roundTimesLeft,
@@ -1096,7 +1089,6 @@ export function useTimerState({
     playersPaused,
     allPaused,
     spamProtectionActive,
-    tableElapsedSeconds,
     depleteAnims,
     graceAnims,
     totalSeconds,

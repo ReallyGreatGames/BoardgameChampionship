@@ -39,7 +39,10 @@ remaining, not anything derived from the per-seat chess clock. `timer.tsx`
 finds the [`Schedule`](../../../lib/models/schedule.md) item whose
 `gameId` matches this screen's `gameId` (`scheduleCollection.find((item)
 => item.gameId === gameId)`, from
-[`useScheduleStore`](../../../lib/stores/appwrite/schedule-store.md)) and
+[`useScheduleStore`](../../../lib/stores/appwrite/schedule-store.md) —
+skipped entirely, returning `undefined`, when `gameId` itself is
+`undefined`, since `Schedule.gameId` is optional and would otherwise
+`.find()`-match an unrelated schedule row that also has no `gameId`) and
 feeds it to [`useRoundCountdown`](../../../lib/hooks/useRoundCountdown.md)
 — the same hook and lookup shape the home screen's
 [`NowPlayingCard`](../../../lib/components/home/NowPlayingCard.md) uses,
@@ -79,6 +82,26 @@ actual native orientation and retries when a transition leaves the timer
 in portrait, with pending checks cancelled when the requested lock changes.
 Timer settings sheets inherit the screen lock, so closing a sheet cannot restore an old
 portrait lock over the focused timer's landscape request.
+
+### Player and team labels
+
+Alongside `playerNames` (`players.map((p) => p.name)`), `timer.tsx` derives
+`playerTeams` the same way using [`teamName`](../../../lib/utils.md), and
+passes both to each [`TimerCell`](../../../lib/components/timer/TimerCell.md)
+as `playerName`/`teamName` — the team name is the larger, primary line in
+the name badge, with the player's own name shown smaller underneath it.
+This only shows a real team name because
+[`useTimerStore`](../../../lib/stores/appwrite/timer-store.md) now expands
+`playerPositions.team.*`; without that, `player.team` on a seat would be an
+unexpanded relation id rather than a `Team` object.
+
+### Bell status while the menu is closed
+
+`bell` (this table's current [`TableBell`](../../../lib/models/table-bell.md),
+if any) is passed to both `TimerMenu` (drives the bell button) and
+`TimerControlPanel` (renders a small ringing/acknowledged badge below the
+round-countdown pill) — so the table's bell status stays visible even while
+the options menu is closed, instead of only being discoverable by opening it.
 
 ### Seat layout
 
@@ -130,3 +153,4 @@ with no `gameId`). `from` is a route param on `TimerPage`, passed down to
 - [`lib/hooks/useRoundCountdown.ts`](../../../lib/hooks/useRoundCountdown.md) — the schedule round countdown shown in `TimerControlPanel`'s pill
 - [`lib/stores/appwrite/schedule-store.ts`](../../../lib/stores/appwrite/schedule-store.md) — source of the `Schedule` item looked up by `gameId`
 - [`lib/bootstrap/ScreenOrientationProvider.tsx`](../../../lib/bootstrap/ScreenOrientationProvider.md)
+- [`lib/utils.ts`](../../../lib/utils.md) — `teamName`, used for each seat's team label

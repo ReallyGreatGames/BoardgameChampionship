@@ -4,7 +4,7 @@
 
 ## Purpose
 
-The app's standard pressable button: four variants, an optional leading
+The app's standard pressable button: five variants, an optional leading
 icon, and a loading state that swaps the content for a spinner.
 
 ## Exports
@@ -19,7 +19,7 @@ icon, and a loading state that swaps the content for a spinner.
 |---|---|---|
 | `label` | `string` | Button text. |
 | `onPress` | `() => void` | Press handler; not called while `disabled` or `loading`. |
-| `variant` | `"primary" \| "secondary" \| "ghost" \| "danger"?` | Visual weight — filled accent, outlined surface, transparent, or filled error. Defaults to `primary`. |
+| `variant` | `"primary" \| "secondary" \| "ghost" \| "danger" \| "success"?` | Visual weight — filled accent, outlined surface, transparent, filled error, or filled `colors.success`. Defaults to `primary`. |
 | `icon` | `Ionicons` glyph name (optional) | Icon rendered next to the label, in the label's color. |
 | `iconPosition` | `"left" \| "right"?` | Which side of the label the icon sits on. Defaults to `"left"`; the welcome screen's "Zum Login" button uses `"right"`. |
 | `disabled` | `boolean?` | Blocks presses and dims the button. Defaults to `false`. |
@@ -33,10 +33,10 @@ memoized via `useMemo` on `colors`.
 
 ## How it works
 
-The foreground color is derived from the variant (`onAccent` on the two
-filled variants, `text` on the two flat ones) and passed to the icon, the
-label, and the spinner alike, so all three stay legible on whichever
-background the variant paints.
+The foreground color is derived from the variant (`onAccent` on the three
+filled variants — `primary`, `danger`, `success` — `text` on the two flat
+ones) and passed to the icon, the label, and the spinner alike, so all
+three stay legible on whichever background the variant paints.
 
 `minHeight: 44` keeps every button at the platform minimum touch target
 regardless of label length, and `accessibilityState` reports the disabled
@@ -45,6 +45,7 @@ than as an ordinary button that does nothing.
 
 ## Used by
 
+- [`lib/components/timer/TimerMenu.tsx`](../timer/TimerMenu.md) — including the `success` variant for an acknowledged table bell
 - [`lib/components/home/NowPlayingCard.tsx`](../home/NowPlayingCard.md)
 - [`app/(pages)/(user)/signature.tsx`](../../../app/(pages)/(user)/signature.md) — Clear/Confirm actions
 - [`lib/components/onboarding/WelcomeScreen.tsx`](../onboarding/WelcomeScreen.md) — "Zum Login" with trailing arrow

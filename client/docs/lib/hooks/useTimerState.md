@@ -32,7 +32,6 @@ has exactly 4 entries, indexed by seat):
 | `playersPaused` | `boolean[]` | Whether each seat is currently paused (not ticking). |
 | `allPaused` | `boolean` | `playersPaused.every(Boolean)` — true only when every seat is paused. |
 | `spamProtectionActive` | `boolean` | `true` while input is being throttled after a burst of rapid presses (see How it works). |
-| `tableElapsedSeconds` | `number` | Total wall-clock seconds the table has been "active" (at least one seat running), computed from the table doc's accumulated-ms/resumed-at fields plus any currently-live running span. |
 | `depleteAnims` | `React.RefObject<Animated.Value[]>` | One `Animated.Value` per seat (0 → 1) driving the pool-time depletion bar; mutated directly, not through React state. |
 | `graceAnims` | `React.RefObject<Animated.Value[]>` | One `Animated.Value` per seat (0 → 1) driving the round-reset grace-period bar; see the grace-bar sync section below. |
 | `totalSeconds` | `number` | The full per-seat pool-time budget in seconds (`effectiveDuration` minutes split evenly across `PLAYER_COUNT`, or `DEFAULT_SECONDS` if no duration is configured). |
@@ -415,7 +414,7 @@ manually. Auto-ringing that case is what made a dismissed bell come back.
 
 ## Related
 
-- [`lib/utils.ts`](../utils.md) — `resolveEffectiveTimer`, `reconcileRoundAndPool`, `computeTableElapsedSeconds`
+- [`lib/utils.ts`](../utils.md) — `resolveEffectiveTimer`, `reconcileRoundAndPool`
 - [`lib/utils/timerColors.ts`](../utils/timerColors.md)
 - [`lib/hooks/useSecureStoragePerGame.ts`](useSecureStoragePerGame.md) — player-color storage
 - [`lib/hooks/useTimerLocalSettings.ts`](useTimerLocalSettings.md) — supplies `pauseMode`

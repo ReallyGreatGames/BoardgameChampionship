@@ -1,12 +1,12 @@
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { Button } from "@/lib/components/ui/Button";
+import { ChipGroup, ChipOption } from "@/lib/components/ui/ChipGroup";
 import { CustomTimerModal } from "@/lib/components/timer/CustomTimerModal";
 import { TimerOrientationMode, TimerPauseMode } from "@/lib/hooks/useTimerLocalSettings";
 import { TableBell } from "@/lib/models/table-bell";
 import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
 import { Ionicons } from "@expo/vector-icons";
-import { ComponentProps } from "react";
 import { GestureResponderEvent, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 
@@ -74,6 +74,15 @@ export function TimerMenu({
   const { colors } = useTheme();
   const { t } = useTranslation(["timer"]);
 
+  const orientationOptions: ChipOption<TimerOrientationMode>[] = [
+    { value: "side", label: t("layoutSide"), icon: "reorder-two-outline" },
+    { value: "center", label: t("layoutCentre"), icon: "grid-outline" },
+  ];
+  const pauseModeOptions: ChipOption<TimerPauseMode>[] = [
+    { value: "quickplay", label: t("modeQuickplay"), icon: "flash-outline" },
+    { value: "simultaneous", label: t("modeSimultaneous"), icon: "hand-left-outline" },
+  ];
+
   const bellRinging = !!bell && !bell.acknowledgeTime;
   const bellBaseLabel = bell?.acknowledgeTime
     ? t("bellAcknowledged")
@@ -102,21 +111,15 @@ export function TimerMenu({
             <View style={styles.grid}>
               <ToggleCard
                 label={t("layout")}
-                icon={orientationMode === "center" ? "grid-outline" : "reorder-two-outline"}
-                value={orientationMode === "center" ? t("layoutCentre") : t("layoutSide")}
-                accessibilityLabel={
-                  orientationMode === "center" ? t("orientationCenter") : t("orientationSide")
-                }
-                onPress={onToggleOrientation}
+                options={orientationOptions}
+                value={orientationMode}
+                onChange={onToggleOrientation}
               />
               <ToggleCard
                 label={t("mode")}
-                icon={pauseMode === "quickplay" ? "flash-outline" : "hand-left-outline"}
-                value={pauseMode === "quickplay" ? t("modeQuickplay") : t("modeSimultaneous")}
-                accessibilityLabel={
-                  pauseMode === "quickplay" ? t("pauseModeQuickplay") : t("pauseModeSimultaneous")
-                }
-                onPress={onTogglePauseMode}
+                options={pauseModeOptions}
+                value={pauseMode}
+                onChange={onTogglePauseMode}
               />
             </View>
 
@@ -124,7 +127,7 @@ export function TimerMenu({
               <Button
                 label={bellLabel}
                 icon={bell ? "notifications-off-outline" : "notifications-outline"}
-                variant={bellRinging ? "primary" : "secondary"}
+                variant={bellRinging ? "primary" : bell ? "success" : "secondary"}
                 onPress={onToggleBell}
                 loading={bellLoading}
                 disabled={bellDisabled}
@@ -140,6 +143,13 @@ export function TimerMenu({
             </View>
 
             <View style={styles.grid}>
+              <Button
+                label={t("close")}
+                icon="close-outline"
+                variant="secondary"
+                onPress={onClose}
+                style={styles.gridButton}
+              />
               <Button
                 label={t("closeTimer")}
                 icon="exit-outline"
@@ -223,35 +233,22 @@ export function TimerMenu({
   );
 }
 
-type ToggleCardProps = {
+type ToggleCardProps<T extends string> = {
   label: string;
-  icon: ComponentProps<typeof Ionicons>["name"];
-  value: string;
-  accessibilityLabel: string;
-  onPress: () => void;
+  options: ChipOption<T>[];
+  value: T;
+  onChange: (value: T) => void;
 };
 
-function ToggleCard({ label, icon, value, accessibilityLabel, onPress }: ToggleCardProps) {
+function ToggleCard<T extends string>({ label, options, value, onChange }: ToggleCardProps<T>) {
   const { colors } = useTheme();
   return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.toggleCard,
-        { backgroundColor: colors.surface, borderColor: colors.border },
-        pressed && { backgroundColor: colors.surfaceHigh },
-      ]}
-      onPress={onPress}
-      accessibilityLabel={accessibilityLabel}
+    <View
+      style={[styles.toggleCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
     >
-      <View style={styles.toggleCardTop}>
-        <Text style={[type.eyebrow, { color: colors.textMuted, fontSize: 10 }]}>{label}</Text>
-        <Ionicons name="swap-horizontal-outline" size={14} color={colors.textMuted} />
-      </View>
-      <View style={styles.toggleCardBottom}>
-        <Ionicons name={icon} size={18} color={colors.text} />
-        <Text style={[type.bodySmall, { color: colors.text }]}>{value}</Text>
-      </View>
-    </Pressable>
+      <Text style={[type.eyebrow, { color: colors.textMuted, fontSize: 10 }]}>{label}</Text>
+      <ChipGroup mode="cycle" options={options} value={value} onChange={onChange} />
+    </View>
   );
 }
 
@@ -298,16 +295,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 14,
     padding: 10,
-    gap: 4,
-  },
-  toggleCardTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  toggleCardBottom: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
 });

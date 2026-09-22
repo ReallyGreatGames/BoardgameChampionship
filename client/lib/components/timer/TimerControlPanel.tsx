@@ -1,6 +1,8 @@
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { RoundCountdown } from "@/lib/hooks/useRoundCountdown";
+import { TableBell } from "@/lib/models/table-bell";
 import { fonts, type } from "@/lib/theme/typography";
+import { ui } from "@/lib/theme/ui";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -11,6 +13,7 @@ type Props = {
   onToggleAllPause: () => void;
   roundCountdown: RoundCountdown;
   spamProtectionActive: boolean;
+  bell: TableBell | undefined;
 };
 
 export function TimerControlPanel({
@@ -19,6 +22,7 @@ export function TimerControlPanel({
   onToggleAllPause,
   roundCountdown,
   spamProtectionActive,
+  bell,
 }: Props) {
   const { colors } = useTheme();
   const { t } = useTranslation(["timer"]);
@@ -89,6 +93,32 @@ export function TimerControlPanel({
               {roundCountdown.label}
             </Text>
           </View>
+
+          {bell && (
+            <View
+              style={[
+                styles.bellBadge,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: bell.acknowledgeTime ? colors.success : colors.accent,
+                },
+              ]}
+            >
+              <Ionicons
+                name="notifications"
+                size={11}
+                color={bell.acknowledgeTime ? colors.success : colors.accent}
+              />
+              <Text
+                style={[
+                  type.eyebrow,
+                  { color: bell.acknowledgeTime ? colors.success : colors.accent },
+                ]}
+              >
+                {bell.acknowledgeTime ? t("bellAcknowledged") : t("bellRinging")}
+              </Text>
+            </View>
+          )}
         </View>
       </View>
     </View>
@@ -158,7 +188,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   disabled: {
-    opacity: 0.4,
+    opacity: ui.disabledOpacity,
   },
   pillRow: {
     position: "absolute",
@@ -167,6 +197,7 @@ const styles = StyleSheet.create({
     right: 0,
     marginTop: DISC_SIZE / 2 + GAP,
     alignItems: "center",
+    gap: 6,
   },
   pill: {
     flexDirection: "row",
@@ -176,6 +207,15 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     paddingVertical: 3,
     paddingHorizontal: 10,
+  },
+  bellBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderWidth: 1,
+    borderRadius: 9,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
   },
   pillValue: {
     fontFamily: fonts.displayExtraBold,

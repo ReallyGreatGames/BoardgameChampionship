@@ -18,8 +18,8 @@ custom timer, revert to default, reassign colors). Also hosts (renders) the
 | Prop | Type | Meaning |
 | --- | --- | --- |
 | `stage` | `"options" \| "settings" \| null` | Which dialog card is shown, if any. Owned by the parent (`app/(pages)/(user)/timer.tsx`'s `menuStage` state). |
-| `onClose` | `() => void` | Dismisses whichever stage is open (backdrop tap or the header's close icon). |
-| `onOpenSettings` | `() => void` | "Timer Settings" button in the options stage; advances to `stage === "settings"`. |
+| `onClose` | `() => void` | Dismisses whichever stage is open (backdrop tap, the header's close icon, or the options stage's "Close" button). |
+| `onOpenSettings` | `() => void` | "Timer Setup" button in the options stage; advances to `stage === "settings"`. |
 | `onBackToOptions` | `() => void` | Header back-arrow in the settings stage; returns to `stage === "options"`. |
 | `onReset` | `() => Promise<void>` | "Reset Timer" button handler; resets all seats' clocks. |
 | `onOpenCustomTimer` | `() => void` | "Custom Timer" button handler; opens the hosted [`CustomTimerModal`](CustomTimerModal.md) by setting `customTimerOpen`. |
@@ -42,16 +42,18 @@ custom timer, revert to default, reassign colors). Also hosts (renders) the
 | `initialRoundSeconds` | `number \| undefined` | Forwarded to `CustomTimerModal`'s `initialRoundSeconds`. |
 | `onSaveCustomTimer` | `(duration: number, dir: "up" \| "down", roundSeconds: number) => Promise<void>` | Forwarded to `CustomTimerModal`'s `onSave`. |
 
-### `ToggleCard({ label, icon, value, accessibilityLabel, onPress }: ToggleCardProps): JSX.Element`
+### `ToggleCard<T extends string>({ label, options, value, onChange }: ToggleCardProps<T>): JSX.Element`
 
-Unexported helper rendering one of the two toggle cards in the options
-stage (layout, mode): a small eyebrow `label` ("Layout"/"Mode") with a
-decorative swap icon in the top row, and the current state's `icon` +
-short `value` text ("Centre"/"Side", "Quickplay"/"Simultaneous") in the
-bottom row. `accessibilityLabel` carries the fuller sentence (e.g.
-"Orientation: Centered") that the old icon-toggle buttons used, since the
-visible text is now intentionally terse. `onPress` flips the underlying
-setting.
+Unexported generic helper rendering one of the two toggle cards in the
+options stage (layout, mode): a small eyebrow `label` ("Layout"/"Mode")
+above a [`ChipGroup`](../ui/ChipGroup.md) in `mode="cycle"`, which itself
+shows the current option's icon + short label ("Centre"/"Side",
+"Quickplay"/"Simultaneous") and advances to the next option on press.
+`options`/`value`/`onChange` are passed straight through to `ChipGroup`.
+Since each toggle only has two options, `TimerMenu` passes its plain
+`onToggleOrientation`/`onTogglePauseMode` toggle functions as `onChange`
+(ignoring the specific next value `ChipGroup` computes) — cycling between
+exactly two options is equivalent to toggling either way.
 
 ## How it works
 
@@ -63,15 +65,20 @@ inside it don't bubble to the backdrop.
 Both stages reuse [`Button`](../ui/Button.md) (the same
 `BoardgameChampionship.Button` used elsewhere) for their action rows, laid
 out via the shared `grid`/`gridButton` styles — two per row where there are
-an even number of buttons, a single full-width `Button` on its own `grid`
-row otherwise (the options stage's trailing "Exit Timer" row). The
-settings stage pairs "Default Timer" with "Reassign colors". The "Exit Timer"
-button uses the `danger` variant to signal it's a different kind of action
-from the others, and sits at the options level (not behind "Timer
-Settings") since ending the session is a decision independent of the
-reset/custom/default timer actions. The bell button uses `primary` while a
-bell is ringing and unacknowledged (`bellRinging`), `secondary` otherwise,
-since `Button` has no dedicated warning color.
+an even number of buttons (the options stage's trailing "Close"/"Exit
+Timer" row included). The settings stage pairs "Default Timer" with
+"Reassign colors". The "Exit Timer" button uses the `danger` variant to
+signal it's a different kind of action from the others, and sits at the
+options level (not behind "Timer Setup") since ending the session is a
+decision independent of the reset/custom/default timer actions. It's paired
+with a plain `secondary` "Close" button (`onClose`) right next to it so the
+only prominent, easy-to-reach action in that row isn't the destructive one —
+tapping "Close" just dismisses the dialog, same as the header's close icon
+or the backdrop. The bell button uses `primary` while a bell is ringing and
+unacknowledged (`bellRinging`), the `success` variant once it's been
+acknowledged (`bell && !bellRinging`), and `secondary` when there's no bell
+at all — three visually distinct states instead of collapsing acknowledged
+into the same look as no-bell.
 
 The bell button's label concatenates the translated state text
 (`ringBell`/`bellRinging`/`bellAcknowledged`) with `bellElapsedLabel` when a
@@ -81,3 +88,7 @@ bell exists (`Button` only takes a single label, unlike the old
 ## Used by
 
 - [`app/(pages)/(user)/timer.tsx`](../../../app/(pages)/(user)/timer.md)
+
+## Related
+
+- [`lib/components/ui/ChipGroup.tsx`](../ui/ChipGroup.md) — `mode="cycle"`, reused by `ToggleCard` instead of a bespoke toggle

@@ -12,7 +12,7 @@ import { useTimerLocalSettings } from "@/lib/hooks/useTimerLocalSettings";
 import { useTimerState } from "@/lib/hooks/useTimerState";
 import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
-import { formatElapsedSeconds } from "@/lib/utils";
+import { formatElapsedSeconds, teamName } from "@/lib/utils";
 import { goBackTo } from "@/lib/utils/navigation";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -69,7 +69,10 @@ function TimerScreenContent({
 
   const scheduleCollection = useScheduleStore((s) => s.collection);
   const scheduleItem = useMemo(
-    () => scheduleCollection.find((item) => item.gameId === gameId),
+    () =>
+      gameId
+        ? scheduleCollection.find((item) => item.gameId === gameId)
+        : undefined,
     [scheduleCollection, gameId],
   );
   const roundCountdown = useRoundCountdown(scheduleItem);
@@ -111,6 +114,7 @@ function TimerScreenContent({
     [existingTimer?.playerPositions],
   );
   const playerNames = useMemo(() => players.map((p) => p.name), [players]);
+  const playerTeams = useMemo(() => players.map((p) => teamName(p)), [players]);
 
   const bellActions = useTableBellActions();
   const [menuStage, setMenuStage] = useState<"options" | "settings" | null>(null);
@@ -171,6 +175,7 @@ function TimerScreenContent({
                 key={idx}
                 idx={idx}
                 playerName={playerNames[idx]}
+                teamName={playerTeams[idx]}
                 timeLeft={times[idx]}
                 totalSeconds={totalSeconds}
                 direction={direction}
@@ -199,6 +204,7 @@ function TimerScreenContent({
           onToggleAllPause={toggleAllPause}
           roundCountdown={roundCountdown}
           spamProtectionActive={spamProtectionActive}
+          bell={bell}
         />
       </View>
 

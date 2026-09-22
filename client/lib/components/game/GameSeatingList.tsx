@@ -87,28 +87,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     section: {
       gap: space[2],
     },
-    tableHero: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: space[3],
-      paddingHorizontal: space[5],
-      paddingVertical: space[3],
-      marginBottom: space[3],
-      borderRadius: ui.cardRadius,
-      borderWidth: 1,
-      borderColor: colors.primary,
-      backgroundColor: colors.surface,
-    },
-    tableHeroLabel: {
-      ...type.h2,
-      color: colors.text,
-    },
-    tableHeroNumber: {
-      ...type.bigNumber,
-      color: colors.primary,
-      fontVariant: ["tabular-nums"],
-    },
     eyebrow: {
       ...type.eyebrow,
       color: colors.textMuted,

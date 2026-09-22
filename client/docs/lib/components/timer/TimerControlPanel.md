@@ -7,10 +7,12 @@
 Floating hub overlaid on the timer screen: a big pause/resume-all disc dead
 center, a small gear beside it that opens [`TimerMenu`](TimerMenu.md), and a
 pill below showing how much time is left in this game's scheduled round —
-the same countdown shown on the home screen's "now playing" card. The
-single primary control (pause/resume everyone) is large and central;
-everything else — orientation, pause mode, the table bell,
-reset/custom/default/exit — lives behind the gear.
+the same countdown shown on the home screen's "now playing" card. Below
+that pill, a small badge shows whether the table bell is ringing or
+acknowledged, so that status stays visible even while `TimerMenu` is
+closed. The single primary control (pause/resume everyone) is large and
+central; everything else — orientation, pause mode, ringing/dismissing the
+bell, reset/custom/default/exit — lives behind the gear.
 
 ## Exports
 
@@ -23,6 +25,7 @@ reset/custom/default/exit — lives behind the gear.
 | `onToggleAllPause` | `() => void` | Pauses or resumes every seat at once (the disc's press handler). |
 | `roundCountdown` | [`RoundCountdown`](../../hooks/useRoundCountdown.md) | The game's scheduled-round time-left state (`label`, `isOvertime`, `isPaused`), shown in the pill; caller resolves it via `useRoundCountdown(scheduleItem)` on the [`Schedule`](../../models/schedule.md) item whose `gameId` matches this table's game. |
 | `spamProtectionActive` | `boolean` | Whether rapid seat/pause-all presses have tripped the anti-spam guard; shows a warning banner above the hub and disables the disc. |
+| `bell` | [`TableBell`](../../models/table-bell.md) `\| undefined` | This table's current bell record, if any; when present, renders a small ringing/acknowledged badge below the round-countdown pill. |
 
 ## How it works
 
@@ -61,6 +64,15 @@ tournament schedule's round budget for this game, a separate concept from
 the four seats' individual clocks, computed by
 [`useRoundCountdown`](../../hooks/useRoundCountdown.md) from the
 [`Schedule`](../../models/schedule.md) document whose `gameId` matches.
+
+The bell badge only renders when `bell` is truthy, sits inside the same
+`pillRow` as the round-countdown pill (stacked underneath it via `gap`),
+and is colored/labeled `colors.accent`/`bellRinging` while unacknowledged
+or `colors.success`/`bellAcknowledged` once acknowledged — the same two
+states [`TimerMenu`](TimerMenu.md)'s bell button itself distinguishes.
+Without this badge, a bell's state was only visible by opening the gear
+menu, so a ringing/acknowledged table wasn't distinguishable from a quiet
+one at a glance while the menu was closed.
 
 When `spamProtectionActive` is true (see
 [`useTimerState`](../../hooks/useTimerState.md)'s `registerPressAndCheckSpam`

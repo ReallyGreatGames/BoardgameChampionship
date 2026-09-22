@@ -13,7 +13,7 @@ import { space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "success";
 
 type Props = {
   label: string;
@@ -38,7 +38,10 @@ export function Button({
 }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const foreground = variant === "primary" || variant === "danger" ? colors.onAccent : colors.text;
+  const foreground =
+    variant === "primary" || variant === "danger" || variant === "success"
+      ? colors.onAccent
+      : colors.text;
 
   return (
     <Pressable
@@ -87,6 +90,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     secondary: { backgroundColor: colors.surfaceHigh, borderColor: colors.border },
     ghost: { backgroundColor: "transparent", borderColor: "transparent" },
     danger: { backgroundColor: colors.error, borderColor: colors.error },
+    success: { backgroundColor: colors.success, borderColor: colors.success },
     label: type.button,
     pressed: { opacity: 0.75 },
     disabled: { opacity: ui.disabledOpacity },

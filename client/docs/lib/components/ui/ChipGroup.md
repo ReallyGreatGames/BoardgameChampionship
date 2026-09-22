@@ -54,6 +54,7 @@ option as "neutral" rather than crashing on a `-1` index.
 
 ## Used by
 
+- [`lib/components/timer/TimerMenu.tsx`](../timer/TimerMenu.md) — `"cycle"` mode, the options stage's layout/mode toggle cards
 - [`lib/components/results/ResultsAdminTab.tsx`](../results/ResultsAdminTab.md)
 - [`lib/components/results/ResultsFilterDialog.tsx`](../results/ResultsFilterDialog.md)
 - [`lib/components/admin/ImportRules.tsx`](../admin/ImportRules.md) — `"select"` mode, per-row rule-type editor in the import preview
