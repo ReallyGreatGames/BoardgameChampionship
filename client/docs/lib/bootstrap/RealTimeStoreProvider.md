@@ -35,31 +35,39 @@ on, so they're documented here.
 `store.getState()` and projects out just the fields
 [`subscribeTier`](../stores/real-time-store.md) needs: `key`
 (collection/table id), `set` (the store's `realtimeSet` setter),
-`channel` (optional override channel string) and `relationshipFields`
-(optional array of relation field names used to merge realtime updates).
-Returns one `{ key, set, channel, relationshipFields }` descriptor per
-store — this is the payload handed to `subscribeTier`.
+`channel` (optional override channel string), `relationshipFields`
+(optional array of relation field names used to merge realtime updates)
+and `refetch` (the store's `init`, used to reload a collection whose
+realtime rows arrived with unexpanded relationships).
+Returns one `{ key, set, channel, relationshipFields, refetch }` descriptor
+per store — this is the payload handed to `subscribeTier`.
 
 #### `loadTier(stores: any[]): Promise<void>`
 
 `stores` — same shape as above. Calls `store.getState().init()` for every
-store in the tier and awaits all of them with `Promise.all`, so a tier's
-stores fetch their initial collections in parallel rather than one after
-another. Resolves once every store in the tier has finished its own
-`init()`.
+store in the tier and awaits all of them with `Promise.allSettled`, so a
+tier's stores fetch their initial collections in parallel rather than one
+after another. A rejected `init()` is logged with the store's key and
+doesn't stop the others or the tier's subscription. Resolves once every
+store in the tier has settled.
 
 #### `openTier(tier: Tier, stores: any[]): Promise<void>` — `useCallback`, deps `[]`
 
 `tier` — which of `"global" | "user" | "admin"` is being (re)opened.
-`stores` — that tier's store list. Awaits `loadTier(stores)` so each store
-has fresh data, opens the new shared subscription via
+`stores` — that tier's store list. Bumps `tierGenerations.current[tier]`
+and remembers the value, awaits `loadTier(stores)` so each store
+has fresh data, returns without subscribing if the generation changed in
+the meantime (a newer `openTier` or a `closeTier` for the same tier ran
+while this one was loading), otherwise opens the new shared subscription via
 `subscribeTier(tierEntries(stores))`, stores its unsubscribe function in
 `tierUnsubscribes.current[tier]`, and only *then* calls the previous
 unsubscribe function for that tier (if any) — see "Subscribe before
 unsubscribe" below. Two overlapping calls for the same tier can't leak a
-subscription either: whichever finishes second unsubscribes the first
-one's. Has no dependencies
-because it only touches the ref (stable identity) and its own arguments —
+subscription either: only the newest call subscribes, and a `closeTier`
+during the load (logout) stops the stale call from re-subscribing a tier
+the user is no longer entitled to. Errors are caught and logged, since every
+caller fires it without awaiting. Has no dependencies
+because it only touches refs (stable identity) and its own arguments —
 this lets it be called safely from effects and from `reconnectAll` without
 those needing `openTier` as a re-triggering dependency.
 
@@ -70,15 +78,20 @@ diagnosing why a reconnect happened (e.g. `"network restored"`,
 `"app foregrounded"`). Re-opens `"global"` unconditionally, `"user"` if
 `isAuthenticated`, and `"admin"` if `isAdmin` via `openTier` (which swaps
 each subscription in place); a tier the user is no longer entitled to is
-closed with `closeTier` instead. The re-opens are fire-and-forget
+closed with `closeTier` instead. Calls within `RECONNECT_DEDUPE_MS`
+(2000 ms) of the previous reconnect are skipped (tracked in
+`lastReconnectAt`), because unlocking a phone typically fires both the
+`AppState` and the `NetInfo` listener at once and each reconnect refetches
+every collection. The re-opens are fire-and-forget
 (`openTier`'s returned promise isn't awaited) since there's no caller
 waiting on reconnect completion.
 
 #### `closeTier(tier: Tier): void` — `useCallback`, deps `[]`
 
-Calls the tier's stored unsubscribe function (if any) and clears its slot.
+Bumps the tier's generation (cancelling any in-flight `openTier`), calls
+the tier's stored unsubscribe function (if any) and clears its slot.
 Used by `reconnectAll` for the `user`/`admin` tiers when auth no longer
-covers them.
+covers them, and by an unmount-only effect that closes all three tiers.
 
 ### Subscribe before unsubscribe
 
@@ -166,7 +179,11 @@ listeners:
   transitions from disconnected to connected.
 - `AppState.addEventListener("change", ...)` — reconnects whenever the app
   is foregrounded (`nextState === "active"`), since a backgrounded app's
-  realtime socket may have gone stale or been suspended by the OS.
+  realtime socket may have gone stale or been suspended by the OS. It first
+  checks `NetInfo.fetch()`: right after unlocking, the radio is often still
+  offline, and reconnecting then made every store's fetch fail and raise its
+  own error `Alert`. When offline it does nothing and leaves the reconnect to
+  the `NetInfo` listener's offline → online transition.
 
 Both listener effects depend on `reconnectAll`, which itself changes
 identity whenever `isAuthenticated` or `isAdmin` changes (its

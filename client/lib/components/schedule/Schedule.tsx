@@ -18,7 +18,7 @@ import { useTableStore } from "@/lib/stores/appwrite/table-store";
 import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
-import { computeTableElapsedSeconds, deepClone } from "@/lib/utils";
+import { computeTableElapsedSeconds, deepClone, resolveGameId } from "@/lib/utils";
 import { useDialog } from "@/lib/components/ui/Dialog";
 import { RunningNowCard } from "@/lib/components/schedule/RunningNowCard";
 import { ScheduleRow } from "@/lib/components/schedule/ScheduleRow";
@@ -104,7 +104,7 @@ export function ScheduleList() {
   async function confirmActiveChange() {
     const currentActive = sortedScheduleItems.find((s) => s.isActive);
     const gameTables = tableCollection.filter((t) => {
-      const tGameId = typeof t.game === "string" ? t.game : t.game.$id;
+      const tGameId = resolveGameId(t.game);
       return !!currentActive?.gameId && tGameId === currentActive.gameId;
     });
     const hasSigned =

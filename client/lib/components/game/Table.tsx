@@ -5,6 +5,7 @@ import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { useTableStore } from "@/lib/stores/appwrite/table-store";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
+import { resolveGameId } from "@/lib/utils";
 
 export function Table({ gameId }: { gameId: string }) {
   const { colors } = useTheme();
@@ -13,7 +14,7 @@ export function Table({ gameId }: { gameId: string }) {
   const collection = useTableStore((s) => s.collection);
 
   const table = collection.find((t) => {
-    const tableGameId = typeof t.game === "string" ? t.game : t.game.$id;
+    const tableGameId = resolveGameId(t.game);
     const gameMatches = tableGameId === gameId;
     const playerMatches =
       t.players?.some((p) => p.$id === currentPlayer?.$id) ?? false;

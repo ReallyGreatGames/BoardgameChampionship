@@ -19,6 +19,28 @@ const client = new Client()
   .setProject(projectId)
   .setPlatform("games.reallygreat.bgchampion");
 
+const HEARTBEAT_INTERVAL_MS = 20000;
+
+const realtime = (client as any).realtime;
+if (realtime) {
+  realtime.createHeartbeat = () => {
+    if (realtime.heartbeat) {
+      clearInterval(realtime.heartbeat);
+    }
+    realtime.heartbeat = setInterval(() => {
+      const socket: WebSocket | undefined = realtime.socket;
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        return;
+      }
+      try {
+        socket.send(JSON.stringify({ type: "ping" }));
+      } catch (e) {
+        console.warn("[realtime] heartbeat ping failed", e);
+      }
+    }, HEARTBEAT_INTERVAL_MS);
+  };
+}
+
 const account = new Account(client);
 const tablesDB = new TablesDB(client);
 const storage = new Storage(client);

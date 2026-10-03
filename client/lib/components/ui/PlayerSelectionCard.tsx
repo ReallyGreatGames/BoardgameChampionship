@@ -8,6 +8,7 @@ import { router } from "expo-router";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { teamName } from "@/lib/utils";
 
 type Props = {
   from?: "settings" | "game";
@@ -52,7 +53,7 @@ export function PlayerSelectionCard({ from, onPress, forceAllow, gameId }: Props
           <View style={styles.row}>
             <Text style={styles.label}>{t("currentTeam")}</Text>
             <Text style={styles.value} numberOfLines={1}>
-              {player.team.name}
+              {teamName(player)}
             </Text>
           </View>
           <View style={[styles.row, styles.rowBorder]}>

@@ -27,6 +27,7 @@ import {
   View,
 } from "react-native";
 import Svg, { Path, SvgXml } from "react-native-svg";
+import { resolveGameId } from "@/lib/utils";
 
 const PLAYER_COUNT = 4;
 
@@ -94,7 +95,7 @@ export default function SignaturePage() {
       return [];
     }
     const entry = tables.find((tbl) => {
-      const tGameId = typeof tbl.game === "string" ? tbl.game : tbl.game.$id;
+      const tGameId = resolveGameId(tbl.game);
       return tGameId === gameId && tbl.tableNumber === tableNumber;
     });
     return entry?.players ?? [];

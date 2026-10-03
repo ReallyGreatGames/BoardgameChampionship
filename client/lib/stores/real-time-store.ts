@@ -41,10 +41,14 @@ export function updateRealtimeCollection<T extends Models.Document>(
   response: RealtimeResponseEvent<T>,
   relationshipFields: readonly string[] = [],
 ) {
-  const { events, payload } = response;
+  const { events, payload } = response ?? ({} as RealtimeResponseEvent<T>);
+  if (!Array.isArray(collection) || !payload || typeof payload.$id !== "string") {
+    return Array.isArray(collection) ? collection : [];
+  }
+
   const eventType =
     ["create", "update", "delete"].find((type) =>
-      events.some((e) => e.endsWith(`.${type}`)),
+      (events ?? []).some((e) => typeof e === "string" && e.endsWith(`.${type}`)),
     ) ?? "unknown";
 
   if (!isNewUpdate(key, payload, eventType)) {
@@ -170,7 +174,43 @@ type TierEntry = {
   set: RealtimeSetter;
   channel?: string;
   relationshipFields?: readonly string[];
+  refetch?: () => void | Promise<void>;
 };
+
+const REFETCH_DEBOUNCE_MS = 500;
+const pendingRefetches = new Map<Key, ReturnType<typeof setTimeout>>();
+
+function scheduleRefetch(entry: TierEntry) {
+  if (!entry.refetch || pendingRefetches.has(entry.key)) {
+    return;
+  }
+  pendingRefetches.set(
+    entry.key,
+    setTimeout(() => {
+      pendingRefetches.delete(entry.key);
+      console.debug(`[realtime] refetching ${entry.key} to expand relationships`);
+      Promise.resolve(entry.refetch?.()).catch((e) =>
+        console.error(`[realtime] ${entry.key} refetch error`, e),
+      );
+    }, REFETCH_DEBOUNCE_MS),
+  );
+}
+
+export function hasUnexpandedRelationship(
+  row: unknown,
+  relationshipFields: readonly string[],
+): boolean {
+  if (!row || typeof row !== "object") {
+    return false;
+  }
+  return relationshipFields.some((field) => {
+    const value = (row as any)[field];
+    if (value === undefined || typeof value === "string") {
+      return true;
+    }
+    return Array.isArray(value) && value.some((v) => v == null || typeof v !== "object");
+  });
+}
 
 export function subscribeTier(entries: TierEntry[]): () => void {
   if (entries.length === 0) {
@@ -188,7 +228,7 @@ export function subscribeTier(entries: TierEntry[]): () => void {
   console.debug(`[realtime] subscribing tier`, channels);
 
   const clientUnsubscribe = client.subscribe<any>(channels, (response) => {
-    const matchedChannel = response.channels.find((ch) =>
+    const matchedChannel = response?.channels?.find((ch) =>
       entryByChannel.has(ch),
     );
     if (!matchedChannel) {
@@ -196,16 +236,25 @@ export function subscribeTier(entries: TierEntry[]): () => void {
     }
 
     const entry = entryByChannel.get(matchedChannel)!;
+    const relationshipFields = entry.relationshipFields ?? [];
     try {
-      entry.set((state: any) => ({
-        ...state,
-        collection: updateRealtimeCollection(
+      let needsRefetch = false;
+      entry.set((state: any) => {
+        const collection = updateRealtimeCollection(
           entry.key,
-          [...state.collection],
+          Array.isArray(state?.collection) ? [...state.collection] : [],
           response,
-          entry.relationshipFields,
-        ),
-      }));
+          relationshipFields,
+        );
+        if (relationshipFields.length > 0) {
+          const row = collection.find((item: any) => item?.$id === response.payload?.$id);
+          needsRefetch = hasUnexpandedRelationship(row, relationshipFields);
+        }
+        return { ...state, collection };
+      });
+      if (needsRefetch) {
+        scheduleRefetch(entry);
+      }
     } catch (e) {
       console.error(`[realtime] ${entry.key} callback error`, e);
     }
@@ -261,16 +310,7 @@ function updateRealtimeCollectionUpdate<T extends Models.Document>(
 
   const merged: any = { ...existing, ...payload };
   for (const key of relationshipFields) {
-    const pv = (payload as any)[key];
-    const ev = existing[key];
-    if (
-      ev != null &&
-      (pv === null ||
-        pv === undefined ||
-        (Array.isArray(pv) && pv.length === 0))
-    ) {
-      merged[key] = ev;
-    }
+    merged[key] = mergeRelationship(existing[key], (payload as any)[key]);
   }
 
   collection = collection.map((item) =>
@@ -295,10 +335,59 @@ function updateRealtimeCollectionDelete<T extends Models.Document>(
   return collection;
 }
 
+function isExpanded(value: unknown): value is Record<string, unknown> {
+  return value != null && typeof value === "object" && !Array.isArray(value);
+}
+
+function mergeRelatedRow(existing: unknown, incoming: unknown): unknown {
+  const incomingId = typeof incoming === "string" ? incoming : (incoming as any)?.$id;
+  if (!isExpanded(existing) || existing.$id !== incomingId) {
+    return incoming;
+  }
+  if (!isExpanded(incoming)) {
+    return existing;
+  }
+  const merged: Record<string, unknown> = { ...existing, ...incoming };
+  for (const [k, ev] of Object.entries(existing)) {
+    const iv = incoming[k];
+    if (isExpanded(ev) && (iv == null || typeof iv === "string")) {
+      merged[k] = ev;
+    }
+  }
+  return merged;
+}
+
+function mergeRelationship(existing: unknown, incoming: unknown): unknown {
+  if (existing == null) {
+    return incoming;
+  }
+  if (incoming === null || incoming === undefined) {
+    return existing;
+  }
+  if (Array.isArray(incoming)) {
+    if (incoming.length === 0 || !Array.isArray(existing)) {
+      return incoming.length === 0 ? existing : incoming;
+    }
+    return incoming.map((item) => {
+      const id = typeof item === "string" ? item : (item as any)?.$id;
+      const match = existing.find((e: any) => e?.$id === id);
+      return match === undefined ? item : mergeRelatedRow(match, item);
+    });
+  }
+  return mergeRelatedRow(existing, incoming);
+}
+
 function isNewUpdate(key: string, payload: any, eventType: string): boolean {
   const updatedAt = payload.$updatedAt ?? payload.$createdAt ?? "";
   const dedupeKey = `${key}:${payload.$id}:${eventType}:${updatedAt}`;
   const now = Date.now();
+  if (recentEvents.size > 500) {
+    for (const [k, t] of recentEvents) {
+      if (now - t >= 5000) {
+        recentEvents.delete(k);
+      }
+    }
+  }
   const last = recentEvents.get(dedupeKey);
 
   if (last !== undefined && now - last < 5000) {

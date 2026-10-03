@@ -30,7 +30,7 @@ specialized utility modules).
 | `arraysEqual(a, b)` | `<T>(T[], T[]) => boolean` | Value-equality for flat arrays (cheaper than a `JSON.stringify` comparison) |
 | `resolveEffectiveTimer(timer, gameSettings)` | see below | Resolves the timer settings that actually apply to a table |
 | `formatPoints(points)` | `(number) => string` | Tournament points → display string: whole numbers plain, tie-averaged fractions to one decimal (`2.5`) |
-| `teamName(player)` | `(Player) => string` | Team name, whether Appwrite returns a hydrated `Team` object or just the `$id` |
+| `teamName(player)` | `(Player \| string \| null \| undefined) => string` | Team name, whether Appwrite returns a hydrated `Team` object or just the `$id`. Returns `""` when `player` isn't an expanded object or has no `team` (a realtime row whose relationships aren't expanded yet). |
 | `injectViewBox(xml)` | `(string) => string` | Injects a missing `viewBox` attribute into signature SVGs |
 | `resolveGameId(ref)` | `(unknown) => string \| null` | Normalizes Appwrite relation fields (string, object, or array) into a game id |
 | `EffectiveTimerSettings` | Type | Return type of `resolveEffectiveTimer` |
@@ -136,9 +136,11 @@ dashboard so the two can't drift apart.
 [`ScoreSignatureModal.tsx`](components/results/ScoreSignatureModal.md),
 [`SignatureSlot.tsx`](components/results/SignatureSlot.md),
 [`TableCard.tsx`](components/results/TableCard.md),
-[`Schedule.tsx`](components/schedule/Schedule.md) (`deepClone`, `computeTableElapsedSeconds`),
+[`Schedule.tsx`](components/schedule/Schedule.md) (`deepClone`, `computeTableElapsedSeconds`, `resolveGameId`),
 [`lib/components/home/*`](components/home/README.md) (`formatPoints`) and
 [`ParticipantHero.tsx`](components/home/ParticipantHero.md) (`teamName`),
+[`PlayerSelectionCard.tsx`](components/ui/PlayerSelectionCard.md) (`teamName`),
+[`Table.tsx`](components/game/Table.md) and [`usePlayerTable.ts`](hooks/usePlayerTable.md) (`resolveGameId`),
 [`useParticipantOverview.ts`](hooks/useParticipantOverview.md) (`resolveGameId`),
 [`useRoundCountdown.ts`](hooks/useRoundCountdown.md) (`formatElapsedSeconds`, `computeTableElapsedSeconds`),
 [`TimerCell.tsx`](components/timer/TimerCell.md) (`teamName`),
@@ -150,4 +152,8 @@ dashboard so the two can't drift apart.
 and the screens [`active-bells.tsx`](../app/(pages)/(admin)/active-bells.md),
 [`game.tsx`](../app/(pages)/(user)/game.md),
 [`results.tsx`](../app/(pages)/(user)/results.md),
+[`signature.tsx`](../app/(pages)/(user)/signature.md),
+[`lottery-options-edit.tsx`](../app/(pages)/(user)/lottery-options-edit.md),
+[`settings.tsx`](../app/(pages)/settings.md),
+[`choose-your-character.tsx`](../app/(pages)/(team-player)/choose-your-character.md),
 [`timer.tsx`](../app/(pages)/(user)/timer.md).

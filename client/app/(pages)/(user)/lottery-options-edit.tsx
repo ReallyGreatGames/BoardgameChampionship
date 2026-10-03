@@ -31,6 +31,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { resolveGameId } from "@/lib/utils";
 
 function emptyOption(): LotteryOption {
   return { id: ID.unique(), title: "", description: "", weight: 1, maxPerTable: 1 };
@@ -58,7 +59,7 @@ export default function LotteryOptionsEditScreen() {
   const tableNumbers = useMemo(
     () =>
       tables
-        .filter((tbl) => (typeof tbl.game === "string" ? tbl.game : tbl.game.$id) === gameId)
+        .filter((tbl) => resolveGameId(tbl.game) === gameId)
         .map((tbl) => tbl.tableNumber),
     [tables, gameId],
   );

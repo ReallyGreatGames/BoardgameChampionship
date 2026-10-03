@@ -1,5 +1,6 @@
 import { usePlayer } from "../bootstrap/PlayerProvider";
 import { useTableStore } from "../stores/appwrite/table-store";
+import { resolveGameId } from "@/lib/utils";
 
 export function usePlayerTable(
   gameId: string | null | undefined,
@@ -11,7 +12,7 @@ export function usePlayerTable(
     return null;
   }
   const found = tableCollection.find((t) => {
-    const tGameId = typeof t.game === "string" ? t.game : t.game.$id;
+    const tGameId = resolveGameId(t.game);
     return (
       tGameId === gameId &&
       t.players?.some((p) => p.$id === currentPlayer.$id)
