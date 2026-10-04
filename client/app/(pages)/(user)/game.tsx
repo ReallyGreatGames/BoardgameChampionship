@@ -123,7 +123,7 @@ export default function GamePage() {
     () =>
       tableNumber !== null
         ? tableStore.collection.find(
-            (t) => t.tableNumber === tableNumber && t.game.$id === gameId,
+            (t) => t.tableNumber === tableNumber && resolveGameId(t.game) === gameId,
           )
         : null,
     [tableStore.collection, tableNumber, gameId],
@@ -325,7 +325,7 @@ export default function GamePage() {
         onClose={() => setColorSetupVisible(false)}
         players={currentTable?.players ?? []}
         onSave={handleSaveSetup}
-        customColors={currentTable?.game.colors}
+        customColors={currentTable?.game?.colors}
       />
     </View>
   );

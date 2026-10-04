@@ -20,7 +20,7 @@ import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
 import { hasScorePlacementConflict, isValidPlacementCombo } from "@/lib/utils/placements";
-import { teamName } from "@/lib/utils";
+import { teamName, resolveGameId } from "@/lib/utils";
 import { goBackTo, goTo } from "@/lib/utils/navigation";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useNavigation } from "expo-router";
@@ -64,7 +64,7 @@ export default function ResultsPage() {
   const playerData = useMemo(() => {
     if (!gameId || tableNumber === null) return [];
     const entry = tables.find((tbl) => {
-      const tGameId = typeof tbl.game === "string" ? tbl.game : tbl.game.$id;
+      const tGameId = resolveGameId(tbl.game);
       return tGameId === gameId && tbl.tableNumber === tableNumber;
     });
     return entry?.players ?? [];

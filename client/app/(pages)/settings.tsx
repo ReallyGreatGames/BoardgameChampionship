@@ -25,6 +25,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { teamName } from "@/lib/utils";
 
 type Language = "en" | "de";
 
@@ -57,7 +58,7 @@ export default function SettingsScreen() {
   );
 
   const subtitle = player
-    ? `${player.name} · ${player.team.name}`
+    ? `${player.name} · ${teamName(player)}`
     : t(`menu:${tournamentType}`);
 
   async function handleLogout() {

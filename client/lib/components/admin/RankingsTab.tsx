@@ -78,8 +78,9 @@ export function RankingsTab() {
 
       const pts = computeTablePoints(result.placements);
 
-      for (let seat = 0; seat < tableEntry.players.length; seat++) {
-        const player = tableEntry.players[seat];
+      const tablePlayers = tableEntry.players ?? [];
+      for (let seat = 0; seat < tablePlayers.length; seat++) {
+        const player = tablePlayers[seat];
         if (!player) continue;
 
         const team = player.team;

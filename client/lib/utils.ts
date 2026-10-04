@@ -168,8 +168,15 @@ export function formatPoints(points: number): string {
   return Number.isInteger(points) ? String(points) : points.toFixed(1);
 }
 
-export function teamName(player: Player): string {
-  return typeof player.team === "string" ? player.team : player.team.name;
+export function teamName(player: Player | string | null | undefined): string {
+  if (!player || typeof player !== "object") {
+    return "";
+  }
+  const team = player.team as Player["team"] | string | null | undefined;
+  if (!team) {
+    return "";
+  }
+  return typeof team === "string" ? team : team.name ?? "";
 }
 
 export function injectViewBox(xml: string): string {

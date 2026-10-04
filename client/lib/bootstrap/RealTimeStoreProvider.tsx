@@ -49,13 +49,23 @@ function tierEntries(stores: any[]) {
       set: state.realtimeSet,
       channel: state.channel,
       relationshipFields: state.relationshipFields,
+      refetch: state.init,
     };
   });
 }
 
 async function loadTier(stores: any[]) {
-  await Promise.all(stores.map((store) => store.getState().init()));
+  const results = await Promise.allSettled(
+    stores.map((store) => store.getState().init()),
+  );
+  results.forEach((result, i) => {
+    if (result.status === "rejected") {
+      console.error(`[realtime] init failed for ${stores[i].getState().key}`, result.reason);
+    }
+  });
 }
+
+const RECONNECT_DEDUPE_MS = 2000;
 
 export function RealTimeStoreProvider() {
   const { isAdmin, isPinVerified, loading } = useAuth();
@@ -69,20 +79,51 @@ export function RealTimeStoreProvider() {
     admin: null,
   });
 
+  const tierGenerations = useRef<Record<Tier, number>>({
+    global: 0,
+    user: 0,
+    admin: 0,
+  });
+  const lastReconnectAt = useRef(0);
+
   const openTier = useCallback(async (tier: Tier, stores: any[]) => {
-    await loadTier(stores);
-    const previous = tierUnsubscribes.current[tier];
-    tierUnsubscribes.current[tier] = subscribeTier(tierEntries(stores));
-    previous?.();
+    const generation = ++tierGenerations.current[tier];
+    try {
+      await loadTier(stores);
+      if (generation !== tierGenerations.current[tier]) {
+        return;
+      }
+      const previous = tierUnsubscribes.current[tier];
+      tierUnsubscribes.current[tier] = subscribeTier(tierEntries(stores));
+      previous?.();
+    } catch (e) {
+      console.error(`[realtime] failed to open ${tier} tier`, e);
+    }
   }, []);
 
   const closeTier = useCallback((tier: Tier) => {
+    tierGenerations.current[tier]++;
     tierUnsubscribes.current[tier]?.();
     tierUnsubscribes.current[tier] = null;
   }, []);
 
+  useEffect(
+    () => () => {
+      closeTier("global");
+      closeTier("user");
+      closeTier("admin");
+    },
+    [closeTier],
+  );
+
   const reconnectAll = useCallback(
     (reason: string) => {
+      const now = Date.now();
+      if (now - lastReconnectAt.current < RECONNECT_DEDUPE_MS) {
+        console.debug(`[realtime] ${reason} — reconnect already in progress, skipping`);
+        return;
+      }
+      lastReconnectAt.current = now;
       console.debug(`[realtime] ${reason} — reconnecting all subscriptions`);
       openTier("global", globalInits);
       if (isAuthenticated) {
@@ -132,8 +173,13 @@ export function RealTimeStoreProvider() {
   }, [reconnectAll]);
 
   useEffect(() => {
-    const handleAppStateChange = (nextState: AppStateStatus) => {
+    const handleAppStateChange = async (nextState: AppStateStatus) => {
       if (nextState !== "active") {
+        return;
+      }
+      const netState = await NetInfo.fetch().catch(() => null);
+      if (netState?.isConnected === false) {
+        console.debug("[realtime] app foregrounded while offline — waiting for network");
         return;
       }
       reconnectAll("app foregrounded");

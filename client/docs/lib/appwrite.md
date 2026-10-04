@@ -28,6 +28,21 @@ environment variables and exports the ready-configured SDK services.
 missing — this prevents a silent failure only surfacing on the first
 Appwrite request.
 
+### Heartbeat override (`client.realtime.createHeartbeat`)
+
+`react-native-appwrite` (0.27.x) starts a 20 s `setInterval` that sends a
+`ping` over the realtime socket once it opens, and never stops it when
+the socket closes. After the phone is locked and unlocked, the socket is
+`CLOSED` or still `CONNECTING` when the interval fires. React Native's
+`WebSocket.send` then throws `INVALID_STATE_ERR`, uncaught inside a timer
+callback, which crashes the app. The SDK's `createSocket` looks up
+`this.realtime.createHeartbeat` on every `open`, so this module replaces
+it on the (private, hence `as any`) `realtime` object with a version that
+pings only when `readyState === WebSocket.OPEN`, wraps `send` in
+`try/catch`, and clears the previous interval with `clearInterval`. If an SDK
+upgrade renames or restructures `realtime`, the `if (realtime)` guard
+skips the override; re-check this after upgrading.
+
 ## Used by
 
 Widely used: [`lib/auth.tsx`](auth.md), every

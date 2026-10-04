@@ -26,6 +26,7 @@ wrapper that plugs its own document type and collection id into these helpers.
 | `removeFromCollection(key, data)` | see below | Deletes a row. |
 | `fetchCollection(key, set, queries?)` | see below | Loads the full collection once (initial fetch/refetch). |
 | `subscribeTier(entries)` | see below | Opens one realtime subscription covering several stores at once. |
+| `hasUnexpandedRelationship(row, relationshipFields)` | `(row: unknown, relationshipFields: readonly string[]) => boolean` | `true` if any named relationship on `row` is missing (`undefined`), a bare id string, or an array containing a non-object (an id string or `null`). Used by `subscribeTier` to decide when a store must be refetched; `false` for a non-object `row`. |
 
 ### `RealtimeEntity`
 
@@ -59,7 +60,10 @@ type RealtimeEntity = { $id: string; $updatedAt?: string; $createdAt?: string };
 | `response` | `RealtimeResponseEvent<T>` | The raw Appwrite realtime message (`events: string[]`, `payload: T`, `channels: string[]`) as delivered by `client.subscribe`. |
 | `relationshipFields` | `readonly string[]` | Forwarded to the update handler; defaults to `[]` (no relationship-field protection) when the store declares none. |
 
-Derives the event type (`"create" \| "update" \| "delete" \| "unknown"`) by
+Returns `collection` unchanged (or `[]` if it isn't an array) when the
+event has no `payload` or the payload has no string `$id` — a malformed
+event must never throw inside a store update. Otherwise derives the event
+type (`"create" \| "update" \| "delete" \| "unknown"`) by
 matching `response.events` against Appwrite's `*.create`/`*.update`/`*.delete`
 suffixes, drops the event entirely if `isNewUpdate` says it's a duplicate,
 then dispatches to one of the internal (non-exported) handlers
@@ -121,7 +125,7 @@ initial load and for manual refetches.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `entries` | `TierEntry[]` | One entry per store to cover, each `{ key: Key; set: RealtimeSetter; channel?: string; relationshipFields?: readonly string[] }` (the internal, non-exported `TierEntry` type mirrors the relevant subset of `RealtimeCollectionStore`). |
+| `entries` | `TierEntry[]` | One entry per store to cover, each `{ key: Key; set: RealtimeSetter; channel?: string; relationshipFields?: readonly string[]; refetch?: () => void \| Promise<void> }` (the internal, non-exported `TierEntry` type mirrors the relevant subset of `RealtimeCollectionStore`; `refetch` is the store's `init`, called when a realtime row arrives with unexpanded relationships). |
 
 Returns immediately with a no-op unsubscribe if `entries` is empty. Otherwise
 computes each entry's realtime channel (`entry.channel` if set, else
@@ -131,6 +135,9 @@ covering all of them at once. On each incoming message, finds the matching
 entry by channel and calls its `set` with an updater that replaces
 `collection` via `updateRealtimeCollection`, guarding the callback in
 `try/catch` so one store's handler error doesn't break delivery to others.
+If the entry has `relationshipFields` and the affected row still has an
+unexpanded relationship after the merge (`hasUnexpandedRelationship`), the
+store's `refetch` is scheduled (see "Unexpanded relationships" below).
 Returns an unsubscribe function that tears down the underlying
 `client.subscribe` call for the whole tier. See "`subscribeTier`" below for
 why subscriptions are batched per-tier rather than per-store.
@@ -139,15 +146,39 @@ why subscriptions are batched per-tier rather than per-store.
 
 ### The relationship-fields problem
 
-Appwrite's realtime payload for an `update` event can omit relationship
-attributes specifically — a to-one relation comes back `null`, a to-many
-one comes back `[]` — when that particular update didn't touch the
-relation. `updateRealtimeCollectionUpdate` merges an incoming payload over
-the existing local copy, and for every field named in
-`relationshipFields` it re-applies this rule: if the existing value is
-non-null/non-empty and the incoming value looks like "Appwrite omitted
-this", the existing value is kept instead of being overwritten with
-null/`[]`.
+Appwrite's realtime payload never carries the `Query.select` expansion the
+initial fetch asked for: a relationship comes back `null`/`[]`, missing,
+or as bare id strings, and nested relations of an expanded row (e.g.
+`playerPositions[].team`) can be missing too.
+`updateRealtimeCollectionUpdate` merges an incoming payload over the
+existing local copy, and for every field named in `relationshipFields`
+runs `mergeRelationship(existing, incoming)` (internal):
+
+- incoming `null`/`undefined`, or an empty array → keep the existing value;
+- incoming id string (or an object) with the same `$id` as the existing
+  expanded row → keep the existing row, overlaying the incoming object's
+  fields except where they'd replace an expanded nested object with
+  `null`/an id string (`mergeRelatedRow`);
+- incoming array → each element is matched to an existing element by
+  `$id` and merged the same way; unmatched elements pass through as-is;
+- a relation that now points at a different `$id` passes through as-is
+  (it can't be expanded locally).
+
+### Unexpanded relationships
+
+A `create` event, an `update` for a row the collection didn't have yet
+(the "fallback add" — typical right after the app resumes from a locked
+screen, when rows changed while the socket was dead), or a reassigned
+relation all leave a row whose relationship is missing or an id string.
+Consumers dereferencing it (`table.game.$id`, `player.team.name`) used to
+crash the app. `subscribeTier` therefore checks the affected row with
+`hasUnexpandedRelationship` and, if needed, schedules the store's
+`refetch` (its `init`, which reloads with the full `Query.select`).
+Refetches are debounced per collection key (`REFETCH_DEBOUNCE_MS`, 500 ms,
+tracked in the module-level `pendingRefetches` map) so a burst of creates
+triggers one reload. Consumers still read relationships defensively
+(`resolveGameId`, `teamName`, `?? []`) because the row is unexpanded until
+that reload lands.
 
 This is deliberately scoped to **only** the fields a store declares as
 `relationshipFields` (e.g. `Timer`'s `playerPositions`, `Table`'s `players`/
@@ -164,7 +195,9 @@ correct default).
 `isNewUpdate` drops a realtime event if the exact same `(collection key,
 document id, event type, $updatedAt)` combination was already processed
 within the last 5 seconds — guards against Appwrite occasionally
-delivering a genuine duplicate of the same event.
+delivering a genuine duplicate of the same event. Once `recentEvents` holds
+more than 500 keys, entries older than 5 seconds are pruned on the next
+event so the map can't grow without bound in a long-running session.
 
 ### Stale-update protection
 

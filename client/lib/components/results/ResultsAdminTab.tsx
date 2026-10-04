@@ -209,7 +209,7 @@ export function ResultsAdminTab() {
         resolveEffectiveTimer(timer, gameTimerSettings);
       return {
         id: t.tableNumber,
-        players: t.players,
+        players: t.players ?? [],
         timer,
         seats,
         result,
@@ -235,7 +235,7 @@ export function ResultsAdminTab() {
         const hit =
           String(entry.id).includes(q) ||
           entry.players.some((p) => teamName(p).toLowerCase().includes(q)) ||
-          entry.players.some((p) => p.name.toLowerCase().includes(q));
+          entry.players.some((p) => (p?.name ?? "").toLowerCase().includes(q));
         if (!hit) return false;
       }
       if (bellFilter === "active" && !entry.hasBell) return false;

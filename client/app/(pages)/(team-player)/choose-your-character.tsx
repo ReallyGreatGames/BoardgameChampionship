@@ -18,6 +18,7 @@ import { DrawerActions } from "expo-router/react-navigation";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { teamName } from "@/lib/utils";
 
 type Language = "en" | "de";
 const LANGUAGES: Language[] = ["en", "de"];
@@ -58,7 +59,7 @@ export default function ChooseYourCharacter() {
   );
 
   const subtitle = player
-    ? `${player.name} · ${player.team.name}`
+    ? `${player.name} · ${teamName(player)}`
     : t(`menu:${tournamentType}`);
 
   const canContinue =

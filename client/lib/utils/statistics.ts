@@ -145,8 +145,9 @@ export function computeTeamSeatPerformance(
       continue;
     }
 
-    for (let seat = 0; seat < table.players.length; seat++) {
-      const player = table.players[seat];
+    const tablePlayers = table.players ?? [];
+    for (let seat = 0; seat < tablePlayers.length; seat++) {
+      const player = tablePlayers[seat];
       if (!player) {
         continue;
       }

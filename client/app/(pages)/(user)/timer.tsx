@@ -113,7 +113,7 @@ function TimerScreenContent({
     () => existingTimer?.playerPositions ?? [],
     [existingTimer?.playerPositions],
   );
-  const playerNames = useMemo(() => players.map((p) => p.name), [players]);
+  const playerNames = useMemo(() => players.map((p) => p?.name ?? ""), [players]);
   const playerTeams = useMemo(() => players.map((p) => teamName(p)), [players]);
 
   const bellActions = useTableBellActions();
