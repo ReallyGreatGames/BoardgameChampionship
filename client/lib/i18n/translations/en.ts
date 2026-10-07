@@ -349,7 +349,7 @@ const translations = {
     openMenu: "Open Menu",
     orientationCenter: "Orientation: Centered",
     orientationSide: "Orientation: Same Direction",
-    pauseModeQuickplay: "Pause Mode: Quickplay",
+    pauseModeQuickplay: "Pause Mode: Sequential",
     pauseModeSimultaneous: "Pause Mode: Simultaneous",
     pauseAll: "Pause All",
     resumeAll: "Resume All",
@@ -365,7 +365,7 @@ const translations = {
     mode: "Mode",
     layoutCentre: "Centre",
     layoutSide: "Side",
-    modeQuickplay: "Quickplay",
+    modeQuickplay: "Sequential",
     modeSimultaneous: "Simultaneous",
     confirmRing: {
       title: "Ring Table Bell",
