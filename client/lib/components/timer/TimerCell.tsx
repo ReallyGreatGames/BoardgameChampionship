@@ -140,6 +140,7 @@ export function TimerCell({
 
   const runningColor = isRunning ? "#ffffff" : playerColor.active;
   const timeColor = showOvertimeLook ? colors.error : runningColor;
+  const overtimeColor = isRunning ? "#ffffff" : playerColor.active;
 
   const overageSeconds = Math.max(0, -timeLeft);
   const baseSeconds =
@@ -234,7 +235,7 @@ export function TimerCell({
                 {formatTime(baseSeconds)}
               </Text>
               {isDepleted && overageSeconds > 0 && (
-                <Text style={[styles.overtimeText, { color: colors.error, ...TEXT_SHADOW }]}>
+                <Text style={[styles.overtimeText, { color: overtimeColor, ...TEXT_SHADOW }]}>
                   +{formatTime(overageSeconds)}
                 </Text>
               )}
