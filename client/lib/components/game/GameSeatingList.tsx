@@ -72,7 +72,7 @@ export function GameSeatingList({ table }: Props) {
               </View>
 
               <Text style={styles.seatLabel}>
-                {t("seating.seat", { seat: index + 1 })}
+                {player.playerCode}
               </Text>
             </View>
           );
