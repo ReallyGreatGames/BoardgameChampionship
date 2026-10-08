@@ -10,13 +10,14 @@ for this game.
 
 ## Exports
 
-### `Table({ gameId }: { gameId: string }): JSX.Element | null`
+### `Table({ gameId, showTableNumber }: { gameId: string; showTableNumber?: boolean }): JSX.Element | null`
 
 | Prop | Type | Meaning |
 |---|---|---|
 | `gameId` | `string` | The `$id` of the game whose table the current player should be shown for. |
+| `showTableNumber` | `boolean?` | When `true` (default) the table's `tableNumber` is passed to `GameSeatingList`, which shows it as a prominent "Table {n}" chip next to the heading; when `false` no chip is shown. |
 
-Renders the seating card for the current player's table in this game, or `null` if the player isn't seated at any table for it. Not exported as a named type — the prop object is inlined in the function signature.
+Renders the seating card (via [`GameSeatingList`](GameSeatingList.md)) for the current player's table in this game, or `null` if the player isn't seated at any table for it. Not exported as a named type — the prop object is inlined in the function signature.
 
 ## How it works
 
@@ -27,10 +28,16 @@ or bare id string) **and** the current player
 `players`. Renders `null` if no such table exists — this is a "your table"
 widget, not a general table browser.
 
+The card shows the table number chip by default because the schedule
+consumers show it nowhere else; `NowPlayingCard` already prints the table
+in its own header, so it passes `showTableNumber={false}` to avoid saying
+it twice.
+
 ## Used by
 
 - [`lib/components/schedule/ScheduleRow.tsx`](../schedule/ScheduleRow.md) — inside an expanded schedule entry
 - [`lib/components/schedule/RunningNowCard.tsx`](../schedule/RunningNowCard.md) — inside the running item's card
+- [`lib/components/home/NowPlayingCard.tsx`](../home/NowPlayingCard.md) — under the home card's table line, with `showTableNumber={false}`
 
 ## Related
 

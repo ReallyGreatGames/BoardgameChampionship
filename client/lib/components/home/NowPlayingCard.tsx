@@ -61,7 +61,7 @@ export function NowPlayingCard({ match }: Props) {
         </Text>
       </View>
 
-      <Table gameId={match.gameId} />
+      <Table gameId={match.gameId} showTableNumber={false} />
 
       <View style={styles.countdownRow}>
         <Text style={styles.countdown}>{countdown.label}</Text>

@@ -1,11 +1,11 @@
 import { Player } from "@/lib/models/player";
 import { Query } from "react-native-appwrite";
 import { create } from "zustand";
-import { fetchCollection, Key, RealtimeCollectionStore } from "../real-time-store";
+import { FetchOptions, fetchCollection, Key, RealtimeCollectionStore } from "../real-time-store";
 
 interface PlayerState extends RealtimeCollectionStore<Player> {
   initialized: boolean;
-  init: () => Promise<void>;
+  init: (options?: FetchOptions) => Promise<void>;
 }
 
 export const usePlayerStore = create<PlayerState>((set) => {
@@ -17,10 +17,10 @@ export const usePlayerStore = create<PlayerState>((set) => {
     realtimeSet: set as any,
     relationshipFields: ["team"],
     initialized: false,
-    init: async () => {
+    init: async (options) => {
       await fetchCollection<Player>(key, set as any, [
         Query.select(["*", "team.*"]),
-      ]);
+      ], options);
       set((s) => ({ ...s, initialized: true }));
     },
   };

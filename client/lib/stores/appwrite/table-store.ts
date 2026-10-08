@@ -2,13 +2,14 @@ import { Table } from "@/lib/models/table";
 import { Query } from "react-native-appwrite";
 import { create } from "zustand";
 import {
+  FetchOptions,
   fetchCollection,
   Key,
   RealtimeCollectionStore,
 } from "../real-time-store";
 
 interface TableState extends RealtimeCollectionStore<Table> {
-  init: () => Promise<void>;
+  init: (options?: FetchOptions) => Promise<void>;
 }
 
 export const useTableStore = create<TableState>((set) => {
@@ -19,10 +20,10 @@ export const useTableStore = create<TableState>((set) => {
     key,
     realtimeSet: set as any,
     relationshipFields: ["players", "game"],
-    init: async () => {
+    init: async (options) => {
       await fetchCollection<Table>(key, set as any, [
         Query.select(["*", "players.*", "players.team.*", "game.*"]),
-      ]);
+      ], options);
     },
   };
 });

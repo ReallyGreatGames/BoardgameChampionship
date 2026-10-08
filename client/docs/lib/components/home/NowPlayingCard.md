@@ -20,7 +20,7 @@ screen still falls back to for non-game schedule items.
 
 | Prop | Type | Meaning |
 |---|---|---|
-| `match` | [`ParticipantMatch`](../../hooks/useParticipantOverview.md) | The running match: its schedule `item` (title + planned duration), `gameId` (navigation target), `round`, `tableNumber`, and `opponents`. |
+| `match` | [`ParticipantMatch`](../../hooks/useParticipantOverview.md) | The running match: its schedule `item` (title + planned duration), `gameId` (navigation target), `round`, and `tableNumber`. |
 
 ### Internal: `openMatch(): void`
 
@@ -38,7 +38,7 @@ screen that can't resolve their table.
 
 ### `makeStyles(colors: ReturnType<typeof useTheme>["colors"]): StyleSheet`
 
-Builds the card, opponent-row, and countdown styles from theme colors;
+Builds the card, table-line, and countdown styles from theme colors;
 memoized via `useMemo` on `colors`.
 
 ## How it works
@@ -63,9 +63,10 @@ advance width instead of the display font's proportional one.
 
 `tableNumber` is `null` until an admin has seated the player, so the
 table line degrades to a round-only label ("Round 3 · table to be
-announced") rather than printing "Table null". Each opponent's country
-chip is skipped when the team relation carries no country, and the label
-falls back from team name to player name for the same reason.
+announced") rather than printing "Table null". The seating below it is
+the shared [`Table`](../game/Table.md) card, rendered with
+`showTableNumber={false}` because this header line already names the
+table.
 
 ## Used by
 
@@ -73,5 +74,6 @@ falls back from team name to player name for the same reason.
 
 ## Related
 
+- [`lib/components/game/Table.tsx`](../game/Table.md) — the seating card shown under the table line
 - [`lib/hooks/useParticipantOverview.ts`](../../hooks/useParticipantOverview.md)
 - [`lib/components/ui/Button.tsx`](../ui/Button.md), [`Badge.tsx`](../ui/Badge.md)

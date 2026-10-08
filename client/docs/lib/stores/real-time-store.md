@@ -24,7 +24,7 @@ wrapper that plugs its own document type and collection id into these helpers.
 | `addToCollection(key, data, options?)` | see below | Creates a row (optionally with a deterministic id). |
 | `updateInCollection(key, data, silent?)` | see below | Updates a row. |
 | `removeFromCollection(key, data)` | see below | Deletes a row. |
-| `fetchCollection(key, set, queries?)` | see below | Loads the full collection once (initial fetch/refetch). |
+| `fetchCollection(key, set, queries?, options?)` | see below | Loads the full collection once (initial fetch/refetch). |
 | `subscribeTier(entries)` | see below | Opens one realtime subscription covering several stores at once. |
 | `hasUnexpandedRelationship(row, relationshipFields)` | `(row: unknown, relationshipFields: readonly string[]) => boolean` | `true` if any named relationship on `row` is missing (`undefined`), a bare id string, or an array containing a non-object (an id string or `null`). Used by `subscribeTier` to decide when a store must be refetched; `false` for a non-object `row`. |
 
@@ -49,7 +49,13 @@ type RealtimeEntity = { $id: string; $updatedAt?: string; $createdAt?: string };
 | `realtimeSet` | `RealtimeSetter` | The setter realtime updates are relayed through — usually the store's raw zustand `set`, but may wrap it (e.g. to derive extra state alongside `collection`). |
 | `channel` | `string?` | Overrides the default `databases.<DATABASE_ID>.collections.<key>.documents` realtime channel for non-document resources such as a storage bucket's file events. |
 | `relationshipFields` | `readonly string[]?` | Names of relation attributes (to-one/to-many) that need the omitted-on-update workaround — see "The relationship-fields problem" below. |
-| `init` | `() => void \| Promise<void>` | Store-specific bootstrap (typically an initial `fetchCollection` call); invoked once per store during app startup. |
+| `init` | `(options?: FetchOptions) => void \| Promise<void>` | Store-specific bootstrap (typically an initial `fetchCollection` call); invoked once per store during app startup. Stores with `relationshipFields` forward `options` to `fetchCollection` so a background refetch can run silently. |
+
+### `FetchOptions`
+
+| Property | Type | Description |
+|---|---|---|
+| `silent` | `boolean?` | When `true`, `fetchCollection` rethrows a failed load instead of showing an error `Alert`. Used for background refetches the user didn't trigger. |
 
 ### `updateRealtimeCollection<T extends Models.Document>(key: Key, collection: T[], response: RealtimeResponseEvent<T>, relationshipFields: readonly string[] = []): T[]`
 
@@ -108,17 +114,19 @@ success, `false` on failure (after optionally alerting).
 Calls `tablesDB.deleteRow`. Returns `true` on success; on failure, shows an
 `Alert` with the error message and returns `false`.
 
-### `fetchCollection<T extends Models.Document, S extends RealtimeCollectionStore<T> = RealtimeCollectionStore<T>>(key: Key, set: Set<T, S>, queries?: string[]): Promise<void>`
+### `fetchCollection<T extends Models.Document, S extends RealtimeCollectionStore<T> = RealtimeCollectionStore<T>>(key: Key, set: Set<T, S>, queries?: string[], options?: FetchOptions): Promise<void>`
 
 | Parameter | Type | Description |
 |---|---|---|
 | `key` | `Key` | Table/collection id to list rows from. |
 | `set` | `Set<T, S>` | The store's zustand setter; called once with `{ collection: <rows> }` on success. |
 | `queries` | `string[]?` | Additional Appwrite `Query` strings appended after `Query.limit(Number.MAX_SAFE_INTEGER)` (i.e. "fetch everything, plus these extra filters"). |
+| `options` | `FetchOptions?` | `silent: true` makes a failure throw instead of alerting. |
 
 Calls `tablesDB.listRows` and, on success, replaces `collection` in the
 store's state with the full result set. On failure, shows an `Alert` with
-the error message and leaves state untouched. Used both for a store's
+the error message and leaves state untouched — or, with `options.silent`,
+rethrows the error (state still untouched) so the caller can log it. Used both for a store's
 initial load and for manual refetches.
 
 ### `subscribeTier(entries: TierEntry[]): () => void`
@@ -154,6 +162,10 @@ or as bare id strings, and nested relations of an expanded row (e.g.
 existing local copy, and for every field named in `relationshipFields`
 runs `mergeRelationship(existing, incoming)` (internal):
 
+- existing `null` and incoming `undefined` → stay `null` (a genuinely empty
+  relation, e.g. a player without a team; returning `undefined` would make
+  `hasUnexpandedRelationship` refetch the whole collection on every update
+  to that row, and the reload would just bring back `null` again);
 - incoming `null`/`undefined`, or an empty array → keep the existing value;
 - incoming id string (or an object) with the same `$id` as the existing
   expanded row → keep the existing row, overlaying the incoming object's
@@ -173,7 +185,10 @@ relation all leave a row whose relationship is missing or an id string.
 Consumers dereferencing it (`table.game.$id`, `player.team.name`) used to
 crash the app. `subscribeTier` therefore checks the affected row with
 `hasUnexpandedRelationship` and, if needed, schedules the store's
-`refetch` (its `init`, which reloads with the full `Query.select`).
+`refetch` (its `init` called with `{ silent: true }`, which reloads with the
+full `Query.select`; silent so a failed background reload on a weak
+connection is only logged by `scheduleRefetch` instead of popping an
+error `Alert` the user never asked for).
 Refetches are debounced per collection key (`REFETCH_DEBOUNCE_MS`, 500 ms,
 tracked in the module-level `pendingRefetches` map) so a burst of creates
 triggers one reload. Consumers still read relationships defensively

@@ -3,7 +3,13 @@ import { GameSeatingList } from "@/lib/components/game/GameSeatingList";
 import { useTableStore } from "@/lib/stores/appwrite/table-store";
 import { resolveGameId } from "@/lib/utils";
 
-export function Table({ gameId }: { gameId: string }) {
+export function Table({
+  gameId,
+  showTableNumber = true,
+}: {
+  gameId: string;
+  showTableNumber?: boolean;
+}) {
   const { player: currentPlayer } = usePlayer();
   const collection = useTableStore((s) => s.collection);
 
@@ -15,5 +21,10 @@ export function Table({ gameId }: { gameId: string }) {
     return gameMatches && playerMatches;
   });
 
-  return <GameSeatingList table={table} />;
+  return (
+    <GameSeatingList
+      table={table}
+      tableNumber={showTableNumber ? table?.tableNumber : null}
+    />
+  );
 }

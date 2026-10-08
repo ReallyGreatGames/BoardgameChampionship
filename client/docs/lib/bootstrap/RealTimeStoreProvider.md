@@ -37,7 +37,7 @@ on, so they're documented here.
 (collection/table id), `set` (the store's `realtimeSet` setter),
 `channel` (optional override channel string), `relationshipFields`
 (optional array of relation field names used to merge realtime updates)
-and `refetch` (the store's `init`, used to reload a collection whose
+and `refetch` (the store's `init` called with `{ silent: true }`, used to reload a collection whose
 realtime rows arrived with unexpanded relationships).
 Returns one `{ key, set, channel, relationshipFields, refetch }` descriptor
 per store — this is the payload handed to `subscribeTier`.

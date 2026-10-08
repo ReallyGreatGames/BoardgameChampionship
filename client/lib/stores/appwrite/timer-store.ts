@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { resolveGameId } from "@/lib/utils";
 import {
   addToCollection,
+  FetchOptions,
   fetchCollection,
   Key,
   RealtimeCollectionStore,
@@ -13,7 +14,7 @@ import {
 export type PartialTimer = Partial<Timer> & { $id: string };
 
 interface TimerState extends RealtimeCollectionStore<Timer> {
-  init: () => Promise<void>;
+  init: (options?: FetchOptions) => Promise<void>;
   add: (data: Omit<Timer, keyof Models.Document>) => Promise<Timer | null>;
   update: (item: PartialTimer, silent?: boolean) => Promise<boolean>;
 }
@@ -26,11 +27,12 @@ export const useTimerStore = create<TimerState>((set) => {
     key,
     realtimeSet: set,
     relationshipFields: ["playerPositions"],
-    init: async () => {
+    init: async (options) => {
       await fetchCollection<Timer, TimerState>(
         key,
         set,
         [Query.select(["*", "playerPositions.*", "playerPositions.team.*"])],
+        options,
       );
     },
 
