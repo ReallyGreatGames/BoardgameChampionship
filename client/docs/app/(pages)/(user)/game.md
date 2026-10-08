@@ -24,7 +24,7 @@ flags), and a table-bell bar pinned to the bottom of the screen.
 |---|---|---|
 | Header | [`GameHeader`](../../../lib/components/game/GameHeader.md) | Full-bleed, opens the drawer via its hamburger button |
 | Fixed row below header | [`BackButton`](../../../lib/components/ui/BackButton.md) + [`Badge`](../../../lib/components/ui/Badge.md) | Stays in place while the body scrolls; the badge shows the game's state (running / scheduled / finished) |
-| Scroll body | [`GameSeatingList`](../../../lib/components/game/GameSeatingList.md) or [`PlayerSelectionCard`](../../../lib/components/ui/PlayerSelectionCard.md) | The selection card replaces the seating list while the player has no table for this game |
+| Scroll body | [`GameSeatingList`](../../../lib/components/game/GameSeatingList.md) or [`PlayerSelectionCard`](../../../lib/components/ui/PlayerSelectionCard.md) | The selection card replaces the seating list while the player has no table for this game. The seating list gets `tableNumber`, so it shows the prominent table chip |
 | Scroll body | [`GameActionRow`](../../../lib/components/game/GameActionRow.md) | The four action tiles |
 | Fixed footer | [`TableBellBar`](../../../lib/components/game/TableBellBar.md) | Outside the `ScrollView`, so the bell stays reachable |
 

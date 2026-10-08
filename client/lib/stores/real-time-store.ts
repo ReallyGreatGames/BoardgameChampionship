@@ -30,8 +30,10 @@ export interface RealtimeCollectionStore<T extends RealtimeEntity> {
   realtimeSet: RealtimeSetter;
   channel?: string;
   relationshipFields?: readonly string[];
-  init: () => void | Promise<void>;
+  init: (options?: FetchOptions) => void | Promise<void>;
 }
+
+export type FetchOptions = { silent?: boolean };
 
 const recentEvents = new Map<string, number>();
 
@@ -155,7 +157,12 @@ export async function removeFromCollection<T>(
 export async function fetchCollection<
   T extends Models.Document,
   S extends RealtimeCollectionStore<T> = RealtimeCollectionStore<T>,
->(key: Key, set: Set<T, S>, queries?: string[]): Promise<void> {
+>(
+  key: Key,
+  set: Set<T, S>,
+  queries?: string[],
+  options?: FetchOptions,
+): Promise<void> {
   try {
     const result = await tablesDB.listRows({
       databaseId: DATABASE_ID,
@@ -165,6 +172,9 @@ export async function fetchCollection<
     console.debug(`[realtime] initial load for ${key}`, result.total);
     set({ collection: result.rows as unknown as T[] } as Partial<S>);
   } catch (e: any) {
+    if (options?.silent) {
+      throw e;
+    }
     Alert.alert("Error", e?.message ?? `Failed to load ${key}.`);
   }
 }
@@ -358,6 +368,9 @@ function mergeRelatedRow(existing: unknown, incoming: unknown): unknown {
 }
 
 function mergeRelationship(existing: unknown, incoming: unknown): unknown {
+  if (existing === null && incoming === undefined) {
+    return null;
+  }
   if (existing == null) {
     return incoming;
   }

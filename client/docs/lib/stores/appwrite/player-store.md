@@ -14,7 +14,7 @@ Zustand store for the `players` collection ([`Player`](../../models/player.md)).
 |---|---|
 | `collection: Player[]` | All `Player` documents, with `team` hydrated |
 | `initialized: boolean` | `true` once the initial fetch has resolved; `false` beforehand so consumers can distinguish "still loading" from "empty" |
-| `init(): Promise<void>` | `fetchCollection<Player>(key, set, [Query.select(["*", "team.*"])])` — loads every `Player` with the related `team` document's fields inlined, then flips `initialized` to `true` |
+| `init(options?: FetchOptions): Promise<void>` | `fetchCollection<Player>(key, set, [Query.select(["*", "team.*"])], options)` — loads every `Player` with the related `team` document's fields inlined, then flips `initialized` to `true`. `options` is forwarded so the realtime refetch can run silently (see [`FetchOptions`](../real-time-store.md)) |
 
 ## How it works
 

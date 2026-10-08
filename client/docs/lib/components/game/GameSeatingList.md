@@ -12,11 +12,12 @@ expanded schedule item.
 
 ## Exports
 
-### `GameSeatingList({ table }: Props): JSX.Element | null`
+### `GameSeatingList({ table, tableNumber }: Props): JSX.Element | null`
 
 | Prop | Type | Meaning |
 |---|---|---|
 | `table` | [`Table`](../../models/table.md) `\| null \| undefined` | The table document to render seating for. Renders `null` when absent, so the caller can pass a lookup result straight through. |
+| `tableNumber` | `number \| null?` | When set, a solid `colors.primary` chip reading "Table {n}"/"Tisch {n}" (`game:seating.table`) sits at the right of the "Participants" heading row; omitted/`null` renders the heading alone. |
 
 Rows are rendered in `table.players` order — that array's index *is* the
 seat number (`index + 1`), the same convention
@@ -39,12 +40,18 @@ it through. Their row gets `colors.surface` instead of the card's
 `colors.onAccent` — the design's way of letting a player find themselves
 in the list at a glance.
 
+The table chip is deliberately loud (filled primary background,
+`onAccent` text, 20 px condensed display font) rather than another muted
+eyebrow: players glance at it to find their physical table, and the
+earlier plain-text heading was easy to miss.
+
 Row separators are drawn with `borderTopWidth` on every row *except* the
 first, so the card's own border isn't doubled at the top edge.
 
 ## Used by
 
 - [`app/(pages)/(user)/game.tsx`](../../../app/(pages)/(user)/game.md)
+- [`Table.tsx`](Table.md)
 
 ## Related
 

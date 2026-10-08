@@ -6,6 +6,7 @@ import { usePlayer } from "@/lib/bootstrap/PlayerProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { Badge } from "@/lib/components/ui/Badge";
 import { Button } from "@/lib/components/ui/Button";
+import { Table } from "@/lib/components/game/Table";
 import { ParticipantMatch } from "@/lib/hooks/useParticipantOverview";
 import { useRoundCountdown } from "@/lib/hooks/useRoundCountdown";
 import { inset, space } from "@/lib/theme/spacing";
@@ -58,21 +59,9 @@ export function NowPlayingCard({ match }: Props) {
             ? t("tableAndRound", { table: match.tableNumber, round: match.round })
             : t("roundOnly", { round: match.round })}
         </Text>
-        {match.opponents.length > 0 && (
-          <View style={styles.opponents}>
-            {match.opponents.map((opponent) => (
-              <View key={opponent.id} style={styles.opponentRow}>
-                {!!opponent.country && (
-                  <Text style={styles.country}>{opponent.country}</Text>
-                )}
-                <Text style={styles.opponentName} numberOfLines={1}>
-                  {opponent.teamName || opponent.name}
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
       </View>
+
+      <Table gameId={match.gameId} showTableNumber={false} />
 
       <View style={styles.countdownRow}>
         <Text style={styles.countdown}>{countdown.label}</Text>
@@ -118,33 +107,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     tableLine: {
       ...type.h3,
       color: colors.text,
-    },
-    opponents: {
-      gap: space[1],
-      paddingTop: 2,
-    },
-    opponentRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: space[2],
-    },
-    country: {
-      ...type.eyebrow,
-      letterSpacing: 1,
-      color: colors.primary,
-      backgroundColor: colors.surfaceHigh,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 4,
-      paddingHorizontal: 5,
-      paddingVertical: 2,
-      overflow: "hidden",
-    },
-    opponentName: {
-      ...type.body,
-      color: colors.textSecondary,
-      flex: 1,
-      minWidth: 0,
     },
     countdownRow: {
       flexDirection: "row",

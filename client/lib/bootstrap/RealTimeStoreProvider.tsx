@@ -49,7 +49,7 @@ function tierEntries(stores: any[]) {
       set: state.realtimeSet,
       channel: state.channel,
       relationshipFields: state.relationshipFields,
-      refetch: state.init,
+      refetch: () => state.init({ silent: true }),
     };
   });
 }

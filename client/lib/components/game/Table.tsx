@@ -1,15 +1,15 @@
-import { useMemo } from "react";
-import { StyleSheet, Text, View } from "react-native";
 import { usePlayer } from "@/lib/bootstrap/PlayerProvider";
-import { useTheme } from "@/lib/bootstrap/ThemeProvider";
+import { GameSeatingList } from "@/lib/components/game/GameSeatingList";
 import { useTableStore } from "@/lib/stores/appwrite/table-store";
-import { inset } from "@/lib/theme/spacing";
-import { type } from "@/lib/theme/typography";
 import { resolveGameId } from "@/lib/utils";
 
-export function Table({ gameId }: { gameId: string }) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+export function Table({
+  gameId,
+  showTableNumber = true,
+}: {
+  gameId: string;
+  showTableNumber?: boolean;
+}) {
   const { player: currentPlayer } = usePlayer();
   const collection = useTableStore((s) => s.collection);
 
@@ -21,81 +21,10 @@ export function Table({ gameId }: { gameId: string }) {
     return gameMatches && playerMatches;
   });
 
-  if (!table) {
-    return null;
-  }
-
   return (
-    <View style={styles.gameSection}>
-      <Text style={styles.gameSectionHeader}>Tisch {table.tableNumber}</Text>
-      <View style={styles.gameTable}>
-        {(table.players ?? []).map((player, i) => (
-          <View
-            key={`${player.$id}-${i}`}
-            style={[
-              styles.gameRow,
-              player.$id === currentPlayer?.$id && styles.gameRowActive,
-            ]}
-          >
-            <Text
-              style={[
-                styles.gameTeam,
-                player.$id === currentPlayer?.$id && styles.gameTeamActive,
-              ]}
-            >
-              {player.name}
-            </Text>
-            <Text style={styles.gamePlayer}>Spieler {i + 1}</Text>
-          </View>
-        ))}
-      </View>
-    </View>
+    <GameSeatingList
+      table={table}
+      tableNumber={showTableNumber ? table?.tableNumber : null}
+    />
   );
-}
-
-function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
-  return StyleSheet.create({
-    gameSection: {
-      marginTop: inset.tight,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 8,
-      overflow: "hidden",
-    },
-    gameSectionHeader: {
-      color: colors.text,
-      fontWeight: "bold",
-      backgroundColor: colors.surfaceHigh,
-      paddingHorizontal: inset.card,
-      paddingVertical: 6,
-      textTransform: "uppercase",
-      letterSpacing: 0.5,
-    },
-    gameTable: {
-      gap: 0,
-    },
-    gameRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      paddingHorizontal: inset.card,
-      paddingVertical: 8,
-      borderTopWidth: 1,
-      borderTopColor: colors.divider,
-    },
-    gameRowActive: {
-      backgroundColor: colors.surfaceHigh,
-    },
-    gameTeam: {
-      ...type.bodySmall,
-      color: colors.text,
-    },
-    gameTeamActive: {
-      fontWeight: "bold",
-    },
-    gamePlayer: {
-      ...type.bodySmall,
-      color: colors.textSecondary,
-    },
-  });
 }

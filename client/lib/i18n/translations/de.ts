@@ -349,7 +349,7 @@ const translations = {
     openMenu: "Menü öffnen",
     orientationCenter: "Ausrichtung: Zentriert",
     orientationSide: "Ausrichtung: Gleiche Richtung",
-    pauseModeQuickplay: "Pausenmodus: Quickplay",
+    pauseModeQuickplay: "Pausenmodus: Nacheinander",
     pauseModeSimultaneous: "Pausenmodus: Simultan",
     pauseAll: "Alle pausieren",
     resumeAll: "Alle fortsetzen",
@@ -365,7 +365,7 @@ const translations = {
     mode: "Modus",
     layoutCentre: "Zentriert",
     layoutSide: "Seitlich",
-    modeQuickplay: "Quickplay",
+    modeQuickplay: "Nacheinander",
     modeSimultaneous: "Simultan",
     confirmRing: {
       title: "Tischklingel läuten",

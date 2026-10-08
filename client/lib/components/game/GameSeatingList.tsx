@@ -11,6 +11,7 @@ import { ui } from "@/lib/theme/ui";
 
 interface Props {
   table: Table | null | undefined;
+  tableNumber?: number | null;
 }
 
 function teamOf(player: Player): { name: string; country: string } {
@@ -21,7 +22,7 @@ function teamOf(player: Player): { name: string; country: string } {
   return { name: team.name ?? "", country: team.country ?? "" };
 }
 
-export function GameSeatingList({ table }: Props) {
+export function GameSeatingList({ table, tableNumber }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { player: currentPlayer } = usePlayer();
@@ -35,7 +36,16 @@ export function GameSeatingList({ table }: Props) {
 
   return (
     <View style={styles.section}>
-      <Text style={styles.eyebrow}>{t("seating.title")}</Text>
+      <View style={styles.header}>
+        <Text style={styles.eyebrow}>{t("seating.title")}</Text>
+        {tableNumber != null && (
+          <View style={styles.tableChip}>
+            <Text style={styles.tableChipText}>
+              {t("seating.table")} {tableNumber}
+            </Text>
+          </View>
+        )}
+      </View>
 
       <View style={styles.card}>
         {players.map((player, index) => {
@@ -72,7 +82,7 @@ export function GameSeatingList({ table }: Props) {
               </View>
 
               <Text style={styles.seatLabel}>
-                {t("seating.seat", { seat: index + 1 })}
+                {player.playerCode}
               </Text>
             </View>
           );
@@ -87,9 +97,29 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     section: {
       gap: space[2],
     },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: space[2],
+    },
     eyebrow: {
       ...type.eyebrow,
       color: colors.textMuted,
+    },
+    tableChip: {
+      backgroundColor: colors.primary,
+      borderRadius: 6,
+      paddingHorizontal: space[3],
+      paddingVertical: space[1],
+    },
+    tableChipText: {
+      fontFamily: fonts.displayBold,
+      fontSize: 20,
+      lineHeight: 24,
+      letterSpacing: 0.5,
+      textTransform: "uppercase",
+      color: colors.onAccent,
     },
     card: {
       borderWidth: 1,

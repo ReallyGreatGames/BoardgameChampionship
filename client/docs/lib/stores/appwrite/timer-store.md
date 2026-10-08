@@ -14,7 +14,7 @@ table-wide timer settings/bookkeeping).
 | State/Method | Purpose |
 |---|---|
 | `collection: Timer[]` | All `Timer` documents — `{ table, games, durationMinutesTotal?, roundSecondsTotal?, direction?, hasCustomTimer?, tableActiveAccumulatedMs?, tableActiveResumedAt?, playerPositions }` table-wide timer state |
-| `init(): Promise<void>` | `fetchCollection<Timer>(key, set, [Query.select(["*", "playerPositions.*", "playerPositions.team.*"])])` — loads every `Timer` with `playerPositions` (the related `Player` documents) inlined, each with its own `team` relation expanded too, so the timer UI can show each seat's team name without a second fetch |
+| `init(options?: FetchOptions): Promise<void>` | `fetchCollection<Timer>(key, set, [Query.select(["*", "playerPositions.*", "playerPositions.team.*"])], options)` — loads every `Timer` with `playerPositions` (the related `Player` documents) inlined, each with its own `team` relation expanded too, so the timer UI can show each seat's team name without a second fetch. `options` is forwarded so the realtime refetch can run silently (see [`FetchOptions`](../real-time-store.md)) |
 | `add(data: Omit<Timer, keyof Models.Document>): Promise<Timer \| null>` | Creates a `Timer` via `addToCollection(key, data, { rowId: timerRowId(data.table, resolveGameId(data.games)), silentOnConflict: true })` — `data.table`/`data.games` drive a deterministic id (see below); returns the created/existing document or `null` on a non-conflict failure |
 | `update(item: PartialTimer, silent?: boolean): Promise<boolean>` | `updateInCollection(key, item, silent)` — partial update by `item.$id`; `silent` (default `false`) suppresses the failure `Alert` for frequent tick-driven writes; returns whether the update succeeded |
 

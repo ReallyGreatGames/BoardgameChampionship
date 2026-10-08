@@ -297,7 +297,7 @@ export default function GamePage() {
         showsVerticalScrollIndicator={false}
       >
         {tableNumber !== null ? (
-          <GameSeatingList table={currentTable} />
+          <GameSeatingList table={currentTable} tableNumber={tableNumber} />
         ) : (
           <PlayerSelectionCard from="game" forceAllow gameId={gameId} />
         )}
