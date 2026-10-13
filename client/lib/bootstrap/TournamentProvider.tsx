@@ -18,7 +18,7 @@ export type ActiveTournamentInfo = {
 const DEFAULT_TOURNAMENT_INFO: ActiveTournamentInfo = {
   locale: "en",
   active: false,
-  type: "dmmib",
+  type: "europemasters",
 };
 
 export const tournamentContext = createContext<ActiveTournamentInfo>(
