@@ -11,6 +11,7 @@
     "lint": "expo lint",
     "test:timer-orientation": "node scripts/test-timer-orientation.cjs",
     "test:timer-colors": "node scripts/test-timer-colors.cjs",
+    "test:connectivity-pill": "node scripts/test-connectivity-pill.cjs",
     "storybook:start": "cross-env STORYBOOK_ENABLED=true dotenv -e .env.local -- expo start",
     "storybook:ios": "cross-env STORYBOOK_ENABLED=true dotenv -e .env.local -- expo start --ios",
     "storybook:android": "cross-env STORYBOOK_ENABLED=true dotenv -e .env.local -- expo run:android"

@@ -12,6 +12,7 @@ type Status = "online" | "offline";
 
 const VISIBLE_MS = 3000;
 const COOLDOWN_MS = 15000;
+const OFFLINE_GRACE_MS = 2000;
 
 export function ConnectivityPill() {
   const { colors } = useTheme();
@@ -28,6 +29,8 @@ export function ConnectivityPill() {
   const prevOnline = useRef<boolean | null>(null);
   const lastShownAt = useRef(0);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const offlineTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const offlineNoticeShown = useRef(false);
   const [anim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
@@ -46,29 +49,58 @@ export function ConnectivityPill() {
     const prev = prevOnline.current;
     prevOnline.current = isOnline;
 
-    if (prev === null || prev === isOnline || timerActive) {
+    if (isOnline || timerActive) {
+      if (offlineTimer.current) {
+        clearTimeout(offlineTimer.current);
+        offlineTimer.current = null;
+      }
+
+      if (isOnline && prev === false && offlineNoticeShown.current) {
+        const now = Date.now();
+        if (now - lastShownAt.current >= COOLDOWN_MS) {
+          lastShownAt.current = now;
+          setDisplayStatus("online");
+          setStatus("online");
+          if (hideTimer.current) {
+            clearTimeout(hideTimer.current);
+          }
+          hideTimer.current = setTimeout(() => setStatus(null), VISIBLE_MS);
+        }
+      }
+      if (isOnline) {
+        offlineNoticeShown.current = false;
+      }
       return;
     }
 
-    const now = Date.now();
-    if (now - lastShownAt.current < COOLDOWN_MS) {
+    if (prev !== true || offlineTimer.current) {
       return;
     }
-    lastShownAt.current = now;
 
-    const next: Status = isOnline ? "online" : "offline";
-    setDisplayStatus(next);
-    setStatus(next);
-    if (hideTimer.current) {
-      clearTimeout(hideTimer.current);
-    }
-    hideTimer.current = setTimeout(() => setStatus(null), VISIBLE_MS);
+    offlineTimer.current = setTimeout(() => {
+      offlineTimer.current = null;
+      const now = Date.now();
+      if (now - lastShownAt.current < COOLDOWN_MS) {
+        return;
+      }
+      lastShownAt.current = now;
+      offlineNoticeShown.current = true;
+      setDisplayStatus("offline");
+      setStatus("offline");
+      if (hideTimer.current) {
+        clearTimeout(hideTimer.current);
+      }
+      hideTimer.current = setTimeout(() => setStatus(null), VISIBLE_MS);
+    }, OFFLINE_GRACE_MS);
   }, [isOnline, timerActive]);
 
   useEffect(
     () => () => {
       if (hideTimer.current) {
         clearTimeout(hideTimer.current);
+      }
+      if (offlineTimer.current) {
+        clearTimeout(offlineTimer.current);
       }
     },
     [],
