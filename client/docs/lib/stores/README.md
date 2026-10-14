@@ -11,6 +11,7 @@ Appwrite realtime.
 | File | Purpose |
 |---|---|
 | [real-time-store.md](real-time-store.md) | Shared realtime/CRUD engine every store below is built on |
+| [connectivity-store.md](connectivity-store.md) | App-wide network status + timer-active flag (not collection-backed) |
 | [appwrite/](appwrite/README.md) | One store per Appwrite collection/bucket |
 
 ## Architecture
