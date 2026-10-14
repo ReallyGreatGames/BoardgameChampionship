@@ -17,8 +17,8 @@ laid out to mirror the physical timer grid.
 | `onClose` | `() => void` | Called when the sheet is dismissed without saving. |
 | `players` | [`Player[]`](../../models/player.md) | Candidate players to cycle through for each of the 4 seats. |
 | `onSave` | `(playerIds: (string \| null)[], colors: string[]) => Promise<void>` | Called with the 4 seats' assigned player ids (in seat order, `null` for an unassigned seat) and their hex colors; awaited while `saving` is shown. |
-| `customColors` | `string[]` (optional) | Per-slot color overrides (typically the game's own previously-saved colors), indexed the same as the 4 seats; falls back to [`PLAYER_COLORS`](../../utils/timerColors.md) swatches where absent. |
-| `initialColors` | `string[]` (optional) | Current seat assignments, separate from the available palette; falls back per seat to `customColors` or the default palette. |
+| `customColors` | `string[]` (optional) | The game's available colors ([`Game.colors`](../../models/game.md), 4–6 hex strings). When present and non-empty it becomes the swatch palette; otherwise the global [`PLAYER_COLOR_OPTIONS`](../../utils/timerColors.md) palette is offered. Seats default to its first four entries. |
+| `initialColors` | `string[]` (optional) | Current seat assignments, separate from the available palette; falls back per seat to the game's colors or the default palette. |
 | `allowPlayerReassignment` | `boolean` (optional, default `true`) | When false, player names remain fixed and only colors can change. |
 | `title`, `saveLabel` | `string` (optional) | Override the setup title and "Save & Open Timer" label when editing an active timer. |
 
@@ -45,16 +45,19 @@ doesn't need a full selection modal. `hasDuplicatePlayers` disables saving
 (with an explanatory message) if the same player got assigned to more than
 one seat.
 
-Colors default to [`PLAYER_COLORS`](../../utils/timerColors.md)'s swatches,
-overridable per-slot via `customColors` (typically the game's own saved
-colors). `initialColors` seeds seat selections without changing the available
-palette. Duplicate palette entries render once; swatches expose their player,
-hex color, and selected state for accessibility.
+The swatch palette comes from `customColors` (the game's configured colors)
+when present, and otherwise from the global
+[`PLAYER_COLOR_OPTIONS`](../../utils/timerColors.md) 6-color list — so a game
+configured with five colors offers exactly those five. Seats default to the
+first four palette entries (`defaultColors`). `initialColors` seeds seat
+selections without changing the available palette. Duplicate palette entries
+render once; swatches expose their player, hex color, and selected state for
+accessibility.
 
-`colorsToUse` is a `useMemo` over `customColors` (falling back per-index to
-`SWATCHES`), recomputed only when `customColors` changes. The `useEffect`
-keyed on `[visible, players, colorsToUse, initialColors]` re-seeds `assignments` from
-`players`/`initialColors`/`colorsToUse` and clears `saving` every time the sheet becomes
+`palette` and `defaultColors` are `useMemo`s over `customColors`, recomputed
+only when it changes. The `useEffect` keyed on
+`[visible, players, defaultColors, initialColors]` re-seeds `assignments` from
+`players`/`initialColors`/`defaultColors` and clears `saving` every time the sheet becomes
 visible (or its inputs change while visible) — this is what makes the sheet
 start from a fresh, correct assignment each time it's reopened instead of
 carrying over stale state from a previous open/close cycle, and it also

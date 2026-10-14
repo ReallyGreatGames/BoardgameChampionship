@@ -151,7 +151,9 @@ table yet contributes `0` from that half.
 
 ### Memoized derivations
 
-`currentTable` (`useMemo`, deps `[tableStore.collection, tableNumber, gameId]`) finds this player's `Table` document for the current game, used for `GameSeatingList`, for `PlayerColorSetupModal`'s `players`/`customColors` props, and to gate `handleTimerPress`.
+`currentTable` (`useMemo`, deps `[tableStore.collection, tableNumber, gameId]`) finds this player's `Table` document for the current game, used for `GameSeatingList`, for `PlayerColorSetupModal`'s `players` prop, and to gate `handleTimerPress`.
+
+`gameColors` (`useMemo`, deps `[timerSettingsCollection, gameId, currentTable]`) supplies `PlayerColorSetupModal`'s `customColors` (the game's 4–6 color palette). It prefers the live [`useTimerSettingsStore`](../../../lib/stores/appwrite/timer-settings-store.md) document, falling back to `currentTable.game.colors` — the nested `game` relation on the table store is hydrated from cache/realtime-table data and does **not** refresh when a game's colors are edited, so reading it directly would show a stale palette (e.g. only 4 of a game's 5 colors) on the initial setup sheet.
 
 `bell` (`useMemo`, deps `[tableBellStore.collection, tableNumber]`) finds the active `TableBell` for this player's table, if any.
 

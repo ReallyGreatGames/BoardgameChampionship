@@ -9,10 +9,16 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import ColorPicker, { HueSlider, Panel1 } from "reanimated-color-picker";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-store";
-import { PLAYER_COLORS } from "@/lib/utils/timerColors";
+import {
+  MAX_PLAYER_COLOR_COUNT,
+  MIN_PLAYER_COLOR_COUNT,
+  PLAYER_COLORS,
+  PLAYER_COLOR_OPTIONS,
+} from "@/lib/utils/timerColors";
 import { BottomSheet, makeSheetStyles } from "@/lib/components/ui/BottomSheet";
 import { TimerDurationFields } from "@/lib/components/timer/TimerDurationFields";
 import { useDurationRoundFields } from "@/lib/hooks/useDurationRoundFields";
@@ -75,7 +81,11 @@ export function TimerSettingsModal({
         direction: existing.direction,
       });
       setPlayerColors(
-        existing.colors?.length === 4 ? existing.colors : DEFAULT_COLORS,
+        existing.colors &&
+          existing.colors.length >= MIN_PLAYER_COLOR_COUNT &&
+          existing.colors.length <= MAX_PLAYER_COLOR_COUNT
+          ? existing.colors
+          : DEFAULT_COLORS,
       );
     } else {
       reset();
@@ -90,6 +100,29 @@ export function TimerSettingsModal({
       next[playerIdx] = hex;
       return next;
     });
+  }
+
+  function addColor() {
+    setPlayerColors((prev) => {
+      if (prev.length >= MAX_PLAYER_COLOR_COUNT) {
+        return prev;
+      }
+      const used = new Set(prev);
+      const next =
+        PLAYER_COLOR_OPTIONS.find((hex) => !used.has(hex)) ??
+        prev[prev.length - 1];
+      return [...prev, next];
+    });
+    setExpandedPlayer(null);
+  }
+
+  function removeColor(index: number) {
+    setPlayerColors((prev) =>
+      prev.length > MIN_PLAYER_COLOR_COUNT
+        ? prev.filter((_, i) => i !== index)
+        : prev,
+    );
+    setExpandedPlayer(null);
   }
 
   async function handleSave() {
@@ -172,17 +205,37 @@ export function TimerSettingsModal({
         const isOpen = expandedPlayer === i;
         return (
           <View key={i} style={pickerStyles.playerRow}>
-            <TouchableOpacity
-              style={pickerStyles.playerHeader}
-              onPress={() => setExpandedPlayer(isOpen ? null : i)}
-              activeOpacity={0.7}
-            >
-              <View style={[pickerStyles.colorDot, { backgroundColor: hex }]} />
-              <Text style={pickerStyles.playerLabel}>
-                {t("timerSettingsModal.playerColorField", { n: i + 1 })}
-              </Text>
-              <Text style={pickerStyles.chevron}>{isOpen ? "▲" : "▼"}</Text>
-            </TouchableOpacity>
+            <View style={pickerStyles.playerHeader}>
+              <TouchableOpacity
+                style={pickerStyles.playerHeaderMain}
+                onPress={() => setExpandedPlayer(isOpen ? null : i)}
+                activeOpacity={0.7}
+              >
+                <View style={[pickerStyles.colorDot, { backgroundColor: hex }]} />
+                <Text style={pickerStyles.playerLabel}>
+                  {t("timerSettingsModal.colorField", { n: i + 1 })}
+                </Text>
+                <Text style={pickerStyles.chevron}>{isOpen ? "▲" : "▼"}</Text>
+              </TouchableOpacity>
+
+              {playerColors.length > MIN_PLAYER_COLOR_COUNT && (
+                <Pressable
+                  onPress={() => removeColor(i)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("timerSettingsModal.removeColor", {
+                    n: i + 1,
+                  })}
+                  hitSlop={8}
+                  style={pickerStyles.removeBtn}
+                >
+                  <Ionicons
+                    name="remove-circle-outline"
+                    size={20}
+                    color={colors.textMuted}
+                  />
+                </Pressable>
+              )}
+            </View>
 
             {isOpen && (
               <ColorPicker
@@ -197,6 +250,20 @@ export function TimerSettingsModal({
           </View>
         );
       })}
+
+      {playerColors.length < MAX_PLAYER_COLOR_COUNT && (
+        <Pressable
+          onPress={addColor}
+          accessibilityRole="button"
+          accessibilityLabel={t("timerSettingsModal.addColor")}
+          style={pickerStyles.addColorBtn}
+        >
+          <Ionicons name="add" size={18} color={colors.text} />
+          <Text style={pickerStyles.addColorText}>
+            {t("timerSettingsModal.addColor")}
+          </Text>
+        </Pressable>
+      )}
     </BottomSheet>
   );
 }
@@ -215,6 +282,30 @@ function makePickerStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       gap: 10,
       padding: 12,
       backgroundColor: colors.surfaceHigh,
+    },
+    playerHeaderMain: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    removeBtn: {
+      padding: 2,
+    },
+    addColorBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      padding: 12,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderStyle: "dashed",
+      borderColor: colors.border,
+    },
+    addColorText: {
+      color: colors.text,
+      fontSize: 14,
     },
     colorDot: {
       width: 20,

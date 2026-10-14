@@ -787,7 +787,9 @@ const translations = {
       directionField: "Zählrichtung",
       directionDown: "Rückwärts",
       directionUp: "Vorwärts",
-      playerColorField: "Spieler {{n}} Farbe",
+      colorField: "Farbe {{n}}",
+      addColor: "Farbe hinzufügen",
+      removeColor: "Farbe {{n}} entfernen",
       save: "Speichern",
     },
     tournamentSettings: {

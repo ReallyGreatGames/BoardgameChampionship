@@ -780,7 +780,9 @@ const translations = {
       directionField: "Count Direction",
       directionDown: "Count Down",
       directionUp: "Count Up",
-      playerColorField: "Player {{n}} Color",
+      colorField: "Color {{n}}",
+      addColor: "Add color",
+      removeColor: "Remove color {{n}}",
       save: "Save",
     },
     tournamentSettings: {

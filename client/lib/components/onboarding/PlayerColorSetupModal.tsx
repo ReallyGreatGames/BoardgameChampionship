@@ -2,7 +2,7 @@ import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { Player } from "@/lib/models/player";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
-import { PLAYER_COLORS } from "@/lib/utils/timerColors";
+import { PLAYER_COLOR_OPTIONS } from "@/lib/utils/timerColors";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -15,7 +15,9 @@ import {
 } from "react-native";
 import { BottomSheet, makeSheetStyles } from "@/lib/components/ui/BottomSheet";
 
-const SWATCHES = PLAYER_COLORS.map((c) => c.active);
+const SWATCHES = [...PLAYER_COLOR_OPTIONS];
+
+const SEAT_COUNT = 4;
 
 const GRID_ROWS = [
   [0, 1],
@@ -58,15 +60,27 @@ export function PlayerColorSetupModal({
   const styles = useMemo(() => makeSheetStyles(colors), [colors]);
   const { t } = useTranslation(["game"]);
 
-  const colorsToUse = useMemo(
-    () => SWATCHES.map((c, i) => customColors?.[i] ?? c),
+  const palette = useMemo(
+    () =>
+      Array.from(
+        new Set(customColors && customColors.length > 0 ? customColors : SWATCHES),
+      ),
+    [customColors],
+  );
+
+  const defaultColors = useMemo(
+    () =>
+      Array.from(
+        { length: SEAT_COUNT },
+        (_, i) => customColors?.[i] ?? SWATCHES[i % SWATCHES.length],
+      ),
     [customColors],
   );
 
   const [assignments, setAssignments] = useState<Assignment[]>(() =>
-    Array.from({ length: 4 }, (_, i) => ({
+    Array.from({ length: SEAT_COUNT }, (_, i) => ({
       playerId: players[i]?.$id ?? null,
-      color: initialColors?.[i] ?? colorsToUse[i],
+      color: initialColors?.[i] ?? defaultColors[i],
     })),
   );
   const [saving, setSaving] = useState(false);
@@ -81,13 +95,13 @@ export function PlayerColorSetupModal({
       return;
     }
     setAssignments(
-      Array.from({ length: 4 }, (_, i) => ({
+      Array.from({ length: SEAT_COUNT }, (_, i) => ({
         playerId: players[i]?.$id ?? null,
-        color: initialColors?.[i] ?? colorsToUse[i],
+        color: initialColors?.[i] ?? defaultColors[i],
       })),
     );
     setSaving(false);
-  }, [visible, players, colorsToUse, initialColors]);
+  }, [visible, players, defaultColors, initialColors]);
 
   function cyclePlayer(posIdx: number) {
     if (players.length === 0) {
@@ -217,7 +231,7 @@ export function PlayerColorSetupModal({
                 </TouchableOpacity>
 
                 <View style={{ flexDirection: "row", gap: 6 }}>
-                  {Array.from(new Set(colorsToUse)).map((hex) => {
+                  {palette.map((hex) => {
                     const isSelected = assignment.color === hex;
                     return (
                       <Pressable
