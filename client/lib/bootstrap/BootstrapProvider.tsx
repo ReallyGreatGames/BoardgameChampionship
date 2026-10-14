@@ -2,6 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { FC, PropsWithChildren } from "react";
 import { AuthProvider } from "../auth";
 import { DialogProvider } from "@/lib/components/ui/Dialog";
+import { CacheProvider } from "./CacheProvider";
+import { ConnectivityProvider } from "./ConnectivityProvider";
 import { PlayerProvider } from "./PlayerProvider";
 import { RealTimeStoreProvider } from "./RealTimeStoreProvider";
 import { ScreenOrientationProvider } from "./ScreenOrientationProvider";
@@ -19,7 +21,9 @@ export const BootstrapProvider: FC<PropsWithChildren> = ({ children }) => {
             <AuthProvider>
               <ScreenOrientationProvider>
                 <PlayerProvider>
+                  <CacheProvider />
                   <RealTimeStoreProvider />
+                  <ConnectivityProvider />
                   {children}
                 </PlayerProvider>
               </ScreenOrientationProvider>

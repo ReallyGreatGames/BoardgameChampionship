@@ -110,6 +110,7 @@ const translations = {
     welcomeDescription:
       "Log in with the PIN shown on the projector.\nThen choose your team and player number.",
     login: "Log in",
+    offlineTimer: "Timer (without login)",
     faqLink: "Have questions? View FAQ",
     now: "Now",
     upNext: "Up Next",
@@ -394,6 +395,10 @@ const translations = {
         "Discard the custom timer and use this game's default timer instead?",
       confirm: "Use Default",
       cancel: "Cancel",
+    },
+    offlineConfig: {
+      title: "Offline Timer",
+      start: "Start",
     },
     customTimerModal: {
       title: "Custom Timer",
@@ -832,6 +837,10 @@ const translations = {
         a: 'From the game screen, tap "Timer". It shows the playing time per player. The time per game is set automatically. If needed, these settings can be overridden.',
       },
     ],
+  },
+  connectivity: {
+    online: "Back online",
+    offline: "No internet connection",
   },
   legal: {
     imprint: {

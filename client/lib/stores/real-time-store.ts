@@ -6,8 +6,24 @@ import {
   RealtimeResponseEvent,
 } from "react-native-appwrite";
 import { client, DATABASE_ID, tablesDB } from "../appwrite";
+import { enqueueWrite } from "../cache/write-queue";
+import { useConnectivityStore } from "./connectivity-store";
 
 export type Key = string;
+
+function isOffline(): boolean {
+  return useConnectivityStore.getState().isOnline === false;
+}
+
+function makeOptimisticRow<T>(rowId: string, data: unknown): T {
+  const now = new Date().toISOString();
+  return {
+    $id: rowId,
+    $createdAt: now,
+    $updatedAt: now,
+    ...(data as object),
+  } as unknown as T;
+}
 export type Set<
   T extends Models.Document,
   S extends RealtimeCollectionStore<T> = RealtimeCollectionStore<T>,
@@ -87,6 +103,15 @@ export async function addToCollection<T>(
     });
     return row as unknown as T;
   } catch (e: any) {
+    if (isOffline()) {
+      await enqueueWrite({
+        op: "create",
+        tableId: key,
+        rowId,
+        data: data as Record<string, unknown>,
+      });
+      return makeOptimisticRow<T>(rowId, data);
+    }
     const isConflict = e?.code === 409 || e?.type === "document_already_exists";
     if (isConflict && options?.silentOnConflict) {
       try {
@@ -128,6 +153,15 @@ export async function updateInCollection<T>(
     });
     return true;
   } catch (e: any) {
+    if (isOffline()) {
+      await enqueueWrite({
+        op: "update",
+        tableId: key,
+        rowId: data.$id,
+        data: dataToUpdate as Record<string, unknown>,
+      });
+      return true;
+    }
     if (!silent) {
       Alert.alert("Error", e?.message ?? "Failed to update item.");
     }
@@ -149,6 +183,14 @@ export async function removeFromCollection<T>(
     });
     return true;
   } catch (e: any) {
+    if (isOffline()) {
+      await enqueueWrite({
+        op: "delete",
+        tableId: key,
+        rowId: data.$id,
+      });
+      return true;
+    }
     Alert.alert("Error", e?.message ?? "Failed to delete item.");
     return false;
   }
@@ -175,7 +217,7 @@ export async function fetchCollection<
     if (options?.silent) {
       throw e;
     }
-    Alert.alert("Error", e?.message ?? `Failed to load ${key}.`);
+    console.warn(`[realtime] failed to load ${key}`, e);
   }
 }
 

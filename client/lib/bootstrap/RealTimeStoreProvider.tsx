@@ -18,6 +18,8 @@ import { useTimerSettingsStore } from "../stores/appwrite/timer-settings-store";
 import { useTimerStore } from "../stores/appwrite/timer-store";
 import { useTournamentStore } from "../stores/appwrite/tournament-store";
 import { subscribeTier } from "../stores/real-time-store";
+import { useConnectivityStore } from "../stores/connectivity-store";
+import { flushWriteQueue } from "../cache/write-queue";
 
 
 const globalInits = [useFeatureFlagStore, useTournamentStore];
@@ -85,6 +87,7 @@ export function RealTimeStoreProvider() {
     admin: 0,
   });
   const lastReconnectAt = useRef(0);
+  const wasOnline = useRef<boolean | null>(null);
 
   const openTier = useCallback(async (tier: Tier, stores: any[]) => {
     const generation = ++tierGenerations.current[tier];
@@ -125,17 +128,19 @@ export function RealTimeStoreProvider() {
       }
       lastReconnectAt.current = now;
       console.debug(`[realtime] ${reason} — reconnecting all subscriptions`);
-      openTier("global", globalInits);
-      if (isAuthenticated) {
-        openTier("user", userInits);
-      } else {
-        closeTier("user");
-      }
-      if (isAdmin) {
-        openTier("admin", adminInits);
-      } else {
-        closeTier("admin");
-      }
+      flushWriteQueue().finally(() => {
+        openTier("global", globalInits);
+        if (isAuthenticated) {
+          openTier("user", userInits);
+        } else {
+          closeTier("user");
+        }
+        if (isAdmin) {
+          openTier("admin", adminInits);
+        } else {
+          closeTier("admin");
+        }
+      });
     },
     [isAuthenticated, isAdmin, openTier, closeTier],
   );
@@ -143,6 +148,15 @@ export function RealTimeStoreProvider() {
   useEffect(() => {
     openTier("global", globalInits);
   }, [openTier]);
+
+  const isOnline = useConnectivityStore((s) => s.isOnline);
+
+  useEffect(() => {
+    if (loading || isOnline !== true) {
+      return;
+    }
+    flushWriteQueue();
+  }, [loading, isOnline]);
 
   useEffect(() => {
     if (loading || !isAuthenticated) {
@@ -159,18 +173,11 @@ export function RealTimeStoreProvider() {
   }, [loading, isAdmin, openTier]);
 
   useEffect(() => {
-    const wasConnected = { current: true };
-
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      const isConnected = state.isConnected ?? false;
-      if (!wasConnected.current && isConnected) {
-        reconnectAll("network restored");
-      }
-      wasConnected.current = isConnected;
-    });
-
-    return () => unsubscribe();
-  }, [reconnectAll]);
+    if (wasOnline.current === false && isOnline === true) {
+      reconnectAll("network restored");
+    }
+    wasOnline.current = isOnline;
+  }, [isOnline, reconnectAll]);
 
   useEffect(() => {
     const handleAppStateChange = async (nextState: AppStateStatus) => {

@@ -1,10 +1,13 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { useTournament } from "@/lib/bootstrap/TournamentProvider";
 import { WelcomeHero } from "@/lib/components/onboarding/WelcomeHero";
+import { OfflineTimerConfigModal } from "@/lib/components/timer/OfflineTimerConfigModal";
 import { Button } from "@/lib/components/ui/Button";
+import { OfflineTimerConfig } from "@/lib/hooks/useOfflineTimer";
+import { useRouter } from "@/lib/routing/useRouter";
 import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 
@@ -18,6 +21,19 @@ export function WelcomeScreen({ onMenuPress, onLoginPress, onFaqPress }: Props) 
   const { colors } = useTheme();
   const { t } = useTranslation(["home"]);
   const { active: eventActive } = useTournament();
+  const { navigate } = useRouter();
+  const [timerConfigOpen, setTimerConfigOpen] = useState(false);
+
+  const startOfflineTimer = (config: OfflineTimerConfig) => {
+    navigate({
+      pathname: "/(pages)/offline-timer",
+      params: {
+        duration: String(config.perPlayerMinutes),
+        round: String(config.roundSecondsTotal),
+        direction: config.direction,
+      },
+    });
+  };
 
   const styles = useMemo(
     () =>
@@ -83,11 +99,24 @@ export function WelcomeScreen({ onMenuPress, onLoginPress, onFaqPress }: Props) 
             onPress={onLoginPress}
             style={styles.loginButton}
           />
+          <Button
+            label={t("offlineTimer")}
+            icon="timer-outline"
+            variant="secondary"
+            onPress={() => setTimerConfigOpen(true)}
+            style={styles.loginButton}
+          />
           <Pressable onPress={onFaqPress} hitSlop={8}>
             <Text style={styles.faqLink}>{t("faqLink")}</Text>
           </Pressable>
         </View>
       </View>
+
+      <OfflineTimerConfigModal
+        visible={timerConfigOpen}
+        onClose={() => setTimerConfigOpen(false)}
+        onStart={startOfflineTimer}
+      />
     </View>
   );
 }

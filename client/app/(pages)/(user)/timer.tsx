@@ -12,6 +12,7 @@ import { useTimerLocalSettings } from "@/lib/hooks/useTimerLocalSettings";
 import { useTimerState } from "@/lib/hooks/useTimerState";
 import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
+import { useConnectivityStore } from "@/lib/stores/connectivity-store";
 import { formatElapsedSeconds, teamName } from "@/lib/utils";
 import { goBackTo } from "@/lib/utils/navigation";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
@@ -25,6 +26,7 @@ export default function TimerPage() {
   useRequireAuth();
   const { forceOrientation, unlockOrientation } = useScreenOrientation();
   const params = useLocalSearchParams<{ gameId?: string; from?: string }>();
+  const setTimerActive = useConnectivityStore((s) => s.setTimerActive);
 
   const tableNumber = usePlayerTable(params.gameId);
 
@@ -32,11 +34,13 @@ export default function TimerPage() {
     useCallback(() => {
       forceOrientation(OrientationLock.LANDSCAPE_RIGHT);
       activateKeepAwakeAsync();
+      setTimerActive(true);
       return () => {
         unlockOrientation().catch(console.error);
         deactivateKeepAwake();
+        setTimerActive(false);
       };
-    }, [forceOrientation, unlockOrientation]),
+    }, [forceOrientation, unlockOrientation, setTimerActive]),
   );
 
   return (
