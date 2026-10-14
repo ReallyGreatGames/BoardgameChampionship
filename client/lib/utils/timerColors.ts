@@ -25,6 +25,15 @@ export const PLAYER_COLORS = [
   },
 ] as const;
 
+export const PLAYER_COLOR_OPTIONS = [
+  ...PLAYER_COLORS.map((color) => color.active),
+  "#9c27b0",
+  "#ff9800",
+] as const;
+
+export const MIN_PLAYER_COLOR_COUNT = 4;
+export const MAX_PLAYER_COLOR_COUNT = 6;
+
 function darkenHex(hex: string, factor: number): string {
   const h = hex.replace("#", "").padStart(6, "0");
   const n = parseInt(h, 16);

@@ -18,7 +18,9 @@ import { useLotteryStore } from "@/lib/stores/appwrite/lottery-store";
 import { useOptionsLotteryStore } from "@/lib/stores/appwrite/options-lottery-store";
 import { useTableBellStore } from "@/lib/stores/appwrite/table-bell-store";
 import { useTableStore } from "@/lib/stores/appwrite/table-store";
+import { useTimerSettingsStore } from "@/lib/stores/appwrite/timer-settings-store";
 import { useTimerStore } from "@/lib/stores/appwrite/timer-store";
+import { useConnectivityStore } from "@/lib/stores/connectivity-store";
 import { resolveGameId } from "@/lib/utils";
 import { getLotteryPhotosForGame } from "@/lib/utils/lottery";
 import { getOptionsLotteriesForGame, getResultForTable } from "@/lib/utils/options-lottery";
@@ -101,9 +103,12 @@ export default function GamePage() {
   const tableNumber = usePlayerTable(gameId);
   const tableStore = useTableStore();
   const timerStore = useTimerStore();
+  const timerSettingsCollection = useTimerSettingsStore((s) => s.collection);
   const lotteryCollection = useLotteryStore((s) => s.collection);
   const optionsLotteryCollection = useOptionsLotteryStore((s) => s.collection);
   const gameSchedule = useGameScheduleInfo(gameId);
+  const isOnline = useConnectivityStore((s) => s.isOnline);
+  const isOffline = isOnline === false;
 
   const optionsLotteryCount = useMemo(() => {
     if (tableNumber === null) {
@@ -130,6 +135,13 @@ export default function GamePage() {
   );
 
   const [colorSetupVisible, setColorSetupVisible] = useState(false);
+
+  const gameColors = useMemo(
+    () =>
+      timerSettingsCollection.find((g) => g.$id === gameId)?.colors ??
+      currentTable?.game?.colors,
+    [timerSettingsCollection, gameId, currentTable],
+  );
 
   const isActiveGame = gameSchedule.isActive;
 
@@ -242,9 +254,11 @@ export default function GamePage() {
       label: t(labelKey),
       badgeCount: key === "lottery" ? lotteryCount : undefined,
       disabled:
-        (tableNumber === null && key !== "rules" && key !== "lottery") ||
-        (requiresActiveGame === true && !isActiveGame) ||
-        (featureFlag !== undefined && !isFeatureEnabled(featureFlag)),
+        key === "timer" && isOffline
+          ? false
+          : (tableNumber === null && key !== "rules" && key !== "lottery") ||
+            (requiresActiveGame === true && !isActiveGame) ||
+            (featureFlag !== undefined && !isFeatureEnabled(featureFlag)),
       onPress:
         key === "timer" ? handleTimerPress : () => onPress(gameId, selfHref),
     }),
@@ -325,7 +339,7 @@ export default function GamePage() {
         onClose={() => setColorSetupVisible(false)}
         players={currentTable?.players ?? []}
         onSave={handleSaveSetup}
-        customColors={currentTable?.game?.colors}
+        customColors={gameColors}
       />
     </View>
   );

@@ -11,7 +11,7 @@ type Props = {
   onOpenMenu: () => void;
   allPaused: boolean;
   onToggleAllPause: () => void;
-  roundCountdown: RoundCountdown;
+  roundCountdown?: RoundCountdown;
   spamProtectionActive: boolean;
   bell: TableBell | undefined;
 };
@@ -74,25 +74,27 @@ export function TimerControlPanel({
         </Pressable>
 
         <View style={styles.pillRow}>
-          <View style={[styles.pill, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[type.eyebrow, { color: colors.textSecondary }]}>
-              {t("timeRemaining")}
-            </Text>
-            <Text
-              style={[
-                styles.pillValue,
-                {
-                  color: roundCountdown.isOvertime
-                    ? colors.error
-                    : roundCountdown.isPaused
-                      ? colors.textMuted
-                      : colors.text,
-                },
-              ]}
-            >
-              {roundCountdown.label}
-            </Text>
-          </View>
+          {roundCountdown && (
+            <View style={[styles.pill, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[type.eyebrow, { color: colors.textSecondary }]}>
+                {t("timeRemaining")}
+              </Text>
+              <Text
+                style={[
+                  styles.pillValue,
+                  {
+                    color: roundCountdown.isOvertime
+                      ? colors.error
+                      : roundCountdown.isPaused
+                        ? colors.textMuted
+                        : colors.text,
+                  },
+                ]}
+              >
+                {roundCountdown.label}
+              </Text>
+            </View>
+          )}
 
           {bell && (
             <View

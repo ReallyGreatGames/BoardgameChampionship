@@ -111,6 +111,7 @@ const translations = {
     welcomeDescription:
       "Logge dich mit der PIN ein, die auf der Leinwand angezeigt wird.\nWähle danach dein Team und deine Spielernummer.",
     login: "Zum Login",
+    offlineTimer: "Timer (ohne Anmeldung)",
     faqLink: "Fragen? FAQ ansehen",
     now: "Jetzt",
     upNext: "Danach",
@@ -394,6 +395,10 @@ const translations = {
         "Benutzerdefinierten Timer verwerfen und den Standardtimer dieses Spiels verwenden?",
       confirm: "Verwenden",
       cancel: "Abbrechen",
+    },
+    offlineConfig: {
+      title: "Offline-Timer",
+      start: "Starten",
     },
     customTimerModal: {
       title: "Benutzerdefinierter Timer",
@@ -782,7 +787,9 @@ const translations = {
       directionField: "Zählrichtung",
       directionDown: "Rückwärts",
       directionUp: "Vorwärts",
-      playerColorField: "Spieler {{n}} Farbe",
+      colorField: "Farbe {{n}}",
+      addColor: "Farbe hinzufügen",
+      removeColor: "Farbe {{n}} entfernen",
       save: "Speichern",
     },
     tournamentSettings: {
@@ -839,6 +846,10 @@ const translations = {
         a: 'Tippe im Spielbildschirm auf "Timer". Er zeigt die Spielzeit pro Spieler:in an. Die Zeit pro Spiel wird automatisch eingestellt. Bei Bedarf können diese Einstellungen überschrieben werden.',
       },
     ],
+  },
+  connectivity: {
+    online: "Wieder online",
+    offline: "Keine Internetverbindung",
   },
   legal: {
     imprint: {

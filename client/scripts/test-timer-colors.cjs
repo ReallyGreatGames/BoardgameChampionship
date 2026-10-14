@@ -176,3 +176,24 @@ test('closing the sheet discards draft colors and default colors are available w
   assert.equal(app.choices.find((choice) => choice.props.accessibilityLabel === `Player 1: ${original[0]}`)
     .props.accessibilityState.checked, true);
 });
+
+test('a game with five configured colors offers all five to every seat', async (t) => {
+  const palette = ['#aa2222', '#2255bb', '#22bb55', '#bbaa22', '#9c27b0'];
+  const app = await setup(t, { gameColors: palette });
+  await app.open();
+  const labels = app.choices.map((choice) => choice.props.accessibilityLabel);
+  palette.forEach((hex) => assert.ok(
+    labels.includes(`Player 1: ${hex}`),
+    `five-color game offers ${hex} to seat 1`,
+  ));
+  assert.equal(app.choices.length, 20, 'five colors across four seats');
+  assert.ok(!labels.includes('Player 1: #ff9800'), 'unconfigured palette colors are not offered');
+  assert.deepEqual(
+    app.cells.map((cell) => cell.playerColor.active),
+    palette.slice(0, 4),
+    'seats default to the first four configured colors',
+  );
+  await app.choose('Player 4', palette[4]);
+  await app.save();
+  assert.deepEqual(app.cells.map((cell) => cell.playerColor.active), [...palette.slice(0, 3), palette[4]]);
+});

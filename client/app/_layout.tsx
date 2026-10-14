@@ -2,6 +2,7 @@ import { BootstrapProvider } from "@/lib/bootstrap/BootstrapProvider";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { useTournament } from "@/lib/bootstrap/TournamentProvider";
 import { AppDrawer } from "@/lib/components/shell/AppDrawer";
+import { ConnectivityPill } from "@/lib/components/shell/ConnectivityPill";
 import "@/lib/i18n/i18n";
 import { BarlowCondensed_600SemiBold } from "@expo-google-fonts/barlow-condensed/600SemiBold";
 import { BarlowCondensed_700Bold } from "@expo-google-fonts/barlow-condensed/700Bold";
@@ -16,6 +17,7 @@ import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StyleSheet } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import "react-native-url-polyfill/auto";
 
 SplashScreen.preventAutoHideAsync();
@@ -53,6 +55,15 @@ function AppNavigator() {
         options={{
           title: t(type),
           headerShown: false,
+        }}
+      />
+      <Drawer.Screen
+        name="(pages)/offline-timer"
+        options={{
+          title: "Timer",
+          headerShown: false,
+          drawerItemStyle: { display: "none" },
+          swipeEnabled: false,
         }}
       />
       <Drawer.Screen
@@ -223,9 +234,12 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={styles.fill}>
-      <BootstrapProvider>
-        <AppNavigator />
-      </BootstrapProvider>
+      <SafeAreaProvider>
+        <BootstrapProvider>
+          <AppNavigator />
+          <ConnectivityPill />
+        </BootstrapProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

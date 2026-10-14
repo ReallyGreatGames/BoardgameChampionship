@@ -11,6 +11,9 @@ Player-color palettes for the timer display (active/dimmed/elapsed).
 | Export | Signature | Purpose |
 |---|---|---|
 | `PLAYER_COLORS` | `const` array (4 entries) | Default color palettes for the 4 seats, each `{ active, muted, elapsed, elapsedMuted }` |
+| `PLAYER_COLOR_OPTIONS` | `const` array (6 entries) | Selectable player-color hex strings offered as the fallback swatch palette; the 4 `PLAYER_COLORS` actives followed by 2 extra colors (purple `#9c27b0`, orange `#ff9800`) |
+| `MIN_PLAYER_COLOR_COUNT` | `4` | Fewest colors a game may configure (one per timer seat) |
+| `MAX_PLAYER_COLOR_COUNT` | `6` | Most colors a game may configure |
 | `buildPlayerColor(hex)` | `(string) => { active, muted, elapsed, elapsedMuted }` | Derives a full color palette from a single hex color (for custom player colors) |
 
 Shape returned by every palette entry / `buildPlayerColor`:

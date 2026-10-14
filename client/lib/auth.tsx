@@ -9,7 +9,14 @@ import {
 import { Models, Query } from "react-native-appwrite";
 import { account, DATABASE_ID, tablesDB } from "./appwrite";
 import { useTournament } from "./bootstrap/TournamentProvider";
+import {
+  clearCachedAuth,
+  loadCachedAuth,
+  saveCachedAuth,
+} from "./cache/auth-cache";
+import { clearWriteQueue } from "./cache/write-queue";
 import * as SecureStore from "./secureStorage";
+import { useConnectivityStore } from "./stores/connectivity-store";
 import { useTournamentStore } from "./stores/appwrite/tournament-store";
 
 const PIN_COLLECTION_ID = "tournament";
@@ -95,8 +102,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setPinVerified(true);
         }
       } catch {
-        setUser(null);
-        setPinVerified(false);
+        const cached = await loadCachedAuth();
+        if (cached?.user) {
+          console.debug("[auth] offline — restored cached session");
+          setUser(cached.user);
+          setPinVerified(cached.pinVerified);
+        } else {
+          setUser(null);
+          setPinVerified(false);
+        }
       } finally {
         setLoading(false);
       }
@@ -132,10 +146,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
-    await SecureStore.deleteItemAsync(PIN_STORE_KEY);
-    await account.deleteSessions();
     setUser(null);
     setPinVerified(false);
+    await SecureStore.deleteItemAsync(PIN_STORE_KEY);
+    await clearCachedAuth();
+    await clearWriteQueue();
+    await account.deleteSessions().catch(() => {});
   }
 
   const isAdmin = !!user?.labels?.includes("admin");
@@ -143,16 +159,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const { active: tournamentActive } = useTournament();
   const tournamentInitialized = useTournamentStore((s) => s.initialized);
+  const isOnline = useConnectivityStore((s) => s.isOnline);
 
   useEffect(() => {
     if (loading || !tournamentInitialized) {
+      return;
+    }
+    if (isOnline !== true) {
       return;
     }
     if (!tournamentActive && isPinVerified) {
       logout();
       router.replace("/");
     }
-  }, [loading, tournamentInitialized, tournamentActive, isPinVerified]);
+  }, [loading, tournamentInitialized, tournamentActive, isPinVerified, isOnline]);
+
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+    if (user) {
+      saveCachedAuth({ user, pinVerified });
+    } else {
+      clearCachedAuth();
+    }
+  }, [user, pinVerified, loading]);
 
   return (
     <AuthContext.Provider

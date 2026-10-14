@@ -95,6 +95,21 @@ Each entry in `ACTION_BUTTONS` declares `requiresActiveGame?` and
 currently active one but the action requires it, or its feature flag
 ([`useFeatureFlags`](../../../lib/feature-flags/useFeatureFlags.md)) is off.
 
+The "timer" tile is the one exception: while the device is offline
+(`isOnline === false` from
+[`useConnectivityStore`](../../../lib/stores/connectivity-store.md)) it is
+never disabled, regardless of table assignment, active-game state or the
+`TIMER` feature flag. Offline, those inputs may be missing or stale (the
+stores only ever hold the last-cached snapshot), but the timer itself is
+fully usable against that cached data — and every write it makes is queued
+by the outbox (`lib/cache/write-queue.ts`) and flushed when the
+connection returns — so gating the tile on them would needlessly strand a
+signed-in player mid-round without a clock. `isOnline === null` (the
+connectivity state hasn't been determined yet) keeps the normal gating
+rather than optimistically enabling the tile. The player is guaranteed to
+be signed in here because [`useRequireAuth`](../../../lib/hooks/useRequireAuth.md)
+redirects otherwise.
+
 ### First-time timer setup detour
 
 Pressing "timer" checks whether this table already has saved player
@@ -136,7 +151,9 @@ table yet contributes `0` from that half.
 
 ### Memoized derivations
 
-`currentTable` (`useMemo`, deps `[tableStore.collection, tableNumber, gameId]`) finds this player's `Table` document for the current game, used for `GameSeatingList`, for `PlayerColorSetupModal`'s `players`/`customColors` props, and to gate `handleTimerPress`.
+`currentTable` (`useMemo`, deps `[tableStore.collection, tableNumber, gameId]`) finds this player's `Table` document for the current game, used for `GameSeatingList`, for `PlayerColorSetupModal`'s `players` prop, and to gate `handleTimerPress`.
+
+`gameColors` (`useMemo`, deps `[timerSettingsCollection, gameId, currentTable]`) supplies `PlayerColorSetupModal`'s `customColors` (the game's 4–6 color palette). It prefers the live [`useTimerSettingsStore`](../../../lib/stores/appwrite/timer-settings-store.md) document, falling back to `currentTable.game.colors` — the nested `game` relation on the table store is hydrated from cache/realtime-table data and does **not** refresh when a game's colors are edited, so reading it directly would show a stale palette (e.g. only 4 of a game's 5 colors) on the initial setup sheet.
 
 `bell` (`useMemo`, deps `[tableBellStore.collection, tableNumber]`) finds the active `TableBell` for this player's table, if any.
 
