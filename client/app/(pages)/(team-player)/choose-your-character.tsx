@@ -30,9 +30,10 @@ export default function ChooseYourCharacter() {
   const { type: tournamentType } = useTournament();
   const { t, i18n: i18nHook } = useTranslation(["settings", "menu"]);
   const navigation = useNavigation();
-  const { from, gameId } = useLocalSearchParams<{
+  const { from, gameId, reason } = useLocalSearchParams<{
     from?: string;
     gameId?: string;
+    reason?: string;
   }>();
 
   const playerStoreCollection = usePlayerStore((s) => s.collection);
@@ -97,6 +98,11 @@ export default function ChooseYourCharacter() {
         <Drawer.Screen options={{ swipeEnabled: false }} />
         {header}
         <View style={styles.pickerWrap}>
+          {reason === "roster-changed" && (
+            <Text style={styles.rosterChangedNotice}>
+              {t("settings:rosterChangedNotice")}
+            </Text>
+          )}
           <PlayerPickerForm
             onConfirm={handleConfirm}
             onBack={
@@ -177,6 +183,17 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     pickerWrap: {
       flex: 1,
       paddingTop: inset.card,
+    },
+    rosterChangedNotice: {
+      ...type.body,
+      color: colors.textSecondary,
+      backgroundColor: colors.surfaceHigh,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      marginHorizontal: inset.screen,
+      marginBottom: inset.tight,
+      padding: inset.card,
     },
     scroll: {
       flex: 1,

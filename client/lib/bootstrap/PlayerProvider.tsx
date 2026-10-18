@@ -4,9 +4,10 @@ import {
   PropsWithChildren,
   useContext,
   useEffect,
-  useRef,
   useState,
 } from "react";
+import { router } from "expo-router";
+import { useAuth } from "../auth";
 import { usePlayerStore } from "../stores/appwrite/player-store";
 import * as SecureStorage from "../secureStorage";
 import { Player } from "../models/player";
@@ -33,11 +34,23 @@ export const playerContext = createContext<PlayerContext>({
   playerLoading: true,
 });
 
+function playerIdentity(player: Player): string | null {
+  if (player.playerCode) {
+    return player.playerCode;
+  }
+
+  const teamCode =
+    typeof player.team === "object" && player.team ? player.team.code : null;
+  return teamCode && Number.isInteger(player.playerNumber)
+    ? `${teamCode}-${player.playerNumber}`
+    : null;
+}
+
 export const PlayerProvider: FC<PropsWithChildren> = ({ children }) => {
+  const { isAdmin } = useAuth();
   const [player, setPlayer] = useState<Player | null>(null);
   const [playerLoading, setPlayerLoading] = useState(true);
   const playerStoreCollection = usePlayerStore((s) => s.collection);
-  const storeWasEmpty = useRef(true);
 
   useEffect(() => {
     (async () => {
@@ -59,19 +72,52 @@ export const PlayerProvider: FC<PropsWithChildren> = ({ children }) => {
 
   useEffect(() => {
     if (playerStoreCollection.length === 0) {
-      storeWasEmpty.current = true;
       return;
     }
-    if (!storeWasEmpty.current) return;
-    storeWasEmpty.current = false;
-    if (!player) return;
-
-    const valid = playerStoreCollection.some((p) => p.$id === player.$id);
-    if (!valid) {
-      setPlayer(null);
-      SecureStorage.deleteItemAsync(PLAYER_INFO_KEY);
+    if (!player) {
+      return;
     }
-  }, [playerStoreCollection, player]);
+
+    const stillSelected = playerStoreCollection.find((p) => p.$id === player.$id);
+    if (stillSelected) {
+      return;
+    }
+
+    if (isAdmin) {
+      void Promise.resolve().then(() => {
+        setPlayer(null);
+        return SecureStorage.deleteItemAsync(PLAYER_INFO_KEY);
+      });
+      return;
+    }
+
+    const identity = playerIdentity(player);
+    const replacement = identity
+      ? playerStoreCollection.find((p) => playerIdentity(p) === identity)
+      : undefined;
+
+    if (replacement) {
+      void Promise.resolve().then(() => {
+        setPlayer(replacement);
+        return SecureStorage.setItemAsync(
+          PLAYER_INFO_KEY,
+          JSON.stringify(replacement),
+        );
+      });
+      return;
+    }
+
+    const missingPlayerTimeout = setTimeout(() => {
+      setPlayer(null);
+      void SecureStorage.deleteItemAsync(PLAYER_INFO_KEY);
+      router.replace({
+        pathname: "/(pages)/(team-player)/choose-your-character",
+        params: { reason: "roster-changed" },
+      });
+    }, 1500);
+
+    return () => clearTimeout(missingPlayerTimeout);
+  }, [isAdmin, playerStoreCollection, player]);
 
   const assignPlayer = async (p: Player) => {
     setPlayer(p);

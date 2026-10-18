@@ -199,6 +199,8 @@ const translations = {
     playerValue: "Spieler {{n}} · {{name}}",
     changeTeam: "Team / Spieler wechseln",
     selectPlayer: "Team & Spieler auswählen",
+    rosterChangedNotice:
+      "Die Teilnehmerliste wurde aktualisiert und deine bisherige Auswahl ist nicht mehr verfügbar. Bitte wähle dein Team und deinen Spieler erneut aus.",
     continueSetup: "Weiter",
     legal: "Rechtliches",
     legalNotice: "Impressum & Datenschutz",
