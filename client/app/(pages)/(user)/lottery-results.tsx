@@ -8,6 +8,7 @@ import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
 import { getOptionsLotteriesForGame } from "@/lib/utils/options-lottery";
 import { goBackTo, redirectTo } from "@/lib/utils/navigation";
+import { localizeOptionText, localizeText } from "@/lib/i18n/content";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import { useMemo } from "react";
@@ -24,13 +25,14 @@ import {
 function resolveResultDisplay(
   instance: OptionsLottery,
   optionIds: string[],
+  language: string,
 ): { titles: string; descriptions: string } {
   const pulled: (LotteryOption | undefined)[] = optionIds.map((id) =>
     instance.options.find((o) => o.id === id),
   );
-  const titles = pulled.map((o) => o?.title ?? "?").join(", ");
+  const titles = pulled.map((o) => o ? localizeOptionText(o.title, o.titleTranslations, language) : "?").join(", ");
   const descriptions = pulled
-    .map((o) => o?.description)
+    .map((o) => o && localizeOptionText(o.description, o.descriptionTranslations, language))
     .filter((d): d is string => !!d)
     .join(" · ");
   return { titles, descriptions };
@@ -53,7 +55,7 @@ export default function LotteryResultsScreen() {
   const contentWidth = screenWidth - inset.screen * 2;
   const cardWidth = (contentWidth - gridGap * (numColumns - 1)) / numColumns;
   const styles = useMemo(() => makeStyles(colors, cardWidth), [colors, cardWidth]);
-  const { t } = useTranslation(["lotteryOptions"]);
+  const { t, i18n } = useTranslation(["lotteryOptions"]);
   const { t: tMenu } = useTranslation(["menu"]);
   const rows = useOptionsLotteryStore((s) => s.collection);
 
@@ -73,7 +75,7 @@ export default function LotteryResultsScreen() {
     const byTable = new Map<number, { titles: string[]; descriptions: string[] }>();
     for (const instance of perTableInstances) {
       for (const result of instance.results) {
-        const { titles, descriptions } = resolveResultDisplay(instance, result.optionIds);
+        const { titles, descriptions } = resolveResultDisplay(instance, result.optionIds, i18n.language);
         const entry = byTable.get(result.table) ?? { titles: [], descriptions: [] };
         if (titles) {
           entry.titles.push(titles);
@@ -90,7 +92,7 @@ export default function LotteryResultsScreen() {
       descriptions: entry.descriptions.join(" · "),
     }));
     return cards.sort((a, b) => a.table - b.table);
-  }, [pulledInstances]);
+  }, [pulledInstances, i18n.language]);
 
   const handleClose = () =>
     goBackTo(from ?? `/(pages)/(user)/lottery?gameId=${gameId}`);
@@ -125,10 +127,11 @@ export default function LotteryResultsScreen() {
                 const { titles, descriptions } = resolveResultDisplay(
                   instance,
                   instance.results[0].optionIds,
+                  i18n.language,
                 );
                 return (
                   <View key={instance.$id} style={styles.sharedBlock}>
-                    <Text style={styles.sharedLabel}>{instance.name}</Text>
+                    <Text style={styles.sharedLabel}>{localizeText(instance.name, i18n.language)}</Text>
                     <Text style={styles.sharedTitle}>{titles}</Text>
                     {descriptions ? (
                       <Text style={styles.sharedDescription}>{descriptions}</Text>

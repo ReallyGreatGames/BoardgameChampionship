@@ -1,6 +1,8 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Schedule } from "@/lib/models/schedule";
 import { useScheduleStore } from "@/lib/stores/appwrite/schedule-store";
+import { localizeText } from "@/lib/i18n/content";
 
 export type GameScheduleInfo = {
   item: Schedule | null;
@@ -22,6 +24,7 @@ export function useGameScheduleInfo(
   gameId: string | null | undefined,
 ): GameScheduleInfo {
   const collection = useScheduleStore((s) => s.collection);
+  const { i18n } = useTranslation();
 
   return useMemo<GameScheduleInfo>(() => {
     if (!gameId) {
@@ -40,10 +43,10 @@ export function useGameScheduleInfo(
     const item = gameItems[index];
     return {
       item,
-      title: item.title,
+      title: localizeText(item.title, i18n.language),
       round: index + 1,
       isActive: item.isActive === true,
       isFinished: item.isFinished === true,
     };
-  }, [collection, gameId]);
+  }, [collection, gameId, i18n.language]);
 }

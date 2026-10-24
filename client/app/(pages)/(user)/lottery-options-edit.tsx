@@ -32,6 +32,7 @@ import {
   View,
 } from "react-native";
 import { resolveGameId } from "@/lib/utils";
+import { localizeOptionText, readLocalizedText, writeLocalizedText } from "@/lib/i18n/content";
 
 function emptyOption(): LotteryOption {
   return { id: ID.unique(), title: "", description: "", weight: 1, maxPerTable: 1 };
@@ -114,7 +115,7 @@ function LotteryOptionsEditForm({
   styles: ReturnType<typeof makeStyles>;
   backToLottery: () => void;
 }) {
-  const { t } = useTranslation(["lotteryOptions"]);
+  const { t, i18n } = useTranslation(["lotteryOptions"]);
   const { confirm } = useDialog();
   const actions = useOptionsLotteryActions();
 
@@ -123,7 +124,9 @@ function LotteryOptionsEditForm({
     (instance ? `&instanceId=${instance.$id}` : "") +
     (draft ? `&draft=${draft}` : "");
 
-  const [name, setName] = useState(instance?.name ?? "");
+  const initialName = readLocalizedText(instance?.name);
+  const [nameDe, setNameDe] = useState(initialName.de ?? "");
+  const [nameEn, setNameEn] = useState(initialName.en ?? "");
   const [pullsPerTable, setPullsPerTable] = useState(String(instance?.pullsPerTable ?? 1));
   const [sameForAllTables, setSameForAllTables] = useState(instance?.sameForAllTables ?? false);
   const [options, setOptions] = useState<LotteryOption[]>(instance?.options ?? [emptyOption()]);
@@ -145,6 +148,20 @@ function LotteryOptionsEditForm({
 
   function updateOption(id: string, patch: Partial<LotteryOption>) {
     setOptions((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
+  }
+
+  function updateOptionText(id: string, field: "title" | "description", language: "de" | "en", value: string) {
+    setOptions((previous) => previous.map((option) => {
+      if (option.id !== id) {
+        return option;
+      }
+      const key = field === "title" ? "titleTranslations" : "descriptionTranslations";
+      const translations = { ...option[key], [language]: value };
+      const fallback = translations.de || translations.en || "";
+      return field === "title"
+        ? { ...option, title: fallback, titleTranslations: translations }
+        : { ...option, description: fallback, descriptionTranslations: translations };
+    }));
   }
 
   function addOption() {
@@ -198,7 +215,7 @@ function LotteryOptionsEditForm({
       return;
     }
     const config: LotteryConfigInput = {
-      name,
+      name: writeLocalizedText({ de: nameDe, en: nameEn }),
       pullsPerTable: pullsPerTableNumber,
       sameForAllTables,
       options,
@@ -283,9 +300,16 @@ function LotteryOptionsEditForm({
           <Text style={styles.fieldLabel}>{t("nameLabel")}</Text>
           <TextInput
             style={styles.input}
-            value={name}
-            onChangeText={setName}
-            placeholder={t("namePlaceholder")}
+            value={nameDe}
+            onChangeText={setNameDe}
+            placeholder={t("namePlaceholderDe")}
+            placeholderTextColor={colors.textPlaceholder}
+          />
+          <TextInput
+            style={styles.input}
+            value={nameEn}
+            onChangeText={setNameEn}
+            placeholder={t("namePlaceholderEn")}
             placeholderTextColor={colors.textPlaceholder}
           />
         </View>
@@ -320,16 +344,34 @@ function LotteryOptionsEditForm({
               <Text style={styles.fieldLabel}>{t("optionTitleLabel")}</Text>
               <TextInput
                 style={styles.input}
-                value={option.title}
-                onChangeText={(v) => updateOption(option.id, { title: v })}
+                value={option.titleTranslations?.de ?? option.title}
+                onChangeText={(v) => updateOptionText(option.id, "title", "de", v)}
+                placeholder={t("germanLabel")}
+                placeholderTextColor={colors.textPlaceholder}
+              />
+              <TextInput
+                style={styles.input}
+                value={option.titleTranslations?.en ?? option.title}
+                onChangeText={(v) => updateOptionText(option.id, "title", "en", v)}
+                placeholder={t("englishLabel")}
+                placeholderTextColor={colors.textPlaceholder}
               />
             </View>
             <View style={styles.field}>
               <Text style={styles.fieldLabel}>{t("optionDescriptionLabel")}</Text>
               <TextInput
                 style={styles.input}
-                value={option.description ?? ""}
-                onChangeText={(v) => updateOption(option.id, { description: v })}
+                value={option.descriptionTranslations?.de ?? option.description ?? ""}
+                onChangeText={(v) => updateOptionText(option.id, "description", "de", v)}
+                placeholder={t("germanLabel")}
+                placeholderTextColor={colors.textPlaceholder}
+              />
+              <TextInput
+                style={styles.input}
+                value={option.descriptionTranslations?.en ?? option.description ?? ""}
+                onChangeText={(v) => updateOptionText(option.id, "description", "en", v)}
+                placeholder={t("englishLabel")}
+                placeholderTextColor={colors.textPlaceholder}
               />
             </View>
             <View style={styles.optionRow}>
@@ -473,7 +515,9 @@ function LotteryOptionsEditForm({
                         ]}
                         onPress={() => toggleManualOption(option)}
                       >
-                        <Text style={styles.manualOptionText}>{option.title}</Text>
+                        <Text style={styles.manualOptionText}>
+                          {localizeOptionText(option.title, option.titleTranslations, i18n.language)}
+                        </Text>
                         {selectedCount > 0 && (
                           <Text style={styles.manualOptionCount}>×{selectedCount}</Text>
                         )}

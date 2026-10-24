@@ -12,6 +12,7 @@ import { Schedule } from "@/lib/models/schedule";
 import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
+import { localizeText } from "@/lib/i18n/content";
 
 export type RunningNowAdmin = {
   onEdit: () => void;
@@ -136,7 +137,7 @@ const adminIconButtonStyles = StyleSheet.create({
 
 export function RunningNowCard({ item, admin }: Props) {
   const { colors } = useTheme();
-  const { t } = useTranslation(["components"]);
+  const { t, i18n } = useTranslation(["components"]);
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const openGame = useOpenGame();
   const countdown = useRoundCountdown(item);
@@ -179,7 +180,7 @@ export function RunningNowCard({ item, admin }: Props) {
         </View>
       </View>
 
-      <Text style={styles.title}>{item.title}</Text>
+      <Text style={styles.title}>{localizeText(item.title, i18n.language)}</Text>
 
       <View style={styles.progressBlock}>
         <View style={styles.progressTrack}>
@@ -190,8 +191,8 @@ export function RunningNowCard({ item, admin }: Props) {
 
       {item.gameId ? <Table gameId={item.gameId} /> : null}
 
-      {item.description ? (
-        <Markdown textStyle={styles.description}>{item.description}</Markdown>
+      {localizeText(item.description, i18n.language) ? (
+        <Markdown textStyle={styles.description}>{localizeText(item.description, i18n.language)}</Markdown>
       ) : null}
 
       {item.gameId ? (

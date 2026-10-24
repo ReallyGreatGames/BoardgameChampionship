@@ -21,6 +21,7 @@ import { Schedule } from "@/lib/models/schedule";
 import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
+import { localizeText } from "@/lib/i18n/content";
 
 if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -52,7 +53,7 @@ interface Props {
  */
 export function ScheduleRow({ schedule, variant, admin }: Props) {
   const { colors } = useTheme();
-  const { t } = useTranslation(["components"]);
+  const { t, i18n } = useTranslation(["components"]);
   const isDone = variant === "done";
   const styles = useMemo(() => makeStyles(colors, isDone), [colors, isDone]);
   const openGame = useOpenGame();
@@ -106,7 +107,7 @@ export function ScheduleRow({ schedule, variant, admin }: Props) {
           />
         ) : null}
         <Text style={styles.title} numberOfLines={2}>
-          {schedule.title}
+          {localizeText(schedule.title, i18n.language)}
         </Text>
         {isDone && (
           <Ionicons name="checkmark-circle" size={17} color={colors.textMuted} />
@@ -129,9 +130,9 @@ export function ScheduleRow({ schedule, variant, admin }: Props) {
 
           {schedule.gameId ? <Table gameId={schedule.gameId} /> : null}
 
-          {schedule.description ? (
+          {localizeText(schedule.description, i18n.language) ? (
             <Markdown textStyle={styles.description}>
-              {schedule.description}
+              {localizeText(schedule.description, i18n.language)}
             </Markdown>
           ) : null}
 

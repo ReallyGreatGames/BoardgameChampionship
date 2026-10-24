@@ -21,6 +21,7 @@ import { type } from "@/lib/theme/typography";
 import { BottomSheet, makeSheetStyles } from "@/lib/components/ui/BottomSheet";
 import { FormField } from "@/lib/components/ui/FormField";
 import { ResizableTextInput } from "@/lib/components/ui/ResizableTextInput";
+import { readLocalizedText, writeLocalizedText } from "@/lib/i18n/content";
 
 type ScheduleIconEntry = { name: string; translationKey: string };
 
@@ -131,10 +132,12 @@ export function ScheduleItemModal({
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useTranslation(["components"]);
 
-  const [title, setTitle] = useState("");
+  const [titleDe, setTitleDe] = useState("");
+  const [titleEn, setTitleEn] = useState("");
   const [icon, setIcon] = useState("");
   const [duration, setDuration] = useState("");
-  const [description, setDescription] = useState("");
+  const [descriptionDe, setDescriptionDe] = useState("");
+  const [descriptionEn, setDescriptionEn] = useState("");
   const [gameId, setGameId] = useState("");
   const [allowUserChange, setAllowUserChange] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -145,17 +148,23 @@ export function ScheduleItemModal({
       return;
     }
     if (item) {
-      setTitle(item.title);
+      const title = readLocalizedText(item.title);
+      const description = readLocalizedText(item.description);
+      setTitleDe(title.de ?? "");
+      setTitleEn(title.en ?? "");
       setIcon(item.icon ?? "");
       setDuration(String(item.durationPlanned));
-      setDescription(item.description ?? "");
+      setDescriptionDe(description.de ?? "");
+      setDescriptionEn(description.en ?? "");
       setGameId(item.gameId ?? "");
       setAllowUserChange(item.allowUserChange ?? false);
     } else {
-      setTitle("");
+      setTitleDe("");
+      setTitleEn("");
       setIcon("");
       setDuration("");
-      setDescription("");
+      setDescriptionDe("");
+      setDescriptionEn("");
       setGameId("");
       setAllowUserChange(false);
     }
@@ -164,7 +173,7 @@ export function ScheduleItemModal({
   }, [visible, item]);
 
   const durValid = isValidDuration(duration);
-  const isValid = title.trim().length > 0 && icon !== "" && durValid;
+  const isValid = (titleDe.trim().length > 0 || titleEn.trim().length > 0) && icon !== "" && durValid;
 
   async function handleSave() {
     if (!isValid || saving) {
@@ -173,11 +182,11 @@ export function ScheduleItemModal({
     setSaving(true);
     try {
       await onSave({
-        title: title.trim(),
+        title: writeLocalizedText({ de: titleDe, en: titleEn }),
         icon,
         startTimePlanned: item?.startTimePlanned ?? "",
         durationPlanned: parseInt(duration, 10),
-        description: description.trim(),
+        description: writeLocalizedText({ de: descriptionDe, en: descriptionEn }),
         gameId: gameId.trim(),
         sortIndex: item ? item.sortIndex : nextSortIndex,
         isActive: item ? item.isActive : false,
@@ -290,16 +299,19 @@ export function ScheduleItemModal({
         </>
       }
     >
-      <FormField
-        icon="text-outline"
-        label={t("schedule.form.titleField")}
-        required
-      >
+      <FormField icon="text-outline" label={t("schedule.form.titleField")} required>
         <TextInput
           style={sheetStyles.input}
-          value={title}
-          onChangeText={setTitle}
-          placeholder={t("schedule.form.titlePlaceholder")}
+          value={titleDe}
+          onChangeText={setTitleDe}
+          placeholder={t("schedule.form.titlePlaceholderDe")}
+          placeholderTextColor={colors.textPlaceholder}
+        />
+        <TextInput
+          style={sheetStyles.input}
+          value={titleEn}
+          onChangeText={setTitleEn}
+          placeholder={t("schedule.form.titlePlaceholderEn")}
           placeholderTextColor={colors.textPlaceholder}
         />
       </FormField>
@@ -350,9 +362,16 @@ export function ScheduleItemModal({
       >
         <ResizableTextInput
           style={sheetStyles.input}
-          value={description}
-          onChangeText={setDescription}
-          placeholder={t("schedule.form.descriptionPlaceholder")}
+          value={descriptionDe}
+          onChangeText={setDescriptionDe}
+          placeholder={t("schedule.form.descriptionPlaceholderDe")}
+          resetOn={visible}
+        />
+        <ResizableTextInput
+          style={sheetStyles.input}
+          value={descriptionEn}
+          onChangeText={setDescriptionEn}
+          placeholder={t("schedule.form.descriptionPlaceholderEn")}
           resetOn={visible}
         />
       </FormField>

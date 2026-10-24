@@ -13,6 +13,7 @@ import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
 import { goTo } from "@/lib/utils/navigation";
+import { localizeText } from "@/lib/i18n/content";
 
 interface Props {
   match: ParticipantMatch;
@@ -21,7 +22,7 @@ interface Props {
 export function NowPlayingCard({ match }: Props) {
   const { colors } = useTheme();
   const { player } = usePlayer();
-  const { t } = useTranslation(["home"]);
+  const { t, i18n } = useTranslation(["home"]);
   const countdown = useRoundCountdown(match.item);
 
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -40,7 +41,7 @@ export function NowPlayingCard({ match }: Props) {
   return (
     <View style={styles.card}>
       <View style={styles.titleRow}>
-        <Text style={styles.title}>{match.item.title}</Text>
+        <Text style={styles.title}>{localizeText(match.item.title, i18n.language)}</Text>
         <Badge
           label={
             countdown.isPaused
