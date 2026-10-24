@@ -720,6 +720,7 @@ const translations = {
       totalDurationHours: "{{hours}} h",
       remaining: "{{minutes}} min left",
       overtime: "Time is up",
+      overtimeLabel: "Overtime",
       paused: "Paused",
       actions: {
         moveUp: "Move up",

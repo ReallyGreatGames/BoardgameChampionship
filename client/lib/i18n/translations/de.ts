@@ -727,6 +727,7 @@ const translations = {
       totalDurationHours: "{{hours}} h",
       remaining: "noch {{minutes}} min",
       overtime: "Zeit abgelaufen",
+      overtimeLabel: "Nachspielzeit",
       paused: "Pausiert",
       actions: {
         moveUp: "Nach oben",

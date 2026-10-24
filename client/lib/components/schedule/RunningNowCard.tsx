@@ -182,11 +182,29 @@ export function RunningNowCard({ item, admin }: Props) {
 
       <Text style={styles.title}>{localizeText(item.title, i18n.language)}</Text>
 
-      <View style={styles.progressBlock}>
+      <View
+        style={[
+          styles.progressBlock,
+          countdown.isOvertime && [
+            styles.progressBlockOvertime,
+            { backgroundColor: colors.error + "12", borderColor: colors.error + "55" },
+          ],
+        ]}
+      >
         <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+          <View
+            style={[
+              styles.progressFill,
+              { width: `${progress * 100}%` },
+              countdown.isOvertime && { backgroundColor: colors.error },
+            ]}
+          />
         </View>
-        <Text style={styles.remaining}>{remaining}</Text>
+        <Text style={[styles.remaining, countdown.isOvertime && { color: colors.error }]}>
+          {countdown.isOvertime
+            ? `+${countdown.label} · ${t("schedule.overtimeLabel")}`
+            : remaining}
+        </Text>
       </View>
 
       {item.gameId ? <Table gameId={item.gameId} /> : null}
@@ -278,6 +296,11 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     },
     progressBlock: {
       gap: space[1],
+    },
+    progressBlockOvertime: {
+      borderWidth: 1,
+      borderRadius: ui.buttonRadius,
+      padding: space[2],
     },
     progressTrack: {
       height: 6,
