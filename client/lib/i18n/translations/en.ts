@@ -663,6 +663,12 @@ const translations = {
       cancel: "Cancel",
     },
     clearResults: "Delete Draws",
+    manualAssignSectionTitle: "Assign Results Manually",
+    manualAssignDescription:
+      "Select the tables, then choose exactly the results they should receive. Other table results stay unchanged.",
+    manualTable: "Table {{table}}",
+    manualSelectionCount: "{{selected}} of {{total}} results selected",
+    manualAssign: "Assign to Selected Tables",
     clearResultsConfirm: {
       title: "Delete draws",
       message:

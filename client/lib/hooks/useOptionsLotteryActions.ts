@@ -2,7 +2,11 @@ import { useAuth } from "@/lib/auth";
 import { DialogOptions, useDialog } from "@/lib/components/ui/Dialog";
 import { LotteryOption, OptionsLottery } from "@/lib/models/options-lottery";
 import { useOptionsLotteryStore } from "@/lib/stores/appwrite/options-lottery-store";
-import { computeDraw, validateLotteryConfig } from "@/lib/utils/lottery-draw";
+import {
+  computeDraw,
+  isValidManualResult,
+  validateLotteryConfig,
+} from "@/lib/utils/lottery-draw";
 import {
   parseOptionsLottery,
   serializeOptions,
@@ -25,6 +29,7 @@ export function useOptionsLotteryActions() {
   const [pullingId, setPullingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [clearingId, setClearingId] = useState<string | null>(null);
+  const [assigningId, setAssigningId] = useState<string | null>(null);
 
   function canRemoveOption(instance: OptionsLottery, optionId: string): boolean {
     return !instance.results.some((r) => r.optionIds.includes(optionId));
@@ -133,6 +138,36 @@ export function useOptionsLotteryActions() {
     }
   }
 
+  async function assignResults(
+    instance: OptionsLottery,
+    tableNumbers: number[],
+    optionIds: string[],
+  ): Promise<boolean> {
+    if (
+      !isAdmin ||
+      tableNumbers.length === 0 ||
+      !isValidManualResult(instance.options, instance.pullsPerTable, optionIds)
+    ) {
+      return false;
+    }
+
+    setAssigningId(instance.$id);
+    try {
+      const selectedTables = new Set(tableNumbers);
+      const untouchedResults = instance.results.filter((result) => !selectedTables.has(result.table));
+      const assignedResults = tableNumbers.map((table) => ({
+        table,
+        optionIds: [...optionIds],
+      }));
+      return await store.update({
+        $id: instance.$id,
+        resultsJson: serializeResults([...untouchedResults, ...assignedResults]),
+      });
+    } finally {
+      setAssigningId(null);
+    }
+  }
+
   async function remove(instance: OptionsLottery, confirmOpts?: DialogOptions): Promise<boolean> {
     if (!isAdmin) {
       return false;
@@ -158,10 +193,12 @@ export function useOptionsLotteryActions() {
     create,
     update,
     pull,
+    assignResults,
     clearResults,
     remove,
     isPulling: (id: string) => pullingId === id,
     isDeleting: (id: string) => deletingId === id,
     isClearing: (id: string) => clearingId === id,
+    isAssigning: (id: string) => assigningId === id,
   };
 }

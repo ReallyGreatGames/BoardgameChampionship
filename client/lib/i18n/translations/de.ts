@@ -669,6 +669,12 @@ const translations = {
       cancel: "Abbrechen",
     },
     clearResults: "Ziehungen löschen",
+    manualAssignSectionTitle: "Ergebnisse manuell zuweisen",
+    manualAssignDescription:
+      "Wähle die Tische und anschließend genau die Ergebnisse aus, die sie erhalten sollen. Die Ergebnisse aller anderen Tische bleiben unverändert.",
+    manualTable: "Tisch {{table}}",
+    manualSelectionCount: "{{selected}} von {{total}} Ergebnissen ausgewählt",
+    manualAssign: "Ausgewählten Tischen zuweisen",
     clearResultsConfirm: {
       title: "Ziehungen löschen",
       message:
