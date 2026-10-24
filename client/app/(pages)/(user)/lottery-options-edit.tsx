@@ -14,8 +14,8 @@ import { useTableStore } from "@/lib/stores/appwrite/table-store";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
-import { validateLotteryConfig } from "@/lib/utils/lottery-draw";
-import { parseOptionsLottery } from "@/lib/utils/options-lottery";
+import { isValidManualResult, validateLotteryConfig } from "@/lib/utils/lottery-draw";
+import { getResultForTable, parseOptionsLottery } from "@/lib/utils/options-lottery";
 import { goBackTo, goTo, redirectTo } from "@/lib/utils/navigation";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
@@ -32,6 +32,7 @@ import {
   View,
 } from "react-native";
 import { resolveGameId } from "@/lib/utils";
+import { localizeOptionText, readLocalizedText, writeLocalizedText } from "@/lib/i18n/content";
 
 function emptyOption(): LotteryOption {
   return { id: ID.unique(), title: "", description: "", weight: 1, maxPerTable: 1 };
@@ -114,7 +115,7 @@ function LotteryOptionsEditForm({
   styles: ReturnType<typeof makeStyles>;
   backToLottery: () => void;
 }) {
-  const { t } = useTranslation(["lotteryOptions"]);
+  const { t, i18n } = useTranslation(["lotteryOptions"]);
   const { confirm } = useDialog();
   const actions = useOptionsLotteryActions();
 
@@ -123,23 +124,78 @@ function LotteryOptionsEditForm({
     (instance ? `&instanceId=${instance.$id}` : "") +
     (draft ? `&draft=${draft}` : "");
 
-  const [name, setName] = useState(instance?.name ?? "");
+  const initialName = readLocalizedText(instance?.name);
+  const [nameDe, setNameDe] = useState(initialName.de ?? "");
+  const [nameEn, setNameEn] = useState(initialName.en ?? "");
   const [pullsPerTable, setPullsPerTable] = useState(String(instance?.pullsPerTable ?? 1));
   const [sameForAllTables, setSameForAllTables] = useState(instance?.sameForAllTables ?? false);
   const [options, setOptions] = useState<LotteryOption[]>(instance?.options ?? [emptyOption()]);
+  const [selectedTables, setSelectedTables] = useState<number[]>([]);
+  const [manualOptionIds, setManualOptionIds] = useState<string[]>([]);
 
   const pullsPerTableNumber = parseInt(pullsPerTable, 10) || 0;
   const validationError = useMemo(
     () => validateLotteryConfig(options, pullsPerTableNumber),
     [options, pullsPerTableNumber],
   );
+  // Assignments are persisted against the last saved configuration. Changes
+  // to the form above must be saved before they can be assigned to tables.
+  const assignmentOptions = instance?.options ?? options;
+  const assignmentPullsPerTable = instance?.pullsPerTable ?? pullsPerTableNumber;
+  const isManualSelectionValid =
+    !!instance &&
+    isValidManualResult(assignmentOptions, assignmentPullsPerTable, manualOptionIds);
 
   function updateOption(id: string, patch: Partial<LotteryOption>) {
     setOptions((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
   }
 
+  function updateOptionText(id: string, field: "title" | "description", language: "de" | "en", value: string) {
+    setOptions((previous) => previous.map((option) => {
+      if (option.id !== id) {
+        return option;
+      }
+      const key = field === "title" ? "titleTranslations" : "descriptionTranslations";
+      const translations = { ...option[key], [language]: value };
+      const fallback = translations.de || translations.en || "";
+      return field === "title"
+        ? { ...option, title: fallback, titleTranslations: translations }
+        : { ...option, description: fallback, descriptionTranslations: translations };
+    }));
+  }
+
   function addOption() {
     setOptions((prev) => [...prev, emptyOption()]);
+  }
+
+  function toggleTable(table: number) {
+    const isSelecting = !selectedTables.includes(table);
+    const next = isSelecting
+      ? [...selectedTables, table]
+      : selectedTables.filter((value) => value !== table);
+    setSelectedTables(next);
+    // Preload the first table's current result so correcting an existing
+    // assignment is quick. Once a selection is being edited, keep it intact.
+    if (isSelecting && selectedTables.length === 0 && instance) {
+      setManualOptionIds(getResultForTable(instance, table)?.optionIds ?? []);
+    }
+  }
+
+  function toggleManualOption(option: LotteryOption) {
+    setManualOptionIds((previous) => {
+      const count = previous.filter((id) => id === option.id).length;
+      if (count > 0) {
+        if (count < option.maxPerTable && previous.length < assignmentPullsPerTable) {
+          return [...previous, option.id];
+        }
+        const index = previous.lastIndexOf(option.id);
+        return previous.filter((_, i) => i !== index);
+      }
+      if (count >= option.maxPerTable || previous.length >= assignmentPullsPerTable) {
+        return previous;
+      }
+      return [...previous, option.id];
+    });
   }
 
   async function removeOption(id: string) {
@@ -159,7 +215,7 @@ function LotteryOptionsEditForm({
       return;
     }
     const config: LotteryConfigInput = {
-      name,
+      name: writeLocalizedText({ de: nameDe, en: nameEn }),
       pullsPerTable: pullsPerTableNumber,
       sameForAllTables,
       options,
@@ -209,6 +265,15 @@ function LotteryOptionsEditForm({
     });
   }
 
+  async function handleManualAssign() {
+    if (!instance || !isManualSelectionValid) {
+      return;
+    }
+    await actions.assignResults(instance, selectedTables, manualOptionIds);
+    setSelectedTables([]);
+    setManualOptionIds([]);
+  }
+
   async function handleDelete() {
     if (!instance) {
       return;
@@ -235,9 +300,16 @@ function LotteryOptionsEditForm({
           <Text style={styles.fieldLabel}>{t("nameLabel")}</Text>
           <TextInput
             style={styles.input}
-            value={name}
-            onChangeText={setName}
-            placeholder={t("namePlaceholder")}
+            value={nameDe}
+            onChangeText={setNameDe}
+            placeholder={t("namePlaceholderDe")}
+            placeholderTextColor={colors.textPlaceholder}
+          />
+          <TextInput
+            style={styles.input}
+            value={nameEn}
+            onChangeText={setNameEn}
+            placeholder={t("namePlaceholderEn")}
             placeholderTextColor={colors.textPlaceholder}
           />
         </View>
@@ -272,16 +344,34 @@ function LotteryOptionsEditForm({
               <Text style={styles.fieldLabel}>{t("optionTitleLabel")}</Text>
               <TextInput
                 style={styles.input}
-                value={option.title}
-                onChangeText={(v) => updateOption(option.id, { title: v })}
+                value={option.titleTranslations?.de ?? option.title}
+                onChangeText={(v) => updateOptionText(option.id, "title", "de", v)}
+                placeholder={t("germanLabel")}
+                placeholderTextColor={colors.textPlaceholder}
+              />
+              <TextInput
+                style={styles.input}
+                value={option.titleTranslations?.en ?? option.title}
+                onChangeText={(v) => updateOptionText(option.id, "title", "en", v)}
+                placeholder={t("englishLabel")}
+                placeholderTextColor={colors.textPlaceholder}
               />
             </View>
             <View style={styles.field}>
               <Text style={styles.fieldLabel}>{t("optionDescriptionLabel")}</Text>
               <TextInput
                 style={styles.input}
-                value={option.description ?? ""}
-                onChangeText={(v) => updateOption(option.id, { description: v })}
+                value={option.descriptionTranslations?.de ?? option.description ?? ""}
+                onChangeText={(v) => updateOptionText(option.id, "description", "de", v)}
+                placeholder={t("germanLabel")}
+                placeholderTextColor={colors.textPlaceholder}
+              />
+              <TextInput
+                style={styles.input}
+                value={option.descriptionTranslations?.en ?? option.description ?? ""}
+                onChangeText={(v) => updateOptionText(option.id, "description", "en", v)}
+                placeholder={t("englishLabel")}
+                placeholderTextColor={colors.textPlaceholder}
               />
             </View>
             <View style={styles.optionRow}>
@@ -386,6 +476,73 @@ function LotteryOptionsEditForm({
                 )}
               </Pressable>
             </View>
+
+            <Text style={styles.sectionTitle}>{t("manualAssignSectionTitle")}</Text>
+            <Text style={styles.manualDescription}>{t("manualAssignDescription")}</Text>
+            <View style={styles.tablePicker}>
+              {tableNumbers.map((table) => {
+                const selected = selectedTables.includes(table);
+                return (
+                  <Pressable
+                    key={table}
+                    style={[styles.tableButton, selected && styles.tableButtonSelected]}
+                    onPress={() => toggleTable(table)}
+                  >
+                    <Text style={[styles.tableButtonText, selected && styles.tableButtonTextSelected]}>
+                      {t("manualTable", { table })}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            {selectedTables.length > 0 && (
+              <>
+                <Text style={styles.manualSelectionLabel}>
+                  {t("manualSelectionCount", {
+                    selected: manualOptionIds.length,
+                    total: assignmentPullsPerTable,
+                  })}
+                </Text>
+                <View style={styles.manualOptions}>
+                  {assignmentOptions.map((option) => {
+                    const selectedCount = manualOptionIds.filter((id) => id === option.id).length;
+                    return (
+                      <Pressable
+                        key={option.id}
+                        style={[
+                          styles.manualOption,
+                          selectedCount > 0 && styles.manualOptionSelected,
+                        ]}
+                        onPress={() => toggleManualOption(option)}
+                      >
+                        <Text style={styles.manualOptionText}>
+                          {localizeOptionText(option.title, option.titleTranslations, i18n.language)}
+                        </Text>
+                        {selectedCount > 0 && (
+                          <Text style={styles.manualOptionCount}>×{selectedCount}</Text>
+                        )}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                <Pressable
+                  style={[
+                    styles.manualAssignBtn,
+                    !isManualSelectionValid && styles.saveBtnDisabled,
+                  ]}
+                  onPress={handleManualAssign}
+                  disabled={
+                    !isManualSelectionValid || actions.isAssigning(instance.$id)
+                  }
+                >
+                  {actions.isAssigning(instance.$id) ? (
+                    <ActivityIndicator size="small" color={colors.onAccent} />
+                  ) : (
+                    <Text style={styles.saveBtnText}>{t("manualAssign")}</Text>
+                  )}
+                </Pressable>
+              </>
+            )}
 
             <Text style={styles.sectionTitle}>{t("resultsSectionTitle")}</Text>
             {instance.results.length === 0 ? (
@@ -537,6 +694,68 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
     viewResultsBtnText: {
       ...type.button,
       color: colors.primary,
+    },
+    manualDescription: {
+      ...type.bodySmall,
+      color: colors.textSecondary,
+    },
+    tablePicker: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: inset.tight,
+    },
+    tableButton: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: ui.buttonRadius,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    tableButtonSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    tableButtonText: {
+      ...type.button,
+      color: colors.primary,
+    },
+    tableButtonTextSelected: {
+      color: colors.onAccent,
+    },
+    manualSelectionLabel: {
+      ...type.bodySmall,
+      color: colors.textMuted,
+    },
+    manualOptions: {
+      gap: inset.tight,
+    },
+    manualOption: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: ui.buttonRadius,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    manualOptionSelected: {
+      borderColor: colors.primary,
+      backgroundColor: colors.surfaceHigh,
+    },
+    manualOptionText: {
+      ...type.button,
+      color: colors.text,
+    },
+    manualOptionCount: {
+      ...type.button,
+      color: colors.primary,
+    },
+    manualAssignBtn: {
+      backgroundColor: colors.primary,
+      borderRadius: ui.buttonRadius,
+      paddingVertical: 12,
+      alignItems: "center",
     },
     dangerRow: {
       flexDirection: "row",

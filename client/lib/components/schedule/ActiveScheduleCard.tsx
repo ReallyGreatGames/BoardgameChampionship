@@ -9,6 +9,7 @@ import { Schedule } from "@/lib/models/schedule";
 import { inset } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { goTo } from "@/lib/utils/navigation";
+import { localizeText } from "@/lib/i18n/content";
 
 interface Props {
   item: Schedule;
@@ -17,7 +18,7 @@ interface Props {
 export function ActiveScheduleCard({ item }: Props) {
   const { colors } = useTheme();
   const { player } = usePlayer();
-  const { t } = useTranslation(["home"]);
+  const { t, i18n } = useTranslation(["home"]);
 
   const styles = useMemo(() => StyleSheet.create({
     card: {
@@ -59,7 +60,7 @@ export function ActiveScheduleCard({ item }: Props) {
   return (
     <View style={styles.card}>
       <View style={styles.cardInner}>
-        <Text style={styles.cardTitle}>{item.title}</Text>
+        <Text style={styles.cardTitle}>{localizeText(item.title, i18n.language)}</Text>
         <Text style={styles.cardDuration}>
           {t("duration", { minutes: item.durationPlanned })}
         </Text>

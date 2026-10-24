@@ -18,6 +18,7 @@ import { clearWriteQueue } from "./cache/write-queue";
 import * as SecureStore from "./secureStorage";
 import { useConnectivityStore } from "./stores/connectivity-store";
 import { useTournamentStore } from "./stores/appwrite/tournament-store";
+import { InvalidPinError } from "./utils/pin-login-error";
 
 const PIN_COLLECTION_ID = "tournament";
 export const PIN_STORE_KEY = "bgcs_pin_auth";
@@ -131,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const valid = await verifyPinInDb(pin);
       if (!valid) {
         await account.deleteSessions().catch(() => {});
-        throw new Error("Invalid PIN");
+        throw new InvalidPinError();
       }
       await SecureStore.setItemAsync(
         PIN_STORE_KEY,

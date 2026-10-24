@@ -25,6 +25,7 @@ import { fonts, type } from "../../lib/theme/typography";
 import { inset, space } from "../../lib/theme/spacing";
 import { ui } from "../../lib/theme/ui";
 import { useRouter } from "@/lib/routing/useRouter";
+import { getPinLoginErrorPresentation } from "@/lib/utils/pin-login-error";
 
 const SECRET_TAPS = 7;
 
@@ -131,9 +132,9 @@ export default function LoginScreen() {
         await loginWithPin(pin);
         router.replace("/");
       } catch (e: any) {
+        const presentation = getPinLoginErrorPresentation(e);
         await confirm({
-          title: "Invalid PIN",
-          message: e?.message ?? "Unknown error",
+          ...presentation,
           cancelLabel: null,
         });
       } finally {

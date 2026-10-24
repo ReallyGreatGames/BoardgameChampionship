@@ -33,6 +33,7 @@ import {
   isValidPlacementCombo,
 } from "@/lib/utils/placements";
 import { resolveEffectiveTimer, resolveGameId, teamName } from "@/lib/utils";
+import { localizeText } from "@/lib/i18n/content";
 import { ChipGroup } from "@/lib/components/ui/ChipGroup";
 import { Combobox } from "@/lib/components/ui/Combobox";
 import { useDialog } from "@/lib/components/ui/Dialog";
@@ -59,7 +60,7 @@ const DEFAULT_TIMER_SECONDS = 10 * 60;
 export function ResultsAdminTab() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { t } = useTranslation(["scoreOverview", "tableOverview"]);
+  const { t, i18n } = useTranslation(["scoreOverview", "tableOverview"]);
   const { confirm } = useDialog();
 
   const { collection: schedules } = useScheduleStore();
@@ -501,7 +502,7 @@ export function ResultsAdminTab() {
       />
       <Combobox
         value={selectedGameId ?? ""}
-        options={gameSchedules.map((s) => ({ value: s.gameId!, label: s.title, isLive: s.isActive }))}
+        options={gameSchedules.map((s) => ({ value: s.gameId!, label: localizeText(s.title, i18n.language), isLive: s.isActive }))}
         onChange={(v) => setSelectedGameId(v)}
       />
       {gameTables.length > 0 && (

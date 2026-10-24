@@ -1,4 +1,5 @@
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
+import { useAuth } from "@/lib/auth";
 import { BackButton } from "@/lib/components/ui/BackButton";
 import { Badge } from "@/lib/components/ui/Badge";
 import { GameActionRow, type GameAction } from "@/lib/components/game/GameActionRow";
@@ -39,6 +40,7 @@ type ActionButton = {
   labelKey: string;
   onPress: (gameId: string, origin: string) => void;
   requiresActiveGame?: boolean;
+  allowsAdminWhenInactive?: boolean;
   featureFlag?: (typeof FeatureFlagSlugs)[keyof typeof FeatureFlagSlugs];
 };
 
@@ -47,6 +49,8 @@ const ACTION_BUTTONS: ActionButton[] = [
     key: "lottery",
     icon: "shuffle",
     labelKey: "actions.lottery",
+    requiresActiveGame: true,
+    allowsAdminWhenInactive: true,
     featureFlag: FeatureFlagSlugs.LOTTERY,
     onPress: (gameId, origin) =>
       goTo(origin, `/(pages)/(user)/lottery?gameId=${gameId}`),
@@ -91,6 +95,7 @@ export default function GamePage() {
     from: string;
   }>();
   const { user, loading } = useRequireAuth();
+  const { isAdmin } = useAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useTranslation(["game"]);
@@ -248,7 +253,15 @@ export default function GamePage() {
   }
 
   const actions: GameAction[] = ACTION_BUTTONS.map(
-    ({ key, icon, labelKey, onPress, requiresActiveGame, featureFlag }) => ({
+    ({
+      key,
+      icon,
+      labelKey,
+      onPress,
+      requiresActiveGame,
+      allowsAdminWhenInactive,
+      featureFlag,
+    }) => ({
       key,
       icon,
       label: t(labelKey),
@@ -257,7 +270,9 @@ export default function GamePage() {
         key === "timer" && isOffline
           ? false
           : (tableNumber === null && key !== "rules" && key !== "lottery") ||
-            (requiresActiveGame === true && !isActiveGame) ||
+            (requiresActiveGame === true &&
+              !isActiveGame &&
+              !(allowsAdminWhenInactive && isAdmin)) ||
             (featureFlag !== undefined && !isFeatureEnabled(featureFlag)),
       onPress:
         key === "timer" ? handleTimerPress : () => onPress(gameId, selfHref),

@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { localizeText } from "@/lib/i18n/content";
 import { StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/lib/bootstrap/ThemeProvider";
 import { Schedule } from "@/lib/models/schedule";
@@ -12,7 +13,7 @@ interface Props {
 
 export function UpcomingList({ items }: Props) {
   const { colors } = useTheme();
-  const { t } = useTranslation(["home"]);
+  const { t, i18n } = useTranslation(["home"]);
 
   const styles = useMemo(() => StyleSheet.create({
     list: {
@@ -44,7 +45,7 @@ export function UpcomingList({ items }: Props) {
       {items.map((item, index) => (
         <View key={item.$id} style={styles.row}>
           <Text style={index === 0 ? styles.titleFirst : styles.title}>
-            {item.title}
+            {localizeText(item.title, i18n.language)}
           </Text>
           <Text style={index === 0 ? styles.durationFirst : styles.duration}>
             {t("duration", { minutes: item.durationPlanned })}

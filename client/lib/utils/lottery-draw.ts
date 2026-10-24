@@ -42,6 +42,36 @@ export function validateLotteryConfig(
 }
 
 /**
+ * Checks a hand entered by an admin before it is assigned to a table.
+ * Unlike a generated draw, a manual hand does not need to follow option
+ * weights; it only has to be a valid result for that one table.
+ */
+export function isValidManualResult(
+  options: LotteryOption[],
+  pullsPerTable: number,
+  optionIds: string[],
+): boolean {
+  if (optionIds.length !== pullsPerTable) {
+    return false;
+  }
+
+  const optionsById = new Map(options.map((option) => [option.id, option]));
+  const counts = new Map<string, number>();
+  for (const id of optionIds) {
+    const option = optionsById.get(id);
+    if (!option) {
+      return false;
+    }
+    const count = (counts.get(id) ?? 0) + 1;
+    if (count > option.maxPerTable) {
+      return false;
+    }
+    counts.set(id, count);
+  }
+  return true;
+}
+
+/**
  * Apportions `totalSlots` across `options` proportionally to their weight,
  * using the largest-remainder method so the split stays as close to the
  * configured ratio as integer math allows.

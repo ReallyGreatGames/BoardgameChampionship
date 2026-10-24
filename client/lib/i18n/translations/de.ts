@@ -647,6 +647,10 @@ const translations = {
     editTitleExisting: "Optionen-Auslosung bearbeiten",
     nameLabel: "Name",
     namePlaceholder: "z. B. Szenarienblatt",
+    namePlaceholderDe: "Deutscher Name",
+    namePlaceholderEn: "Englischer Name",
+    germanLabel: "Deutsch",
+    englishLabel: "Englisch",
     pullsPerTableLabel: "Ziehungen pro Tisch",
     sameForAllTablesLabel: "Gleiches Ergebnis für alle Tische",
     sameForAllTablesDescription:
@@ -669,6 +673,12 @@ const translations = {
       cancel: "Abbrechen",
     },
     clearResults: "Ziehungen löschen",
+    manualAssignSectionTitle: "Ergebnisse manuell zuweisen",
+    manualAssignDescription:
+      "Wähle die Tische und anschließend genau die Ergebnisse aus, die sie erhalten sollen. Die Ergebnisse aller anderen Tische bleiben unverändert.",
+    manualTable: "Tisch {{table}}",
+    manualSelectionCount: "{{selected}} von {{total}} Ergebnissen ausgewählt",
+    manualAssign: "Ausgewählten Tischen zuweisen",
     clearResultsConfirm: {
       title: "Ziehungen löschen",
       message:
@@ -717,6 +727,7 @@ const translations = {
       totalDurationHours: "{{hours}} h",
       remaining: "noch {{minutes}} min",
       overtime: "Zeit abgelaufen",
+      overtimeLabel: "Nachspielzeit",
       paused: "Pausiert",
       actions: {
         moveUp: "Nach oben",
@@ -756,11 +767,15 @@ const translations = {
         save: "Speichern",
         titleField: "Titel",
         titlePlaceholder: "z.B. Eröffnungsfeier",
+        titlePlaceholderDe: "Deutscher Titel",
+        titlePlaceholderEn: "Englischer Titel",
         iconField: "Symbol",
         durationField: "Dauer (min)",
         durationPlaceholder: "z.B. 30",
         descriptionField: "Beschreibung",
         descriptionPlaceholder: "Optionale Details...",
+        descriptionPlaceholderDe: "Deutsche Beschreibung (optional)",
+        descriptionPlaceholderEn: "Englische Beschreibung (optional)",
         gameIdField: "Spiel-ID",
         gameIdPlaceholder: "Optional",
         allowUserChangeField: "Teamwechsel erlauben",

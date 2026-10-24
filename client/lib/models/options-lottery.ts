@@ -1,9 +1,12 @@
 import { Models } from "react-native-appwrite";
+import { LocalizedText } from "@/lib/i18n/content";
 
 export type LotteryOption = {
   id: string;
   title: string;
   description?: string;
+  titleTranslations?: LocalizedText;
+  descriptionTranslations?: LocalizedText;
   weight: number;
   maxPerTable: number;
 };

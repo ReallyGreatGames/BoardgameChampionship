@@ -13,11 +13,12 @@ import { useTableStore } from "@/lib/stores/appwrite/table-store";
 import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { computeSeatStats, computeTeamSeatPerformance } from "@/lib/utils/statistics";
+import { localizeText } from "@/lib/i18n/content";
 
 export function StatisticsTab() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { t } = useTranslation(["statistics"]);
+  const { t, i18n } = useTranslation(["statistics"]);
 
   const { collection: schedules } = useScheduleStore();
   const { collection: results } = useResultStore();
@@ -38,10 +39,10 @@ export function StatisticsTab() {
         existing.isActive = existing.isActive || !!s.isActive;
         continue;
       }
-      seen.set(s.gameId!, { gameId: s.gameId!, gameName: s.title, isActive: !!s.isActive });
+      seen.set(s.gameId!, { gameId: s.gameId!, gameName: localizeText(s.title, i18n.language), isActive: !!s.isActive });
     }
     return Array.from(seen.values());
-  }, [gameSchedules]);
+  }, [gameSchedules, i18n.language]);
 
   const defaultGameId = useMemo(() => {
     const active = gameSchedules.find((s) => s.isActive);

@@ -13,6 +13,7 @@ import { inset, space } from "@/lib/theme/spacing";
 import { type } from "@/lib/theme/typography";
 import { ui } from "@/lib/theme/ui";
 import { goTo } from "@/lib/utils/navigation";
+import { localizeText } from "@/lib/i18n/content";
 
 interface Props {
   match: ParticipantMatch;
@@ -21,7 +22,7 @@ interface Props {
 export function NowPlayingCard({ match }: Props) {
   const { colors } = useTheme();
   const { player } = usePlayer();
-  const { t } = useTranslation(["home"]);
+  const { t, i18n } = useTranslation(["home"]);
   const countdown = useRoundCountdown(match.item);
 
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -40,7 +41,7 @@ export function NowPlayingCard({ match }: Props) {
   return (
     <View style={styles.card}>
       <View style={styles.titleRow}>
-        <Text style={styles.title}>{match.item.title}</Text>
+        <Text style={styles.title}>{localizeText(match.item.title, i18n.language)}</Text>
         <Badge
           label={
             countdown.isPaused
@@ -63,9 +64,26 @@ export function NowPlayingCard({ match }: Props) {
 
       <Table gameId={match.gameId} showTableNumber={false} />
 
-      <View style={styles.countdownRow}>
-        <Text style={styles.countdown}>{countdown.label}</Text>
-        <Text style={styles.countdownCaption}>
+      <View
+        style={[
+          styles.countdownRow,
+          countdown.isOvertime && [
+            styles.countdownRowOvertime,
+            { backgroundColor: colors.error + "12", borderColor: colors.error + "55" },
+          ],
+        ]}
+      >
+        <View>
+          {countdown.isOvertime && (
+            <Text style={[styles.countdownStatus, { color: colors.error }]}>
+              {t("overtime")}
+            </Text>
+          )}
+          <Text style={[styles.countdown, countdown.isOvertime && { color: colors.error }]}>
+            {countdown.isOvertime ? `+${countdown.label}` : countdown.label}
+          </Text>
+        </View>
+        <Text style={[styles.countdownCaption, countdown.isOvertime && { color: colors.error }]}>
           {countdown.isPaused
             ? t("paused")
             : countdown.isOvertime
@@ -116,10 +134,20 @@ function makeStyles(colors: ReturnType<typeof useTheme>["colors"]) {
       borderTopWidth: 1,
       borderTopColor: colors.divider,
     },
+    countdownRowOvertime: {
+      borderTopWidth: 1,
+      borderRadius: ui.buttonRadius,
+      paddingHorizontal: space[3],
+      paddingBottom: space[2],
+    },
     countdown: {
       ...type.bigNumber,
       color: colors.accent,
       fontVariant: ["tabular-nums"],
+    },
+    countdownStatus: {
+      ...type.eyebrow,
+      marginBottom: -space[1],
     },
     countdownCaption: {
       ...type.bodySmall,
