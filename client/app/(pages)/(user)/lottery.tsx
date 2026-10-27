@@ -17,6 +17,7 @@ import { ui } from "@/lib/theme/ui";
 import { getLotteryPhotosForGame } from "@/lib/utils/lottery";
 import { getOptionsLotteriesForGame, getResultForTable } from "@/lib/utils/options-lottery";
 import { goBackTo, goTo } from "@/lib/utils/navigation";
+import { localizeOptionText, localizeText } from "@/lib/i18n/content";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useNavigation } from "expo-router";
@@ -47,6 +48,7 @@ function OptionsLotterySection({
   styles,
   colors,
   t,
+  language,
 }: {
   instance: OptionsLottery;
   playerTable: number | null;
@@ -56,6 +58,7 @@ function OptionsLotterySection({
   styles: ReturnType<typeof makeStyles>;
   colors: ReturnType<typeof useTheme>["colors"];
   t: (key: string, opts?: any) => string;
+  language: string;
 }) {
   const result = playerTable !== null ? getResultForTable(instance, playerTable) : null;
   const pulledOptions = result
@@ -65,7 +68,7 @@ function OptionsLotterySection({
   const content = (
     <View style={styles.optionsSection}>
       <View style={styles.optionsSectionHeader}>
-        <Text style={styles.sectionTitle}>{instance.name}</Text>
+        <Text style={styles.sectionTitle}>{localizeText(instance.name, language)}</Text>
         {isAdmin && <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />}
       </View>
       {instance.results.length === 0 ? (
@@ -75,9 +78,13 @@ function OptionsLotterySection({
       ) : (
         pulledOptions.map((option, i) => (
           <View key={`${option?.id ?? "?"}-${i}`} style={styles.optionsResultItem}>
-            <Text style={styles.optionsResultTitle}>{option?.title ?? "?"}</Text>
-            {option?.description ? (
-              <Text style={styles.optionsResultDescription}>{option.description}</Text>
+            <Text style={styles.optionsResultTitle}>
+              {option ? localizeOptionText(option.title, option.titleTranslations, language) : "?"}
+            </Text>
+            {option && localizeOptionText(option.description, option.descriptionTranslations, language) ? (
+              <Text style={styles.optionsResultDescription}>
+                {localizeOptionText(option.description, option.descriptionTranslations, language)}
+              </Text>
             ) : null}
           </View>
         ))
@@ -112,7 +119,7 @@ export default function LotteryScreen() {
   const isCompact = screenWidth < ui.breakpointTablet;
   const numColumns = isCompact ? 2 : 3;
   const styles = useMemo(() => makeStyles(colors, numColumns), [colors, numColumns]);
-  const { t } = useTranslation(["lottery", "menu"]);
+  const { t, i18n } = useTranslation(["lottery", "menu"]);
   const { t: tOptions } = useTranslation(["lotteryOptions"]);
   const navigation = useNavigation();
   const game = useGameScheduleInfo(gameId);
@@ -174,6 +181,7 @@ export default function LotteryScreen() {
           styles={styles}
           colors={colors}
           t={tOptions}
+          language={i18n.language}
         />
       ))}
     </View>

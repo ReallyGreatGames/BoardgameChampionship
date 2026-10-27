@@ -1,4 +1,6 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { localizeText } from "@/lib/i18n/content";
 import { usePlayer } from "@/lib/bootstrap/PlayerProvider";
 import { Player } from "@/lib/models/player";
 import { Schedule } from "@/lib/models/schedule";
@@ -78,6 +80,7 @@ function findPlayerTable(
 }
 
 export function useParticipantOverview(): ParticipantOverview {
+  const { i18n } = useTranslation();
   const { player } = usePlayer();
   const scheduleCollection = useScheduleStore((s) => s.collection);
   const tableCollection = useTableStore((s) => s.collection);
@@ -127,7 +130,7 @@ export function useParticipantOverview(): ParticipantOverview {
       return {
         scheduleId: item.$id,
         gameId,
-        title: item.title,
+        title: localizeText(item.title, i18n.language),
         round: index + 1,
         tableNumber: table?.tableNumber ?? null,
         placement,
@@ -168,5 +171,5 @@ export function useParticipantOverview(): ParticipantOverview {
       playedCount,
       totalCount: entries.length,
     };
-  }, [player, scheduleCollection, tableCollection, resultCollection]);
+  }, [player, scheduleCollection, tableCollection, resultCollection, i18n.language]);
 }

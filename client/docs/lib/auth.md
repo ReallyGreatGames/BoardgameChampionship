@@ -37,6 +37,8 @@ login screen itself) can read from Appwrite.
 - **`loginWithPin(pin)`** — verifies the PIN against the `tournament`
   collection (`verifyPinInDb`, checks `pin` AND `active === true`), creates
   an anonymous session on success, and persists `{ pin, lastVerified }` locally.
+  A rejected lookup is surfaced as an explicit `InvalidPinError`; a request
+  failure remains distinct so the login screen can show a network error.
 
 ### PIN re-verification
 

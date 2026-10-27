@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { localizeText } from "@/lib/i18n/content";
 import {
   ActivityIndicator,
   Pressable,
@@ -37,7 +38,7 @@ type Phase = "paste" | "preview" | "deleting" | "importing" | "done";
 export function ImportRules() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { t } = useTranslation(["importTab", "rules"]);
+  const { t, i18n } = useTranslation(["importTab", "rules"]);
   const { confirm } = useDialog();
   const { setBusy } = useImportActivity();
 
@@ -76,8 +77,8 @@ export function ImportRules() {
       [...schedules]
         .filter((s) => !!s.gameId)
         .sort((a, b) => a.sortIndex - b.sortIndex)
-        .map((s) => ({ value: s.gameId!, label: s.title })),
-    [schedules],
+        .map((s) => ({ value: s.gameId!, label: localizeText(s.title, i18n.language) })),
+    [schedules, i18n.language],
   );
 
   const [gameId, setGameId] = useState<string>("");

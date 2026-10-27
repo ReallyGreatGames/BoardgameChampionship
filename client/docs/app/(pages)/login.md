@@ -35,7 +35,7 @@ Increments `tapCount` and resets a 2-second `tapTimer` on every tap (so taps mus
 
 ### `handleLogin(): Promise<void>`
 
-Branches on `adminMode`. Admin branch: validates `email`/`password` are non-empty (shows an error dialog otherwise), calls `login(email, password)`, and on success replaces the route to `/admin`; on failure shows an error dialog with the caught message. PIN branch: bails out silently if `eventInactive`, validates `pin` is non-empty, calls `loginWithPin(pin)`, and on success replaces to `/`; on failure shows an "Invalid PIN" dialog. Sets `loading` around both branches to drive the submit button's spinner.
+Branches on `adminMode`. Admin branch: validates `email`/`password` are non-empty (shows an error dialog otherwise), calls `login(email, password)`, and on success replaces the route to `/admin`; on failure shows an error dialog with the caught message. PIN branch: bails out silently if `eventInactive`, validates `pin` is non-empty, calls `loginWithPin(pin)`, and on success replaces to `/`. An explicitly rejected PIN shows an "Invalid PIN" dialog; a failed verification request shows a network-error dialog without exposing platform exception text. Sets `loading` around both branches to drive the submit button's spinner.
 
 ## How it works
 
