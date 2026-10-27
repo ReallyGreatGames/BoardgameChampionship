@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "778504630428",
+    "project_id": "boardgame-championship",
+    "storage_bucket": "boardgame-championship.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:778504630428:android:7ba7ced4b6f67b32f17d59",
+        "android_client_info": {
+          "package_name": "games.reallygreat.bgchampion"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBw4CWPFuvXiv-fOd0To1oPpavMfft1VaQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
